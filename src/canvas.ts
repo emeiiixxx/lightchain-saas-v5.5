@@ -6,34 +6,45 @@ import { mergeGroupStages, MERGE_GROUP_GAP, MERGE_OUTPUT_GAP } from './canvas-me
 export { MERGE_OUTPUT_GAP } from './canvas-merge-layout';
 export type Viewport = { x: number; y: number; zoom: number };
 export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string };
-export const MAX_FUSION_REFERENCES = 4;
-export type WorkflowKind = 'fusion' | 'lingerie' | 'directed' | 'flat' | 'merge';
+export const MAX_FUSION_REFERENCES = 9;
+export const MAX_BATCH_MAIN_IMAGES = 20;
+export type WorkflowKind = 'fusion' | 'lingerie' | 'directed' | 'flat' | 'merge' | 'batch';
 export type FlatRegion = 'top' | 'bottom' | 'full';
 export type FlatFace = 'front' | 'back';
 export type DirectedFusionPoint = { id: string; reference: FusionReference; maskPreviewUrl?: string; maskSourceUrl?: string };
 export const MAX_DIRECTED_POINTS = 3;
-export type FusionSettings = { kind?: WorkflowKind; position?: { x: number; y: number }; prompt: string; ratio: string; resolution: string; reference?: FusionReference; references?: FusionReference[]; directedPoints?: DirectedFusionPoint[]; flatRegion?: FlatRegion; flatFace?: FlatFace; batchFlat?: boolean; drawingGuide?: DrawingGuide };
+export type FusionSettings = { kind?: WorkflowKind; position?: { x: number; y: number }; prompt: string; ratio: string; resolution: string; reference?: FusionReference; references?: FusionReference[]; mainImages?: FusionReference[]; directedPoints?: DirectedFusionPoint[]; flatRegion?: FlatRegion; flatFace?: FlatFace; batchFlat?: boolean; drawingGuide?: DrawingGuide };
 export const fusionReferences = (settings?: FusionSettings): FusionReference[] => settings?.references ?? (settings?.reference ? [settings.reference] : []);
-export const isMultiInputWorkflow = (settings?: FusionSettings) => settings?.kind === 'merge' || (settings?.kind === 'flat' && settings.batchFlat === true);
+export const batchMainImages = (settings?: FusionSettings): FusionReference[] => settings?.mainImages ?? [];
+export const workflowInputs = (settings?: FusionSettings): FusionReference[] => settings?.kind === 'batch' ? batchMainImages(settings) : fusionReferences(settings);
+export const isMultiInputWorkflow = (settings?: FusionSettings) => settings?.kind === 'batch' || settings?.kind === 'merge' || (settings?.kind === 'flat' && settings.batchFlat === true);
 export const workflowReferenceLimit = (settings?: FusionSettings) => settings?.batchFlat ? 20 : settings?.kind === 'lingerie' ? 1 : MAX_FUSION_REFERENCES;
-export const defaultFusion = (kind: WorkflowKind = 'fusion'): FusionSettings => ({ kind, prompt: '', ratio: 'auto', resolution: '2K', ...(kind === 'directed' ? { directedPoints: [] } : {}), ...(kind === 'flat' ? { flatRegion: 'top', flatFace: 'front' } : {}) });
+export const defaultFusion = (kind: WorkflowKind = 'fusion'): FusionSettings => ({ kind, prompt: '', ratio: 'auto', resolution: '2K', ...(kind === 'batch' ? { mainImages: [], references: [] } : {}), ...(kind === 'directed' ? { directedPoints: [] } : {}), ...(kind === 'flat' ? { flatRegion: 'top', flatFace: 'front' } : {}) });
 export const FUSION_GAP = 80;
 const BRANCH_GAP = 120;
 export const GROUP_GAP = 240;
+const GROUPS_PER_ROW = 5;
 export const FUSION_WIDTH = 280;
+export const workflowWidth = (settings?: FusionSettings) => settings?.kind === 'batch' ? 592 : FUSION_WIDTH;
 // Shared action footer adds a 1px divider and 12px spacing above the button.
 export const FUSION_HEIGHT = 592;
+function referenceGridRows(settings?: FusionSettings) {
+  const count = fusionReferences(settings).length;
+  const slots = count + (count < workflowReferenceLimit(settings) ? 1 : 0);
+  return Math.ceil(Math.max(1, slots) / 4);
+}
 // Directed: 282px including the action footer, plus 129px card + 12px gap per point.
 // The 56px add entry and its 12px gap disappear at the three-point limit.
 export function workflowHeight(settings?: FusionSettings) {
-  if (settings?.kind === 'merge') return 505;
+  if (settings?.kind === 'batch') return 404;
+  if (settings?.kind === 'merge') return 505 + (referenceGridRows(settings) - 1) * 64;
   if (settings?.kind === 'flat' && settings.batchFlat) {
     const count = fusionReferences(settings).length;
     const rows = Math.ceil(Math.max(1, count + (count < 20 ? 1 : 0)) / 4);
     return 401 + Math.min(208, rows * 64 - 8);
   }
   if (settings?.kind === 'flat') return 430;
-  if (settings?.kind !== 'directed') return FUSION_HEIGHT;
+  if (settings?.kind !== 'directed') return FUSION_HEIGHT + (referenceGridRows(settings) - 1) * 72;
   const count = Math.min(MAX_DIRECTED_POINTS, settings.directedPoints?.length ?? 0);
   return 282 + count * 141 - (count === MAX_DIRECTED_POINTS ? 68 : 0);
 }
@@ -46,7 +57,7 @@ export function workflowSources(items: CanvasImage[], editor: CanvasImage): Canv
     const seen = new Set<string>();
     // A source ID is the connection identity. Asset URLs can change while the
     // same image remains connected; reference order is the input order.
-    return fusionReferences(editor.fusion).flatMap(reference => {
+    return workflowInputs(editor.fusion).flatMap(reference => {
       const source = reference.sourceImageId ? images.get(reference.sourceImageId) : undefined;
       if (!source || seen.has(source.id)) return [];
       seen.add(source.id);
@@ -111,9 +122,8 @@ export function boundsOf(images: CanvasImage[]): Bounds | null {
   const x = Math.min(...images.map(n => n.x)), y = Math.min(...images.map(n => n.y));
   return { x, y, width: Math.max(...images.map(n => n.x + n.width)) - x, height: Math.max(...images.map(n => n.y + n.height)) - y };
 }
-export function arrangeImages(items: CanvasImage[], startX = 0, viewport = { width: 1440, height: 852 }): CanvasImage[] {
+export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { width: 1440, height: 852 }, options: { independentGap?: number } = {}): CanvasImage[] {
   if (!items.length) return [];
-  const area = canvasSafeArea(viewport.width, viewport.height);
   // Layout the visible graph: an image and its editor are separate vertices.
   type Vertex = { id: string; width: number; height: number; editor: boolean; children: string[] };
   type Placement = { id: string; x: number; y: number };
@@ -121,7 +131,7 @@ export function arrangeImages(items: CanvasImage[], startX = 0, viewport = { wid
   const vertices = new Map<string, Vertex>();
   for (const item of items) {
     if (!item.nodeOnly) vertices.set(item.id, {id:item.id, width:item.width, height:item.height, editor:false, children:[]});
-    if (item.fusion) vertices.set(`${item.id}:fusion`, {id:`${item.id}:fusion`, width:FUSION_WIDTH, height:workflowHeight(item.fusion), editor:true, children:[]});
+    if (item.fusion) vertices.set(`${item.id}:fusion`, {id:`${item.id}:fusion`, width:workflowWidth(item.fusion), height:workflowHeight(item.fusion), editor:true, children:[]});
   }
   const parents = new Map<string, string>();
   const mergeRoots = new Set(items.filter(item => isMultiInputWorkflow(item.fusion)).map(item => `${item.id}:fusion`));
@@ -175,7 +185,7 @@ export function arrangeImages(items: CanvasImage[], startX = 0, viewport = { wid
       const data = tree.get(id)!;
       // Reserve the widest node at each depth BEFORE contour compaction.
       // Shifting columns afterwards would invalidate the computed separation.
-      // Reserve the wider output gap before contour layout; rendered width stays 280.
+      // Reserve the wider output gap before contour layout without changing node widths.
       data.width = widths[depth] + (mergeRoots.has(id) ? MERGE_OUTPUT_GAP - FUSION_GAP : 0);
       data.children = vertices.get(id)!.children.map(child => tree.get(child)!);
     }
@@ -204,38 +214,33 @@ export function arrangeImages(items: CanvasImage[], startX = 0, viewport = { wid
     (!connected ? independent : mergeRoots.has(root.id) ? mergeBlocks : related).push(block);
   }
   groupTaskBlocks(items, related, mergeBlocks);
-  function pack(blocks: Block[], columns: number): Block {
+  function pack(blocks: Block[], columns: number, gap = GROUP_GAP): Block {
     const nodes: Placement[] = [];
     let width = 0, y = 0;
     for (let row=0;row<blocks.length;row+=columns) {
       let x=0, rowHeight=0;
       for (const block of blocks.slice(row,row+columns)) {
-        nodes.push(...moved(block,x,y)); x += block.width+GROUP_GAP; rowHeight=Math.max(rowHeight,block.height);
+        nodes.push(...moved(block,x,y)); x += block.width+gap; rowHeight=Math.max(rowHeight,block.height);
       }
-      width=Math.max(width,x-GROUP_GAP); y+=rowHeight+GROUP_GAP;
+      width=Math.max(width,x-gap); y+=rowHeight+gap;
     }
-    return {nodes, width, height:Math.max(0,y-GROUP_GAP)};
+    return {nodes, width, height:Math.max(0,y-gap)};
   }
-  const relatedLayouts = Array.from({length:Math.max(1,related.length)},(_,i)=>pack(related,i+1));
-  const independentLayouts = Array.from({length:Math.max(1,independent.length)},(_,i)=>pack(independent,i+1));
-  const mergeLayouts = mergeGroupStages(items, mergeBlocks).map(blocks => pack(blocks, 1));
-  let best: Placement[] = [], bestScore = -Infinity;
-  for (const top of relatedLayouts) for (const bottom of independentLayouts) {
-    const topHeight = Math.max(top.height, ...mergeLayouts.map(block => block.height));
-    const placements = moved(top,0,(topHeight-top.height)/2);
-    let topWidth = top.width;
-    for (const block of mergeLayouts) {
-      const x = topWidth ? topWidth + MERGE_GROUP_GAP : 0;
-      placements.push(...moved(block,x,(topHeight-block.height)/2));
-      topWidth = x + block.width;
-    }
-    const bottomY = placements.length && bottom.nodes.length ? topHeight + GROUP_GAP * 2 : 0;
-    placements.push(...moved(bottom,0,bottomY));
-    const width = Math.max(topWidth,bottom.width), height = Math.max(topHeight,bottomY+bottom.height);
-    const score = Math.min(area.width/Math.max(1,width),area.height/Math.max(1,height));
-    if (score>bestScore+1e-9) { bestScore=score; best=placements; }
+  // Keep complete groups together and wrap after five, regardless of viewport.
+  const top = pack(related, GROUPS_PER_ROW);
+  const bottom = pack(independent, GROUPS_PER_ROW, options.independentGap ?? GROUP_GAP);
+  const mergeLayouts = mergeGroupStages(items, mergeBlocks).map(blocks => pack(blocks, GROUPS_PER_ROW));
+  const topHeight = Math.max(top.height, ...mergeLayouts.map(block => block.height));
+  const placements = moved(top,0,(topHeight-top.height)/2);
+  let topWidth = top.width;
+  for (const block of mergeLayouts) {
+    const x = topWidth ? topWidth + MERGE_GROUP_GAP : 0;
+    placements.push(...moved(block,x,(topHeight-block.height)/2));
+    topWidth = x + block.width;
   }
-  const positions = new Map(best.map(node=>[node.id,{x:node.x+startX,y:node.y}]));
+  const bottomY = placements.length && bottom.nodes.length ? topHeight + GROUP_GAP * 2 : 0;
+  placements.push(...moved(bottom,0,bottomY));
+  const positions = new Map(placements.map(node=>[node.id,{x:node.x+startX,y:node.y}]));
   return items.map(item=>{
     const image = positions.get(item.id), editor = positions.get(`${item.id}:fusion`);
     return {...item, ...(image ?? (item.nodeOnly ? editor : undefined)),
@@ -244,12 +249,12 @@ export function arrangeImages(items: CanvasImage[], startX = 0, viewport = { wid
 }
 
 export function fusionPosition(image: CanvasImage) {
-  return image.fusion?.position ?? { x: image.x + image.width + FUSION_GAP, y: image.y - 7 };
+  return image.fusion?.position ?? { x: image.x + image.width + FUSION_GAP, y: image.y + (image.height - workflowHeight(image.fusion)) / 2 };
 }
 
 // Include workflow nodes in navigation without treating them as uploaded images.
 export function canvasNodes(images: CanvasImage[]): CanvasImage[] {
-  return images.flatMap(image => image.fusion ? [...(image.nodeOnly ? [] : [image]), { ...image, id: `${image.id}:fusion`, fusion: undefined, ...fusionPosition(image), width: FUSION_WIDTH, height: workflowHeight(image.fusion) }] : image.nodeOnly ? [] : [image]);
+  return images.flatMap(image => image.fusion ? [...(image.nodeOnly ? [] : [image]), { ...image, id: `${image.id}:fusion`, fusion: undefined, ...fusionPosition(image), width: workflowWidth(image.fusion), height: workflowHeight(image.fusion) }] : image.nodeOnly ? [] : [image]);
 }
 
 // Keep an empty workflow record when its source image is removed.
@@ -259,7 +264,8 @@ export function deleteCanvasSelection(items: CanvasImage[], selected: string[]):
     const deleteImage = ids.has(item.id), deleteNode = ids.has(`${item.id}:fusion`);
     if (deleteNode && (item.nodeOnly || deleteImage)) return [];
     if (item.fusion && isMultiInputWorkflow(item.fusion)) {
-      return [{ ...item, fusion: { ...item.fusion, references: fusionReferences(item.fusion).filter(ref => !ref.sourceImageId || !ids.has(ref.sourceImageId)) } }];
+      const inputs = workflowInputs(item.fusion).filter(ref => !ref.sourceImageId || !ids.has(ref.sourceImageId));
+      return [{ ...item, fusion: { ...item.fusion, ...(item.fusion.kind === 'batch' ? { mainImages: inputs } : { references: inputs }) } }];
     }
     if (item.editorSourceId && ids.has(item.editorSourceId) && item.fusion) {
       return [{...item, editorSourceId: undefined, name: '', url: '', fusion: {...defaultFusion(item.fusion.kind), position: fusionPosition(item)}}];
@@ -300,11 +306,11 @@ export function createFusionEditor(items: CanvasImage[], sourceId: string, id: s
   const source = items.find(n => n.id === sourceId && !n.nodeOnly);
   if (!source) return null;
   const x = source.x + source.width + FUSION_GAP;
-  const height = workflowHeight(defaultFusion(kind));
-  let y = source.y;
+  const width = workflowWidth(defaultFusion(kind)), height = workflowHeight(defaultFusion(kind));
+  let y = source.y + (source.height - height) / 2;
   const occupied = canvasNodes(items);
-  while (occupied.some(n => x < n.x + n.width + 16 && x + FUSION_WIDTH + 16 > n.x && y < n.y + n.height + 16 && y + height + 16 > n.y)) y += height + FUSION_GAP;
-  return {id, name: source.name, url: '', x, y, width: FUSION_WIDTH, height,
+  while (occupied.some(n => x < n.x + n.width + 16 && x + width + 16 > n.x && y < n.y + n.height + 16 && y + height + 16 > n.y)) y += height + FUSION_GAP;
+  return {id, name: source.name, url: '', x, y, width, height,
     nodeOnly: true, editorSourceId: source.id, fusion: {...defaultFusion(kind), position: {x,y}}};
 }
 
@@ -322,4 +328,26 @@ export function createMergeEditor(items: CanvasImage[], selected: string[], id: 
   }
   return { id, name: batchFlat ? '转3D平铺' : '合拼生图', url: '', x, y, width: FUSION_WIDTH, height, nodeOnly: true,
     fusion: { ...fusion, position: { x, y }, references: sources.map(source => ({ id: source.id, name: source.name, url: source.url, sourceImageId: source.id })) } };
+}
+
+
+// Batch edit has separate primary inputs and shared references. Keep the source
+// identity on every main image so cross-group inputs retain their original group.
+export function createBatchEditor(items: CanvasImage[], selected: string[], id: string): CanvasImage | null {
+  const sources = items.filter(item => selected.includes(item.id) && !item.nodeOnly);
+  if (sources.length < 2 || sources.length > MAX_BATCH_MAIN_IMAGES) return null;
+  const bounds = boundsOf(sources)!;
+  const fusion: FusionSettings = { ...defaultFusion('batch'), mainImages: sources.map(source => ({
+    id: source.id, name: source.name, url: source.url, sourceImageId: source.id,
+  })), references: [] };
+  const width = workflowWidth(fusion), height = workflowHeight(fusion);
+  const x = bounds.x + bounds.width + MERGE_GROUP_GAP;
+  let y = bounds.y + (bounds.height - height) / 2;
+  const occupied = canvasNodes(items);
+  let collisions;
+  while ((collisions = occupied.filter(item => x < item.x + item.width + 16 && x + width + 16 > item.x && y < item.y + item.height + 16 && y + height + 16 > item.y)).length) {
+    y = Math.max(...collisions.map(item => item.y + item.height)) + FUSION_GAP;
+  }
+  return { id, name: '批量编辑', url: '', x, y, width, height, nodeOnly: true,
+    fusion: { ...fusion, position: { x, y } } };
 }

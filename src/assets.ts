@@ -1,5 +1,9 @@
 // Figma node 12:3127 assets; theme icons reuse the existing 5.2 TopBar artwork.
 export const assets = {
+  batchTip: '/assets/batch-edit/tip.svg',
+  batchAdd: '/assets/batch-edit/add.svg',
+  batchAddImage: '/assets/batch-edit/add-image.svg',
+  batchClose: '/assets/batch-edit/close.svg',
   guideMarker: '/assets/draw-guide/marker.svg',
   guideEraser: '/assets/draw-guide/eraser.svg',
   guideMinus: '/assets/draw-guide/minus.svg',

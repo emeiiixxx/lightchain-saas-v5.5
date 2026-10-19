@@ -1,8 +1,8 @@
-import { fusionReferences, isMultiInputWorkflow, workflowSources, type CanvasImage } from './canvas';
+import { isMultiInputWorkflow, workflowInputs, workflowSources, type CanvasImage } from './canvas';
 import type { LayoutBlock } from './canvas-merge-layout';
 
-// Remember which previously unconnected materials entered this task. Existing
-// workflows keep their ownership when another task references their images.
+// New, unconnected uploads may enter a task; existing workflows keep their
+// ownership when another task uses one of their images as an input.
 export function standaloneTaskInputs(items: CanvasImage[]): Set<string> {
   const connected = new Set<string>();
   for (const item of items) {
@@ -11,7 +11,7 @@ export function standaloneTaskInputs(items: CanvasImage[]): Set<string> {
     if (item.fusion) {
       connected.add(item.id);
       if (item.editorSourceId) connected.add(item.editorSourceId);
-      for (const reference of fusionReferences(item.fusion)) if (reference.sourceImageId) connected.add(reference.sourceImageId);
+      for (const reference of workflowInputs(item.fusion)) if (reference.sourceImageId) connected.add(reference.sourceImageId);
     }
   }
   return new Set(items.filter(item => !item.nodeOnly && !connected.has(item.id)).map(item => item.id));
@@ -22,55 +22,11 @@ const rootImage = (items: CanvasImage[], block: LayoutBlock) => items.find(item 
 
 export function groupTaskBlocks(items: CanvasImage[], related: LayoutBlock[], tasks: LayoutBlock[]) {
   const editors = items.filter(item => isMultiInputWorkflow(item.fusion));
-  const inputOwners = new Map<string, string>();
-  for (const editor of editors) {
-    for (const source of workflowSources(items, editor)) {
-      // Preserve an owner only while it still references this image. Otherwise
-      // the first current consumer owns a bare input, regardless of upload age.
-      if (!inputOwners.has(source.id) || source.layoutTaskId === editor.id) inputOwners.set(source.id, editor.id);
-    }
-  }
-  const members = new Map<string, { block: LayoutBlock; taskId: string }>();
-  for (const block of related) {
-    const root = rootImage(items, block);
-    if (root) members.set(root.id, { block, taskId: root.layoutTaskId ?? '' });
-  }
-  for (const editor of editors) {
-    const task = tasks.find(block => block.nodes.some(node => node.id === `${editor.id}:fusion`));
-    if (!task) continue;
-    const adopted: LayoutBlock[] = [];
-    for (const source of workflowSources(items, editor)) {
-      const member = members.get(source.id);
-      if (!member) continue;
-      // Bare inputs follow current connections, even with missing/stale ownership.
-      // Existing workflow trees stay intact when another task references them.
-      const owner = member.block.nodes.length === 1 ? inputOwners.get(source.id) : member.taskId;
-      if (owner !== editor.id) continue;
-      if (!related.includes(member.block)) continue;
-      adopted.push(member.block);
-      related.splice(related.indexOf(member.block), 1);
-      members.delete(source.id);
-    }
-    if (adopted.length) {
-      const inputWidth = Math.max(...adopted.map(block => block.width));
-      const inputHeight = adopted.reduce((sum, block) => sum + block.height, 0) + (adopted.length - 1) * 120;
-      const height = Math.max(task.height, inputHeight);
-      let y = (height - inputHeight) / 2;
-      const nodes = adopted.flatMap(block => { const placed = offset(block, 0, y); y += block.height + 120; return placed; });
-      nodes.push(...offset(task, inputWidth + 80, (height - task.height) / 2));
-      task.nodes = nodes; task.width += inputWidth + 80; task.height = height;
-    }
-  }
-  // A task containing all its canvas inputs is a normal complete group, not a
-  // cross-group stage that must be separated from every other workflow.
-  for (const task of [...tasks]) {
-    const ids = new Set(task.nodes.map(node => node.id));
-    const taskEditors = editors.filter(editor => ids.has(`${editor.id}:fusion`));
-    const external = taskEditors.some(editor => workflowSources(items, editor).some(source => !ids.has(source.id)));
-    if (!external) { tasks.splice(tasks.indexOf(task), 1); related.push(task); }
-  }
-  // Direct batch operations have no shared editor: keep each source/result pair
-  // intact, and pack the newly owned pairs together as one task.
+  const imageOrder = new Map(items.filter(item => !item.nodeOnly).map((item, index) => [item.id, index]));
+  const firstMainOrder = (block: LayoutBlock) => Math.min(...block.nodes.filter(node => node.x === 0).map(node => imageOrder.get(node.id) ?? Infinity));
+
+  // Direct batch operations have no shared editor. Their source/result pairs
+  // already belong to one group, even when a later batch uses several pairs.
   const batches = new Map<string, LayoutBlock[]>();
   for (const block of related) {
     const root = rootImage(items, block);
@@ -89,28 +45,87 @@ export function groupTaskBlocks(items: CanvasImage[], related: LayoutBlock[], ta
     related.splice(index, 0, combined);
   }
 
-  // Group order follows the first editor (or direct operation result), not the
-  // oldest uploaded input. Adding an older material cannot move a task forward.
-  const imageOrder = new Map<string, number>(), editorOrder = new Map<string, number>(), resultOrder = new Map<string, number>();
-  const resultParents = new Map<string, string>();
-  items.forEach((item, index) => {
-    if (!item.nodeOnly) imageOrder.set(item.id, index);
-    if (item.fusion) editorOrder.set(`${item.id}:fusion`, index);
-    const parent = item.sourceImageId ?? (item.generatedByEditorId ? `${item.generatedByEditorId}:fusion` : undefined);
-    if (!item.nodeOnly && parent) { resultOrder.set(item.id, index); resultParents.set(item.id, parent); }
-  });
-  const firstOrder = (block: LayoutBlock, order: Map<string, number>) => Math.min(...block.nodes.map(node => order.get(node.id) ?? Infinity));
-  const groupOrder = (block: LayoutBlock) => {
-    const ids = new Set(block.nodes.map(node => node.id));
-    const firstResult = Math.min(...block.nodes.map(node => {
-      const parent = resultParents.get(node.id);
-      return parent && ids.has(parent) ? resultOrder.get(node.id)! : Infinity;
-    }));
-    const firstOperation = Math.min(firstOrder(block, editorOrder), firstResult);
-    return firstOperation !== Infinity ? firstOperation : firstOrder(block, imageOrder);
-  };
-  const orders = new Map([...related, ...tasks].map(block => [block, groupOrder(block)]));
-  const byCreation = (a: LayoutBlock, b: LayoutBlock) => orders.get(a)! - orders.get(b)!;
-  related.sort(byCreation);
-  tasks.sort(byCreation);
+  // Pin bare inputs to a valid saved owner, otherwise their first current
+  // consumer. This prevents a shared input moving between groups on each tidy.
+  const inputOwners = new Map<string, string>();
+  for (const editor of editors) {
+    for (const source of workflowSources(items, editor)) {
+      if (!inputOwners.has(source.id) || source.layoutTaskId === editor.id) inputOwners.set(source.id, editor.id);
+    }
+  }
+  const bareInputs = new Map<string, LayoutBlock>();
+  for (const block of related) {
+    if (block.nodes.length === 1 && imageOrder.has(block.nodes[0].id)) bareInputs.set(block.nodes[0].id, block);
+  }
+  const taskBlocks = new Map<string, LayoutBlock>();
+  const orders = new Map(related.map(block => [block, firstMainOrder(block)]));
+  for (const editor of editors) {
+    const task = tasks.find(block => block.nodes.some(node => node.id === `${editor.id}:fusion`));
+    if (!task) continue;
+    taskBlocks.set(editor.id, task);
+    const sources = workflowSources(items, editor);
+    // A new group uses its main images' upload order. Existing groups retain
+    // their original order when later images or editors are added to them.
+    orders.set(task, Math.min(...sources.map(source => imageOrder.get(source.id) ?? Infinity)));
+    const adopted = sources.flatMap(source => {
+      const block = bareInputs.get(source.id);
+      if (!block || inputOwners.get(source.id) !== editor.id) return [];
+      bareInputs.delete(source.id);
+      related.splice(related.indexOf(block), 1);
+      return [block];
+    });
+    if (!adopted.length) continue;
+    const inputWidth = Math.max(...adopted.map(block => block.width));
+    const inputHeight = adopted.reduce((sum, block) => sum + block.height, 0) + (adopted.length - 1) * 120;
+    const height = Math.max(task.height, inputHeight);
+    let y = (height - inputHeight) / 2;
+    const nodes = adopted.flatMap(block => { const placed = offset(block, 0, y); y += block.height + 120; return placed; });
+    nodes.push(...offset(task, inputWidth + 80, (height - task.height) / 2));
+    task.nodes = nodes; task.width += inputWidth + 80; task.height = height;
+  }
+
+  const groups = new Set([...related, ...tasks]);
+  const owner = new Map<string, LayoutBlock>();
+  for (const block of groups) for (const node of block.nodes) owner.set(node.id, block);
+  const dependencies = new Map<string, Set<string>>();
+  for (const editor of editors) {
+    const parents = new Set<string>();
+    for (const source of workflowSources(items, editor)) {
+      const group = owner.get(source.id);
+      for (const [parentId, block] of taskBlocks) if (block === group && parentId !== editor.id) parents.add(parentId);
+    }
+    dependencies.set(editor.id, parents);
+  }
+  const pending = new Set(taskBlocks.keys());
+  while (pending.size) {
+    const ready = [...pending].find(id => [...(dependencies.get(id) ?? [])].every(parent => !pending.has(parent)));
+    // Break one layout dependency in malformed legacy cycles, without dropping nodes.
+    const id = ready ?? pending.values().next().value!;
+    pending.delete(id);
+    if (ready === undefined) continue;
+    const editor = editors.find(item => item.id === id)!;
+    const task = owner.get(`${id}:fusion`)!;
+    const sourceGroups = new Set(workflowSources(items, editor).map(source => owner.get(source.id)).filter((block): block is LayoutBlock => !!block && block !== task));
+    // One existing group + any new uploads extends that group. Two or more
+    // existing groups create a separate group and never pull their images away.
+    if (sourceGroups.size !== 1) continue;
+    const parent = sourceGroups.values().next().value!;
+    const height = Math.max(parent.height, task.height);
+    parent.nodes = [...offset(parent, 0, (height - parent.height) / 2), ...offset(task, parent.width + 80, (height - task.height) / 2)];
+    parent.width += task.width + 80; parent.height = height;
+    groups.delete(task);
+    for (const node of parent.nodes) owner.set(node.id, parent);
+  }
+
+  related.splice(0); tasks.splice(0);
+  for (const group of groups) {
+    const ids = new Set(group.nodes.map(node => node.id));
+    const external = editors.some(editor => ids.has(`${editor.id}:fusion`) && workflowSources(items, editor).some(source => !ids.has(source.id)));
+    (external ? tasks : related).push(group);
+  }
+  // Cross-group dependency stages still take precedence; within each stage,
+  // groups follow their main images' upload order rather than editor creation.
+  const byMainUpload = (a: LayoutBlock, b: LayoutBlock) => (orders.get(a) ?? Infinity) - (orders.get(b) ?? Infinity);
+  related.sort(byMainUpload);
+  tasks.sort(byMainUpload);
 }

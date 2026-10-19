@@ -26,14 +26,20 @@ export function paintGuide(canvas: HTMLCanvasElement, strokes: GuideStroke[], ac
     ctx.fillStyle = ctx.strokeStyle = stroke.color;
     ctx.lineWidth = stroke.size;
     ctx.lineCap = ctx.lineJoin = 'round';
-    ctx.beginPath();
     if (stroke.points.length === 1) {
+      ctx.beginPath();
       ctx.arc(first.x, first.y, stroke.size / 2, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      ctx.moveTo(first.x, first.y);
-      for (let i = 1; i < stroke.points.length; i++) ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
-      ctx.stroke();
+      // Composite each round-capped segment independently. Retraced and
+      // crossing segments must accumulate, not form one self-crossing path.
+      for (let i = 1; i < stroke.points.length; i++) {
+        const previous = stroke.points[i - 1], next = stroke.points[i];
+        ctx.beginPath();
+        ctx.moveTo(previous.x, previous.y);
+        ctx.lineTo(next.x, next.y);
+        ctx.stroke();
+      }
     }
   }
   ctx.globalCompositeOperation = 'source-over';

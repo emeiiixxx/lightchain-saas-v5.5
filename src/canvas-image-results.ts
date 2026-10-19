@@ -14,7 +14,7 @@ export function createImageResults(current: CanvasImage[], outputs: ImageOutput[
   const x = bounds.x + bounds.width + 80;
   for (const { source, output } of pairs) {
     const width = output.width ?? source.width, height = output.height ?? source.height;
-    let y = source.y;
+    let y = source.y + (source.height - height) / 2;
     let collisions;
     while ((collisions = occupied.filter(item => x < item.x + item.width + 16 && x + width + 16 > item.x && y < item.y + item.height + 16 && y + height + 16 > item.y)).length) {
       y = Math.max(...collisions.map(item => item.y + item.height)) + 80;

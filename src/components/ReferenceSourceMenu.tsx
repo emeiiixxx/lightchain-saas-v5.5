@@ -1,9 +1,9 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { usePresence } from '../usePresence';
 import { Icon } from './ui';
 
-export function ReferenceSourceMenu({ addLabel, canvasLabel, onChoose }: { addLabel: string; canvasLabel: string; onChoose: (source: 'upload' | 'canvas') => void }) {
+export function ReferenceSourceMenu({ addLabel, canvasLabel, onChoose, className = 'fusion-reference', children }: { addLabel: string; canvasLabel: string; onChoose: (source: 'upload' | 'canvas') => void; className?: string; children?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const shown = usePresence(open ? true : null);
   const trigger = useRef<HTMLButtonElement>(null), popup = useRef<HTMLDivElement>(null);
@@ -39,8 +39,8 @@ export function ReferenceSourceMenu({ addLabel, canvasLabel, onChoose }: { addLa
   }, [shown.value, open]);
   const expand = (keys: boolean) => { keyboard.current = keys; document.dispatchEvent(new CustomEvent('lc-select-open', { detail: id })); setOpen(true); };
   return <>
-    <button ref={trigger} type="button" className="fusion-reference" aria-label={addLabel} data-tooltip={addLabel} aria-haspopup="menu" aria-controls={id} aria-expanded={open}
-      onClick={() => open ? setOpen(false) : expand(false)} onKeyDown={e => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); expand(true); } if (e.key === 'Escape') setOpen(false); }}><Icon name="fusionAddImage" size={20} /></button>
+    <button ref={trigger} type="button" className={className} aria-label={addLabel} data-tooltip={addLabel} aria-haspopup="menu" aria-controls={id} aria-expanded={open}
+      onClick={() => open ? setOpen(false) : expand(false)} onKeyDown={e => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); expand(true); } if (e.key === 'Escape') setOpen(false); }}>{children ?? <Icon name="fusionAddImage" size={20} />}</button>
     {shown.value && createPortal(<div ref={popup} popover="manual" role="menu" id={id} aria-label={addLabel} className="lc-select-popup" data-select-popup data-overlay data-phase={shown.phase} inert={shown.phase === 'exit'}
       onKeyDown={e => {
         const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('button'));

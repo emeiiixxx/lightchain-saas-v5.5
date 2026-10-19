@@ -152,29 +152,38 @@
 .draw-guide-tools,
 .draw-guide-actions { display: flex; align-items: center; flex-shrink: 0; gap: 4px; }
 
-/* Preserve the mounted controls while the palette and tool order change. */
-.draw-guide-tools { transition: grid-template-columns var(--motion-duration) var(--motion-easing); }
-.draw-guide-palette {
+/* Each tool owns an adjacent panel; collapse and expansion run together. */
+.draw-guide-options {
+  --guide-options-width: 200px;
   flex-shrink: 0;
-  width: 112px;
+  width: 0;
   height: 40px;
-  margin-right: 0;
-  overflow: hidden;
-  opacity: 1;
-  visibility: visible;
+  margin-right: -4px;
+  /* Clip horizontally while preserving room above for the size tooltip. */
+  clip-path: inset(-48px 0 -8px 0);
+  opacity: 0;
+  visibility: hidden;
   transition:
     width var(--motion-duration) var(--motion-easing),
     margin-right var(--motion-duration) var(--motion-easing),
     opacity var(--motion-duration) var(--motion-easing),
-    visibility 0s linear;
+    visibility 0s linear var(--motion-duration);
 }
-.draw-guide-toolbar[data-tool='eraser'] .draw-guide-palette {
-  width: 0;
-  margin-right: -4px;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition-delay: 0s, 0s, 0s, var(--motion-duration);
+.draw-guide-options[data-options-tool='brush'] { --guide-options-width: 316px; }
+.draw-guide-options[data-expanded='false'] { pointer-events: none; }
+.draw-guide-options[data-expanded='true'] {
+  width: var(--guide-options-width);
+  margin-right: 0;
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+.draw-guide-options-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: var(--guide-options-width);
+  height: 40px;
 }
 .draw-guide-switch-divider {
   display: flex;
@@ -184,15 +193,6 @@
   width: 1px;
   height: 32px;
 }
-.draw-guide-size-slot,
-.draw-guide-switch-divider { translate: 0; transition: translate var(--motion-duration) var(--motion-easing); }
-.draw-guide-eraser {
-  translate: 0;
-  transition-property: translate, color, background-color, border-color, outline-color, box-shadow, opacity;
-}
-.draw-guide-toolbar[data-tool='eraser'] .draw-guide-size-slot { translate: 49px 0; }
-.draw-guide-toolbar[data-tool='eraser'] .draw-guide-switch-divider,
-.draw-guide-toolbar[data-tool='eraser'] .draw-guide-eraser { translate: -204px 0; }
 
 .draw-guide-title {
   display: flex;
@@ -270,22 +270,7 @@
 .draw-guide-color[aria-pressed='true']::before { border-color: var(--border-brand); }
 .draw-guide-color:disabled { opacity: .65; }
 
-.draw-guide-size-slot { position: relative; flex-shrink: 0; width: 200px; height: 40px; }
 .draw-guide-size { display: flex; align-items: center; flex-shrink: 0; gap: 4px; width: 200px; height: 40px; }
-.draw-guide-size-slot > .draw-guide-size {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity var(--motion-duration) var(--motion-easing), visibility 0s linear var(--motion-duration);
-}
-.draw-guide-size-slot > .draw-guide-size[data-active='true'] {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transition-delay: 0s;
-}
 .draw-guide-range { position: relative; display: flex; align-items: center; flex: 1; width: 112px; min-width: 0; height: 40px; }
 
 .draw-guide-range input[type='range'] {
@@ -413,14 +398,16 @@ html:not([lang='zh-CN']) .draw-guide-editor :is(.draw-guide-clear, .draw-guide-c
     justify-content: center;
     width: 100%;
   }
-  .draw-guide-toolbar[data-tool='eraser'] .draw-guide-tools { grid-template-columns: 40px 0px 40px; }
-  .draw-guide-brush { grid-column: 1; grid-row: 1; }
-  .draw-guide-palette { grid-column: 2; grid-row: 1; }
-  .draw-guide-eraser { grid-column: 3; grid-row: 1; }
-  .draw-guide-size-slot { grid-column: 1 / 4; grid-row: 2; justify-self: center; }
-  .draw-guide-toolbar[data-tool] .draw-guide-palette { margin-right: 0; }
-  .draw-guide-toolbar[data-tool] .draw-guide-size-slot,
-  .draw-guide-toolbar[data-tool] .draw-guide-eraser { translate: 0; }
+  .draw-guide-brush { grid-column: 1; grid-row: 1; z-index: 1; }
+  .draw-guide-eraser { grid-column: 3; grid-row: 1; z-index: 1; }
+  .draw-guide-options { grid-column: 1 / 4; grid-row: 2; margin-right: 0; }
+  .draw-guide-options[data-options-tool='brush'] {
+    --guide-options-width: 200px;
+    grid-row: 1 / 3;
+    height: 84px;
+  }
+  .draw-guide-options[data-options-tool='brush'] .draw-guide-options-content { flex-wrap: wrap; height: 84px; }
+  .draw-guide-options[data-options-tool='brush'] .draw-guide-colors { margin-left: 44px; }
   .draw-guide-switch-divider,
   .draw-guide-tools > .divider,
   .draw-guide-actions > .divider { display: none; }

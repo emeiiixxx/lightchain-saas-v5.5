@@ -2,7 +2,7 @@ import { ProgressiveImage } from './ProgressiveImage';
 import { PromptTools } from './PromptTools';
 import { useEffect, useId, useRef, useState } from 'react';
 import { assets } from '../assets';
-import { fusionReferences, workflowReferenceLimit, type CanvasImage, type FusionSettings } from '../canvas';
+import { fusionReferences, workflowReferenceLimit, workflowHeight, type CanvasImage, type FusionSettings } from '../canvas';
 import { ReferenceSourceMenu } from './ReferenceSourceMenu';
 import { GenerateTaskButton } from './GenerateTaskButton';
 import type { Locale } from '../i18n';
@@ -23,9 +23,9 @@ const lingerieCopy = {
 };
 
 const mergeCopy = {
-  'zh-CN': { title: '合拼生图', tip: '上传多张参考图,合并生成新图', uploaded: '最多4张，已上传' },
-  en: { title: 'Merge & generate', tip: 'Combine reference images into a new image', uploaded: 'Up to 4, added' },
-  ja: { title: '結合して生成', tip: '複数の参考画像を結合して新しい画像を生成', uploaded: '最大4枚、追加済み' },
+  'zh-CN': { title: '合拼生图', tip: '上传多张参考图,合并生成新图', uploaded: (limit: number) => `最多${limit}张，已上传` },
+  en: { title: 'Merge & generate', tip: 'Combine reference images into a new image', uploaded: (limit: number) => `Up to ${limit}, added` },
+  ja: { title: '結合して生成', tip: '複数の参考画像を結合して新しい画像を生成', uploaded: (limit: number) => `最大${limit}枚、追加済み` },
 };
 
 type Props = { image: CanvasImage; locale: Locale; onChange: (patch: Partial<FusionSettings>) => void; onAddMain: () => void; onReference: (source: 'upload' | 'canvas') => void; onEditGuide: () => void; onGenerate: () => void };
@@ -52,11 +52,11 @@ export function FusionNode({ image, locale, onChange, onAddMain, onReference, on
   }, []);
   useEffect(() => { if (image.nodeOnly) setError(false); }, [image.nodeOnly]);
   function updatePrompt(value: string) { onChange({ prompt: value.slice(0, 2000) }); setError(false); }
-  return <section ref={root} className={`fusion-node${!merge && image.nodeOnly ? ' is-empty' : ''}${lingerie ? ' lingerie-node' : ''}${merge ? ' merge-node' : ''}`} data-overlay data-node-id={merge ? (!references.length ? '177:6191' : references.length === 4 ? '177:6100' : '177:7186') : lingerie ? (image.nodeOnly ? '136:17414' : '136:17371') : (image.nodeOnly ? '107:5118' : '35:6422')} data-source-image={image.id} aria-label={t.title}>
+  return <section ref={root} className={`fusion-node${!merge && image.nodeOnly ? ' is-empty' : ''}${lingerie ? ' lingerie-node' : ''}${merge ? ' merge-node' : ''}`} style={merge ? { height: workflowHeight(settings) } : undefined} data-overlay data-node-id={merge ? (!references.length ? '177:6191' : references.length === referenceLimit ? '177:6100' : '177:7186') : lingerie ? (image.nodeOnly ? '136:17414' : '136:17371') : (image.nodeOnly ? '107:5118' : '35:6422')} data-source-image={image.id} aria-label={t.title}>
     <header className="fusion-header"><h2>{t.title}</h2><div className="fusion-tip"><img src={assets.fusionTip} alt="" width={20} height={20} /><span>{t.tip}</span></div></header>
     <div className="fusion-content">
       {!merge && <>{image.nodeOnly ? <button className="fusion-add-main" onClick={onAddMain}><Icon name="fusionAddImage" size={20}/>{lingerie ? lingerieCopy[locale].addMain : locale === 'zh-CN' ? '添加主图' : locale === 'ja' ? 'メイン画像を追加' : 'Add main image'}</button> : <div className="fusion-main"><span className="fusion-main-preview"><ProgressiveImage src={image.url} alt={t.main} width={40} height={40}/>{guide && <img className="fusion-guide-preview" src={guide.previewUrl} alt="" aria-hidden="true" draggable={false}/>}</span><span>{t.main}</span>{!lingerie && <Button variant="outline" className={`fusion-mask${guide ? ' has-guide' : ''}`} aria-label={guideLabel} onClick={onEditGuide}><Icon name="fusionBrush" size={20}/></Button>}</div>}<Divider /></>}
-      <div className="fusion-field"><span className="fusion-label">{t.reference}{merge ? <><span className="merge-count-divider"/><span className="merge-reference-count">{mergeCopy[locale].uploaded} <span>{references.length}</span>/{referenceLimit}</span></> : !lingerie && <span className="fusion-reference-count">{references.length} / {referenceLimit}</span>}</span>
+      <div className="fusion-field"><span className="fusion-label">{t.reference}{merge ? <><span className="merge-count-divider"/><span className="merge-reference-count">{mergeCopy[locale].uploaded(referenceLimit)} <span>{references.length}</span>/{referenceLimit}</span></> : !lingerie && <span className="fusion-reference-count">{references.length} / {referenceLimit}</span>}</span>
         <div className="fusion-references">
           {references.map((reference, index) => <div className="fusion-reference-wrap" key={merge ? reference.id : reference.url}>
             <div className="fusion-reference"><ProgressiveImage src={reference.url} alt={reference.name} /></div>
