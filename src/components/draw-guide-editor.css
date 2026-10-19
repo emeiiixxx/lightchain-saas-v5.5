@@ -134,7 +134,7 @@
   position: absolute;
   z-index: 4;
   left: 50%;
-  bottom: max(40px, env(safe-area-inset-bottom));
+  bottom: max(48px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
   align-items: center;
@@ -331,7 +331,7 @@ html:not([lang='zh-CN']) .draw-guide-editor :is(.draw-guide-clear, .draw-guide-c
 .draw-guide-range input[type='range']::-moz-range-thumb { transition: none; }
 
 @media (max-width: 920px) {
-  .draw-guide-toolbar { bottom: max(16px, env(safe-area-inset-bottom)); flex-wrap: wrap; justify-content: center; }
+  .draw-guide-toolbar { flex-wrap: wrap; justify-content: center; }
   .draw-guide-title-group { flex: 1 0 100%; justify-content: flex-start; }
   .draw-guide-title-group > .divider { display: none; }
   .draw-guide-tools,
