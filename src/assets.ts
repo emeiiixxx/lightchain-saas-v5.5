@@ -35,6 +35,8 @@ export const assets = {
   promptMore: '/assets/prompts/more.svg',
   promptTrash: '/assets/prompts/trash.svg',
   promptEdit: '/assets/prompts/edit.svg',
+  promptCoverAddImage: '/assets/prompts/cover-add-image.svg',
+  promptCoverReplace: '/assets/prompts/cover-replace.svg',
   promptCollapse: '/assets/fusion/promptCollapse.svg',
   cutoutAi: '/assets/cutout/cutoutAi.svg',
   cutoutBrush: '/assets/cutout/cutoutBrush.svg',

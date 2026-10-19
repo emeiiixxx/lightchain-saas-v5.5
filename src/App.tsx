@@ -29,6 +29,7 @@ import { copyCanvasSelection, pasteCanvasSelection } from './canvas-clipboard';
 import { CanvasContextMenu } from './components/CanvasContextMenu';
 import { standaloneTaskInputs } from './canvas-task-layout';
 import { createImageResults } from './canvas-image-results';
+import { PromptLibraryProvider } from './PromptLibraryContext';
 
 type Theme = 'dark' | 'light' | 'system';
 type Tool = 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat';
@@ -734,7 +735,7 @@ export default function App() {
   }
   function changeZoom(factor: number, animated = false) { const r = canvas.current!.getBoundingClientRect(); if (animated) animateView(zoomAt(viewRef.current, factor, r.width / 2, r.height / 2)); else setView(v => zoomAt(v, factor, r.width / 2, r.height / 2)); }
 
-  return <div className="app-shell" data-library="Lightchain SaaS v5.1 libraries Beta" data-node-id="12:3127">
+  return <PromptLibraryProvider uploads={uploads} onUpload={rememberUpload} locale={locale}><div className="app-shell" data-library="Lightchain SaaS v5.1 libraries Beta" data-node-id="12:3127">
     <header className="topbar flex items-center justify-between gap-2 px-6" data-node-id="12:3148">
       <div className="flex items-center gap-6 min-w-0">
         <div className="brand flex items-center gap-2 shrink-0" aria-label="Lightchain">
@@ -1055,5 +1056,5 @@ export default function App() {
         : shownModal.value === 'project' ? <><div className="project-summary p-4 rounded-xl mb-4"><p className="font-medium mb-1">{projectName}</p><p className="text-xs text-muted">{t.workspace} · {images.filter(n => !n.nodeOnly).length} {t.image}</p></div><p className="text-xs leading-5 text-muted">{t.localNote}</p><div className="flex justify-end mt-6"><Button variant="outline" size="m" onClick={closeModal}>{t.returnCanvas}</Button></div></>
         : <p className="text-sm leading-6 text-muted">{shownModal.value === 'support' ? t.supportNote : t.creditsNote}</p>}
     </Dialog>}
-  </div>;
+  </div></PromptLibraryProvider>;
 }

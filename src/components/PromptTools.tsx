@@ -5,33 +5,32 @@ import { Button, Icon, type IconName } from './ui';
 import { usePresence } from '../usePresence';
 import './prompt-tools.css';
 import type { PromptEntry as Entry } from '../prompt-types';
-const KEY='lc-v55-flow-fusion-prompts';
-function readSaved(): Entry[] {try {const raw=JSON.parse(localStorage.getItem(KEY)||'[]');const data: unknown=raw?.version===2?raw.entries:raw;return Array.isArray(data)?data.flatMap((v,i)=>typeof v==='string'?[{id:`legacy-${i}`,name:v.slice(0,50),content:v}]:v && typeof v.name==='string' && typeof v.content==='string'?[{id:v.id||`legacy-${i}`,name:v.name,content:v.content,pinned:v.pinned===true}]:[]):[];}catch{return [];}}
-function read(): Entry[] {return readSaved();}
+import type { PromptStoreResult } from '../prompt-storage';
+import { usePromptLibrary } from '../PromptLibraryContext';
+import { PromptCoverField } from './PromptCoverField';
 export function PromptTools({value,onChange,labels,expandIcon='fusionExpand',expandDisabled=false,hideInlineActions=false,iconSize=16}:{expandIcon?:IconName;expandDisabled?:boolean;hideInlineActions?:boolean;iconSize?:number;value:string;onChange:(v:string)=>void;labels:{expand:string;save:string;library:string;prompt:string;clear:string;close:string}}){
  const [editorOpen,setEditorOpen]=useState(false), editorShown=usePresence(editorOpen?true:null);
  const [libraryOpen,setLibraryOpen]=useState(false), libraryShown=usePresence(libraryOpen?true:null);
  const [anchor,setAnchor]=useState<HTMLElement|null>(null), saveShown=usePresence(anchor);
- const [entries,setEntries]=useState<Entry[]>(read);
- const store=(next:Entry[])=>{try{localStorage.setItem(KEY,JSON.stringify({version:2,entries:next}));setEntries(next);window.dispatchEvent(new Event('lc-prompts-changed'));return true;}catch{notify('保存失败，请检查浏览器存储空间');return false;}};
- useEffect(()=>{const refresh=()=>setEntries(read());window.addEventListener('storage',refresh);window.addEventListener('lc-prompts-changed',refresh);return()=>{window.removeEventListener('storage',refresh);window.removeEventListener('lc-prompts-changed',refresh);};},[]);
+ const {entries,store}=usePromptLibrary();
  const save=(el:HTMLElement)=>{if(!value.trim()){notify('请输入提示词后再保存');return;}setAnchor(el);};
- const openLibrary=()=>{setEntries(read());setLibraryOpen(true);};
+ const openLibrary=()=>setLibraryOpen(true);
  const actions=(large=false)=><><Button className={large?'':'fusion-xs-icon'} aria-label={labels.save} onClick={e=>save(e.currentTarget)}><Icon name="fusionSave" size={large?20:16}/></Button><Button className={large?'':'fusion-xs-icon'} aria-label={labels.library} onClick={openLibrary}><Icon name="fusionPrompts" size={large?20:16}/></Button></>;
  return <><Button className="fusion-xs-icon" aria-label={labels.expand} disabled={expandDisabled} onClick={()=>setEditorOpen(true)}><Icon name={expandIcon} size={iconSize}/></Button>{!hideInlineActions&&actions()}
  {editorShown.value&&createPortal(<ExpandedPrompt phase={editorShown.phase} title={labels.prompt} value={value} onChange={onChange} onClose={()=>setEditorOpen(false)} actions={actions(true)} clear={labels.clear}/>,document.body)}
  {libraryShown.value&&createPortal(<PromptLibrary phase={libraryShown.phase} entries={entries} onStore={store} onClose={()=>setLibraryOpen(false)} onApply={(text,mode)=>{const next=mode==='append'&&value.trim()?value+(value.endsWith('\n')?'':'\n')+text:text;if(next.length>2000){notify('插入合并后超过2000字,请先精简原文或选择覆盖', 'error');return;}onChange(next);setLibraryOpen(false);}}/>,document.body)}
- {saveShown.value&&createPortal(<SavePrompt anchor={saveShown.value} phase={saveShown.phase} onClose={()=>setAnchor(null)} onSave={name=>{if(store([{id:crypto.randomUUID(),name,content:value},...entries]))setAnchor(null);}}/>, saveShown.value.closest('dialog')??document.body)}
+ {saveShown.value&&createPortal(<SavePrompt anchor={saveShown.value} phase={saveShown.phase} onClose={()=>setAnchor(null)} onSave={async name=>{const result=await store([{id:crypto.randomUUID(),name,content:value},...entries]);if(result.ok)setAnchor(null);return result;}}/>, saveShown.value.closest('dialog')??document.body)}
  </>;
 }
-function SavePrompt({anchor,phase,onClose,onSave}:{anchor:HTMLElement;phase:'enter'|'exit';onClose:()=>void;onSave:(name:string)=>void}){
- const ref=useRef<HTMLDivElement>(null);const [name,setName]=useState('');
+function SavePrompt({anchor,phase,onClose,onSave}:{anchor:HTMLElement;phase:'enter'|'exit';onClose:()=>void;onSave:(name:string)=>Promise<PromptStoreResult>}){
+ const ref=useRef<HTMLDivElement>(null);const [name,setName]=useState('');const [busy,setBusy]=useState(false);const busyRef=useRef(false);
+ const submit=async()=>{if(!name.trim()||busyRef.current)return;busyRef.current=true;setBusy(true);try{const result=await onSave(name.trim());if(!result.ok)notify(result.message,'error');}finally{busyRef.current=false;setBusy(false);}};
  useLayoutEffect(()=>{const el=ref.current!;el.showPopover();let frame=0;const place=()=>{const r=anchor.getBoundingClientRect();el.style.left=`${Math.max(8,Math.min(r.left,innerWidth-el.offsetWidth-8))}px`;el.style.top=`${Math.max(8,r.top-el.offsetHeight-8>=8?r.top-el.offsetHeight-8:Math.min(r.bottom+8,innerHeight-el.offsetHeight-8))}px`;frame=requestAnimationFrame(place);};place();el.querySelector('input')?.focus({preventScroll:true});return()=>cancelAnimationFrame(frame);},[anchor]);
- useEffect(()=>{const outside=(e:PointerEvent)=>{if(e.target instanceof Node&&!ref.current?.contains(e.target)&&!anchor.contains(e.target))onClose();};document.addEventListener('pointerdown',outside,true);return()=>document.removeEventListener('pointerdown',outside,true);},[anchor,onClose]);
- return <div ref={ref} popover="manual" data-overlay data-select-popup role="dialog" aria-label="保存提示词" className="prompt-save-popover" data-phase={phase} inert={phase==='exit'} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();onClose();anchor.focus({preventScroll:true});}if(e.key==='Enter'&&name.trim()){e.preventDefault();onSave(name.trim());}}}>
- <header><h3>保存提示词</h3><Button aria-label="关闭" onClick={onClose}><Icon name="close" size={16}/></Button></header>
- <label className="prompt-name-input"><input aria-label="提示词名称" placeholder="请输入名称" value={name} maxLength={50} onChange={e=>setName(e.target.value)}/><span>{name.length}/50</span></label>
- <footer><Button variant="secondary" onClick={onClose}>取消</Button><Button variant="primary" disabled={!name.trim()} onClick={()=>onSave(name.trim())}>保存</Button></footer></div>;
+ useEffect(()=>{const outside=(e:PointerEvent)=>{if(!busyRef.current&&e.target instanceof Node&&!ref.current?.contains(e.target)&&!anchor.contains(e.target))onClose();};document.addEventListener('pointerdown',outside,true);return()=>document.removeEventListener('pointerdown',outside,true);},[anchor,onClose]);
+ return <div ref={ref} popover="manual" data-overlay data-select-popup role="dialog" aria-label="保存提示词" className="prompt-save-popover" data-phase={phase} inert={phase==='exit'} aria-busy={busy} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();if(!busyRef.current){onClose();anchor.focus({preventScroll:true});}}if(e.key==='Enter'&&!e.nativeEvent.isComposing&&name.trim()){e.preventDefault();void submit();}}}>
+ <header><h3>保存提示词</h3><Button aria-label="关闭" disabled={busy} onClick={onClose}><Icon name="close" size={16}/></Button></header>
+ <label className="prompt-name-input"><input aria-label="提示词名称" placeholder="请输入名称" value={name} maxLength={50} disabled={busy} onChange={e=>setName(e.target.value)}/><span>{name.length}/50</span></label>
+ <footer><Button variant="secondary" disabled={busy} onClick={onClose}>取消</Button><Button variant="primary" disabled={!name.trim()||busy} onClick={()=>void submit()}>保存</Button></footer></div>;
 }
 function useModal(ref:React.RefObject<HTMLDialogElement|null>){useEffect(()=>{const old=document.activeElement as HTMLElement|null;const el=ref.current!;el.showModal();return()=>{el.close();if(old?.isConnected)old.focus({preventScroll:true});};},[]);}
 function ExpandedPrompt({phase,title,value,onChange,onClose,actions,clear}:{phase:'enter'|'exit';title:string;value:string;onChange:(v:string)=>void;onClose:()=>void;actions:React.ReactNode;clear:string}){
@@ -46,63 +45,100 @@ function ExpandedPrompt({phase,title,value,onChange,onClose,actions,clear}:{phas
  <div className="prompt-expanded-field" style={{height:box.h}}><textarea autoFocus aria-label={title} value={value} maxLength={2000} onChange={e=>onChange(e.target.value)}/><footer><div>{actions}</div><span>{value.length}/2000</span><Button variant="secondary" onClick={()=>onChange('')}>{clear}</Button></footer>
  {['nw','ne','sw','se'].map(c=><span key={c} className={`prompt-resize ${c}`} aria-hidden="true" onPointerDown={e=>{e.preventDefault();drag.current={x:e.clientX,y:e.clientY,box,corner:c};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={move} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}}/>)}<img className="prompt-resize-mark" src="/assets/fusion/promptResize.svg" alt=""/></div></section></dialog>;
 }
-function PromptLibrary({phase,entries,onStore,onApply,onClose}:{phase:'enter'|'exit';entries:Entry[];onStore:(e:Entry[])=>boolean;onApply:(text:string,mode:'append'|'replace')=>void;onClose:()=>void}){
- const ref=useRef<HTMLDialogElement>(null);useModal(ref);const [selected,setSelected]=useState(entries[0]?.id??'');const [query,setQuery]=useState('');const [draft,setDraft]=useState<Entry|null>(null);
+function PromptLibrary({phase,entries,onStore,onApply,onClose}:{phase:'enter'|'exit';entries:Entry[];onStore:(e:Entry[])=>Promise<PromptStoreResult>;onApply:(text:string,mode:'append'|'replace')=>void;onClose:()=>void}){
+ const ref=useRef<HTMLDialogElement>(null);useModal(ref);
+ const {uploads,onUpload,locale}=usePromptLibrary();
+ const [selected,setSelected]=useState(entries[0]?.id??'');
+ const [query,setQuery]=useState('');
+ const [draft,setDraft]=useState<Entry|null>(null);
+ const [coverBusy,setCoverBusy]=useState(false);
+ const [saving,setSaving]=useState(false);
  const [menu,setMenu]=useState<{entry:Entry;anchor:HTMLElement}|null>(null);
  const previousSelection=useRef(selected);
  const isNew=!!draft&&!entries.some(e=>e.id===draft.id);
- const isEmpty=entries.length===0&&!draft;
+ const sorted=[...entries].sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned));
+ const listed=isNew?[draft!,...sorted]:sorted;
+ const visible=listed.filter(e=>(e.name+' '+e.content).toLowerCase().includes(query.toLowerCase()));
+ const current=visible.find(e=>e.id===selected)??visible[0];
+ const activeId=draft?.id??current?.id;
+ const isEmpty=visible.length===0&&!draft;
  const cancelDraft=()=>{if(isNew)setSelected(entries.some(e=>e.id===previousSelection.current)?previousSelection.current:(entries[0]?.id??''));setDraft(null);};
- const addPrompt=()=>{setQuery('');if(isNew)return;previousSelection.current=selected;const entry={id:crypto.randomUUID(),name:'',content:''};setDraft(entry);setSelected(entry.id);};
+ const addPrompt=()=>{if(draft||saving)return;setQuery('');previousSelection.current=selected;const entry={id:crypto.randomUUID(),name:'',content:''};setDraft(entry);setSelected(entry.id);};
  useEffect(()=>{if(isNew){ref.current?.querySelector('nav')?.scrollTo({top:0});ref.current?.querySelector<HTMLInputElement>('[aria-label="编辑提示词名称"]')?.focus({preventScroll:true});}},[isNew]);
- const commitDraft=(saveAs=false)=>{
-   if(!draft||!draft.name.trim()||!draft.content.trim())return;
+ const saveEntries=async(next:Entry[])=>{
+   setSaving(true);
+   try{const result=await onStore(next);if(!result.ok)notify(result.message,'error');return result.ok;}
+   finally{setSaving(false);}
+ };
+ const commitDraft=async(saveAs=false)=>{
+   if(!draft||!draft.name.trim()||!draft.content.trim()||coverBusy||saving)return;
    const name=draft.name.trim();
    const original=entries.find(entry=>entry.id===draft.id);
-   // Keep the automatic suffix inside the 50-character title limit.
+   // Preserve the existing 50-character title rule when creating an independent copy.
    const savedName=saveAs&&name===original?.name.trim()
      ? `${name.slice(0,47).replace(/[\uD800-\uDBFF]$/,'')}_副本`:name;
-   // Save As creates an independent text record without inheriting pin state.
    const entry:Entry=saveAs
-     ? {id:crypto.randomUUID(),name:savedName,content:draft.content}
+     ? {id:crypto.randomUUID(),name:savedName,content:draft.content,coverUrl:draft.coverUrl}
      : {...draft,name:savedName};
    const next=saveAs?[entry,...entries]:entries.some(e=>e.id===entry.id)
      ? entries.map(e=>e.id===entry.id?entry:e):[entry,...entries];
-   if(!onStore(next))return;
+   if(!await saveEntries(next))return;
    setQuery('');setSelected(entry.id);setDraft(null);
    requestAnimationFrame(()=>ref.current?.querySelector('[data-selected="true"]')?.scrollIntoView({block:'nearest'}));
  };
-
- const sorted=[...entries].sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned));
- const listed=isNew?[draft!,...sorted]:sorted;
- const removeEntry=(id:string)=>{const next=entries.filter(e=>e.id!==id);if(onStore(next)){if(selected===id){setSelected([...next].sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned))[0]?.id??'');setDraft(null);}setMenu(null);}};
- const togglePin=()=>{
-   if(!menu)return;
+ const removeEntry=async(id:string)=>{
+   if(saving)return;
+   const next=entries.filter(e=>e.id!==id);
+   if(await saveEntries(next)){
+     if(selected===id||draft?.id===id){setSelected([...next].sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned))[0]?.id??'');setDraft(null);}
+     setMenu(null);
+   }
+ };
+ const togglePin=async()=>{
+   if(!menu||saving)return;
    const entry=entries.find(e=>e.id===menu.entry.id);if(!entry)return;
    const pinned=!entry.pinned;
    const updated={...entry,pinned};
-   // Most recently pinned goes first, including ahead of older pinned entries.
    const rest=entries.filter(e=>e.id!==entry.id);
    const next=pinned?[updated,...rest]:[...rest.filter(e=>e.pinned),updated,...rest.filter(e=>!e.pinned)];
-   if(onStore(next)){
+   if(await saveEntries(next)){
      if(draft?.id===entry.id)setDraft({...draft,pinned});
      setMenu(null);
      requestAnimationFrame(()=>ref.current?.querySelector('nav')?.scrollTo({top:0}));
      notify(pinned?'已置顶':'已取消置顶');
    }
  };
- const visible=listed.filter(e=>(e.name+' '+e.content).toLowerCase().includes(query.toLowerCase()));const current=entries.find(e=>e.id===selected);
- return <dialog ref={ref} data-overlay data-select-popup className="prompt-library" data-phase={phase} inert={phase==='exit'} aria-label="提示词库" onCancel={e=>{e.preventDefault();onClose();}}>
- <aside><header><div><h2>提示词库</h2><Button aria-label="新增提示词" onClick={addPrompt}><Icon name="cutoutPlus"/></Button></div><label className="prompt-library-search"><Icon name="search"/><input aria-label="搜索提示词" placeholder="请输入关键词搜索" value={query} onChange={e=>setQuery(e.target.value)}/></label></header>
- <nav>{visible.map(entry=><div className="prompt-list-card" key={entry.id} data-selected={selected===entry.id}>
- <button className="prompt-card-select" aria-pressed={selected===entry.id} onClick={()=>{setSelected(entry.id);if(entry.id!==draft?.id)setDraft(null);}}><strong>{entry.pinned&&<span className="prompt-pinned-tag">置顶</span>}<span className="prompt-card-title">{entry.name||'Untitled'}</span></strong><p>{entry.content||'请输入提示词内容...'}</p></button>
- {entries.some(e=>e.id===entry.id)&&<Button className="prompt-card-more" aria-label={`更多 · ${entry.name||'Untitled'}`} aria-haspopup="menu" aria-expanded={menu?.entry.id===entry.id} onClick={e=>setMenu(menu?.entry.id===entry.id?null:{entry,anchor:e.currentTarget})}><Icon name="promptMore" size={20}/></Button>}
+ const saveDisabled=coverBusy||saving||!draft?.name.trim()||!draft?.content.trim();
+ return <dialog ref={ref} data-overlay data-select-popup className="prompt-library" data-phase={phase} inert={phase==='exit'} aria-label="提示词库" aria-busy={saving} onCancel={e=>{e.preventDefault();if(!saving)onClose();}}>
+ <aside><header><div><h2>提示词库</h2><Button aria-label="新增提示词" disabled={!!draft||saving} onClick={addPrompt}><Icon name="cutoutPlus"/></Button></div><label className="prompt-library-search"><Icon name="search"/><input aria-label="搜索提示词" placeholder="请输入关键词搜索" disabled={saving} value={query} onChange={e=>setQuery(e.target.value)}/></label></header>
+ <nav>{visible.map(entry=><div className="prompt-list-card" key={entry.id} data-selected={activeId===entry.id}>
+ <button className="prompt-card-select" disabled={saving} aria-pressed={activeId===entry.id} onClick={()=>{setSelected(entry.id);if(entry.id!==draft?.id)setDraft(null);}}>
+   {entry.coverUrl&&<span className="prompt-list-cover"><img src={entry.coverUrl} alt=""/></span>}
+   <span className="prompt-card-context"><strong>{entry.pinned&&<span className="prompt-pinned-tag">置顶</span>}<span className="prompt-card-title">{entry.name||'Untitled'}</span></strong><span className="prompt-card-description">{entry.content||'请输入提示词内容...'}</span></span>
+ </button>
+ {entries.some(e=>e.id===entry.id)&&<Button className="prompt-card-more" disabled={saving} aria-label={`更多 · ${entry.name||'Untitled'}`} aria-haspopup="menu" aria-expanded={menu?.entry.id===entry.id} onClick={e=>setMenu(menu?.entry.id===entry.id?null:{entry,anchor:e.currentTarget})}><Icon name="promptMore" size={20}/></Button>}
  </div>)}{!visible.length&&entries.length>0&&<p className="prompt-empty">没有匹配的提示词</p>}</nav></aside>
- {menu&&<PromptCardMenu anchor={menu.anchor} pinned={!!menu.entry.pinned} onClose={()=>setMenu(null)} onPin={togglePin} onDelete={()=>removeEntry(menu.entry.id)}/>}
-
- <section className={isEmpty?'prompt-library-initial':undefined} data-node-id={isEmpty?'171:4333':undefined}><header>{!isEmpty&&<h2>{isNew?'新增提示词':'提示词详情'}</h2>}<Button aria-label="关闭" onClick={onClose}><Icon name="close"/></Button></header>
- <div className="prompt-library-body">{isEmpty?<div className="prompt-library-empty-state" data-node-id="171:4443"><div className="prompt-library-empty-content"><img src="/assets/prompts/empty-library.png" alt="" width={128} height={128}/><h3>暂无数据</h3><p>当前没有可展示的内容</p></div><Button variant="primary" size="s" onClick={addPrompt}>新增提示词</Button></div>:draft?<><label><span>提示词标题 <em className="prompt-required">*</em></span><div className="prompt-edit-title"><input aria-label="编辑提示词名称" placeholder="请输入名称" required maxLength={50} value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/><span>{draft.name.length}/50</span></div></label><label className="prompt-content-edit"><span>提示词内容 <em className="prompt-required">*</em></span><div className="prompt-edit-content"><textarea aria-label="编辑提示词内容" placeholder="请输入提示词内容..." required maxLength={2000} value={draft.content} onChange={e=>setDraft({...draft,content:e.target.value})}/><span>{draft.content.length}/2000</span></div></label></>:current?<><div className="prompt-detail-card" data-node-id="111:5494"><h3>{current.name}</h3><p className="prompt-detail-content">{current.content}</p></div></>:<p className="prompt-empty">选择或新增一条提示词</p>}</div>
- {!isEmpty&&<footer>{draft?<>{!isNew&&<Button variant="outline" className="prompt-delete" size="m" onClick={()=>removeEntry(draft.id)}><Icon name="promptTrash" size={20}/>删除</Button>}<Button variant="secondary" size="m" onClick={cancelDraft}>取消</Button>{!isNew&&<Button variant="secondary" size="m" disabled={!draft.name.trim()||!draft.content.trim()} onClick={()=>commitDraft(true)}>另存为</Button>}<Button variant="primary" size="m" disabled={!draft.name.trim()||!draft.content.trim()} onClick={()=>commitDraft()}>保存</Button></>:<><Button variant="outline" size="m" disabled={!current} onClick={()=>setDraft(current??null)}><Icon name="promptEdit" size={20}/>编辑</Button><Button variant="secondary" size="m" disabled={!current} onClick={()=>{if(current)onApply(current.content,'append');}}>在已有输入后插入</Button><Button variant="primary" size="m" disabled={!current} onClick={()=>{if(current)onApply(current.content,'replace');}}>应用并覆盖原文</Button></>}</footer>}</section></dialog>;
+ {menu&&<PromptCardMenu anchor={menu.anchor} pinned={!!menu.entry.pinned} onClose={()=>setMenu(null)} onPin={()=>void togglePin()} onDelete={()=>void removeEntry(menu.entry.id)}/>}
+ <section className={isEmpty?'prompt-library-initial':undefined} data-node-id={isEmpty?'171:4333':undefined}>
+ <header>{!isEmpty&&<h2>{isNew?'新增提示词':'提示词详情'}</h2>}<Button aria-label="关闭" disabled={saving} onClick={onClose}><Icon name="close"/></Button></header>
+ <div className="prompt-library-body">{isEmpty?
+   <div className="prompt-library-empty-state" data-node-id="171:4443"><div className="prompt-library-empty-content"><img src="/assets/prompts/empty-library.png" alt="" width={128} height={128}/><h3>暂无数据</h3><p>当前没有可展示的内容</p></div><Button variant="primary" size="s" onClick={addPrompt}>新增提示词</Button></div>
+   :draft?<>
+     <label><span>提示词标题 <em className="prompt-required">*</em></span><div className="prompt-edit-title"><input aria-label="编辑提示词名称" placeholder="请输入名称" required maxLength={50} disabled={saving} value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/><span>{draft.name.length}/50</span></div></label>
+     <div inert={saving}><PromptCoverField key={draft.id} value={draft.coverUrl} uploads={uploads} onUpload={onUpload} locale={locale} onBusy={setCoverBusy} onChange={coverUrl=>setDraft(currentDraft=>currentDraft?{...currentDraft,coverUrl}:null)}/></div>
+     <label className="prompt-content-edit"><span>提示词内容 <em className="prompt-required">*</em></span><div className="prompt-edit-content"><textarea aria-label="编辑提示词内容" placeholder="请输入提示词内容..." required maxLength={2000} disabled={saving} value={draft.content} onChange={e=>setDraft({...draft,content:e.target.value})}/><span>{draft.content.length}/2000</span></div></label>
+   </>:current?<div className="prompt-detail-card" data-node-id="111:5494"><h3>{current.name}</h3>{current.coverUrl&&<img className="prompt-detail-cover" src={current.coverUrl} alt={current.name}/>}<p className="prompt-detail-content">{current.content}</p></div>:<p className="prompt-empty">选择或新增一条提示词</p>}
+ </div>
+ {!isEmpty&&<footer>{draft?<>
+   {!isNew&&<Button variant="outline" className="prompt-delete" size="m" disabled={saving} onClick={()=>void removeEntry(draft.id)}><Icon name="promptTrash" size={20}/>删除</Button>}
+   <Button variant="secondary" size="m" disabled={saving} onClick={cancelDraft}>取消</Button>
+   {!isNew&&<Button variant="secondary" size="m" disabled={saveDisabled} onClick={()=>void commitDraft(true)}>另存为</Button>}
+   <Button variant="primary" size="m" disabled={saveDisabled} onClick={()=>void commitDraft()}>保存</Button>
+ </>:<>
+   <Button variant="outline" size="m" disabled={!current||saving} onClick={()=>{if(current){setSelected(current.id);setDraft(current);}}}><Icon name="promptEdit" size={20}/>编辑</Button>
+   <Button variant="secondary" size="m" disabled={!current||saving} onClick={()=>{if(current)onApply(current.content,'append');}}>在已有输入后插入</Button>
+   <Button variant="primary" size="m" disabled={!current||saving} onClick={()=>{if(current)onApply(current.content,'replace');}}>应用并覆盖原文</Button>
+ </>}</footer>}</section></dialog>;
 }
 
 function PromptCardMenu({anchor,pinned,onClose,onPin,onDelete}:{anchor:HTMLElement;pinned:boolean;onClose:()=>void;onPin:()=>void;onDelete:()=>void}){

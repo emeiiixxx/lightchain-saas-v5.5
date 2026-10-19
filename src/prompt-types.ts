@@ -1,1 +1,1 @@
-export type PromptEntry = { id: string; name: string; content: string; pinned?: boolean };
+export type PromptEntry = { id: string; name: string; content: string; pinned?: boolean; coverUrl?: string };

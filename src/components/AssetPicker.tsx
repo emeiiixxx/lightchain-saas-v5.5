@@ -4,9 +4,11 @@ import { Button, Dialog, Divider, Icon } from './ui';
 import { demoAssets, multiDemoAssets, prepareMainImage, type LibraryImage } from '../asset-library';
 import { readImage, type CanvasImage } from '../canvas';
 import { messages, type Locale } from '../i18n';
+import { promptCoverMessages, readPromptCoverImage } from '../prompt-cover-image';
 
 const sources = ['historyUploads', 'generationHistory', 'personalAssets', 'teamAssets', 'platformAssets'] as const;
 type Props = {
+  allowSvg?: boolean;
   maxCount?: number;
   excludedUrls?: string[];
   limitMessage?: string;
@@ -19,7 +21,7 @@ type Props = {
   onClose: () => void;
 };
 
-export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onConfirmBatch, onClose, maxCount = 20, excludedUrls = [], limitMessage }: Props) {
+export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onConfirmBatch, onClose, maxCount = 20, excludedUrls = [], limitMessage, allowSvg = false }: Props) {
   const t = messages[locale];
   const multiple = !!onConfirmBatch;
   const [chosen, setChosen] = useState<LibraryImage[]>([]);
@@ -46,7 +48,7 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
     const id = ++request.current;
     locked.current = true; setBusy(true); setError(null);
     try {
-      const results = await Promise.allSettled(Array.from(files).map(readImage));
+      const results = await Promise.allSettled(Array.from(files).map(allowSvg ? readPromptCoverImage : readImage));
       const loaded = results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
       if (!active.current || id !== request.current) { loaded.forEach(asset => URL.revokeObjectURL(asset.url)); return; }
       loaded.forEach(onUpload);
@@ -105,7 +107,7 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
         onDragOver={event => { event.preventDefault(); if (event.dataTransfer.types.includes('Files')) setDragOver(true); }}
         onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragOver(false); }}
         onDrop={event => { event.preventDefault(); event.stopPropagation(); setDragOver(false); void upload(event.dataTransfer.files); }}>
-        <Icon name="upload" size={32} /><span className="asset-upload-title">{busy ? t.reading : dragOver ? t.dropImagesHere : t.localUpload}</span><span className="asset-upload-hint">{dragOver && !busy ? t.releaseToUpload : t.localUploadHint}</span>
+        <Icon name="upload" size={32} /><span className="asset-upload-title">{busy ? t.reading : dragOver ? t.dropImagesHere : t.localUpload}</span><span className="asset-upload-hint">{dragOver && !busy ? t.releaseToUpload : allowSvg ? promptCoverMessages[locale].formats : t.localUploadHint}</span>
       </button>}
       {visible.map(asset => multiple ? <button type="button" key={asset.id} className="asset-card asset-card--multiple" aria-label={asset.name} aria-pressed={chosen.some(item => item.id === asset.id)} disabled={busy} onClick={() => toggleAsset(asset)}>
         <ProgressiveImage src={asset.url} alt="" />
@@ -121,8 +123,8 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
       </div>)}
       {!visible.length && (source !== 'historyUploads' || query.trim()) && <div className="asset-empty">{query.trim() ? t.noSearchResults : t.noAssets}</div>}
     </div>
-    <input ref={input} type="file" hidden multiple={multiple} accept="image/png,image/jpeg,image/webp" onChange={event => { if (event.target.files) void upload(event.target.files); event.target.value = ''; }} />
-    {error && <p className="asset-error error-message" role="alert">{error === 'limit' ? (multiple ? (limitMessage || t.batchImageLimit) : t.mainImageLimit) : t.uploadError}</p>}
+    <input ref={input} type="file" hidden multiple={multiple} accept={allowSvg ? 'image/png,image/jpeg,image/webp,image/svg+xml' : 'image/png,image/jpeg,image/webp'} onChange={event => { if (event.target.files) void upload(event.target.files); event.target.value = ''; }} />
+    {error && <p className="asset-error error-message" role="alert">{error === 'limit' ? (multiple ? (limitMessage || t.batchImageLimit) : allowSvg ? promptCoverMessages[locale].limit : t.mainImageLimit) : allowSvg ? promptCoverMessages[locale].error : t.uploadError}</p>}
     {multiple && <footer className="asset-footer" data-node-id="17:1865">
       <div className="asset-counter" role="status"><span>{t.selectedCount}</span><strong>{chosen.length} / {maxCount}</strong></div>
       <Button variant="secondary" size="m" onClick={onClose}>{t.cancel}</Button>
