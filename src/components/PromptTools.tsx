@@ -50,6 +50,7 @@ function PromptLibrary({phase,entries,onStore,onApply,onClose}:{phase:'enter'|'e
  const {uploads,onUpload,locale}=usePromptLibrary();
  const [selected,setSelected]=useState(entries[0]?.id??'');
  const [query,setQuery]=useState('');
+ const searchInputRef=useRef<HTMLInputElement>(null);
  const [draft,setDraft]=useState<Entry|null>(null);
  const [coverBusy,setCoverBusy]=useState(false);
  const [saving,setSaving]=useState(false);
@@ -110,7 +111,10 @@ function PromptLibrary({phase,entries,onStore,onApply,onClose}:{phase:'enter'|'e
  };
  const saveDisabled=coverBusy||saving||!draft?.name.trim()||!draft?.content.trim();
  return <dialog ref={ref} data-overlay data-select-popup className="prompt-library" data-phase={phase} inert={phase==='exit'} aria-label="提示词库" aria-busy={saving} onCancel={e=>{e.preventDefault();if(!saving)onClose();}}>
- <aside><header><div><h2>提示词库</h2><Button aria-label="新增提示词" disabled={!!draft||saving} onClick={addPrompt}><Icon name="cutoutPlus"/></Button></div><label className="prompt-library-search"><Icon name="search"/><input aria-label="搜索提示词" placeholder="请输入关键词搜索" disabled={saving} value={query} onChange={e=>setQuery(e.target.value)}/></label></header>
+ <aside><header><div><h2>提示词库</h2><Button aria-label="新增提示词" disabled={!!draft||saving} onClick={addPrompt}><Icon name="cutoutPlus"/></Button></div>
+ <div className="prompt-library-search" role="search"><Icon name="search"/><input ref={searchInputRef} aria-label="搜索提示词" placeholder="请输入关键词搜索" disabled={saving} value={query} onChange={e=>setQuery(e.target.value)}/>
+ {query.length>0&&<Button className="prompt-library-search-clear" aria-label="清除搜索" disabled={saving} onClick={()=>{setQuery('');searchInputRef.current?.focus({preventScroll:true});}}><Icon name="promptSearchClear" size={20}/></Button>}
+ </div></header>
  <nav>{visible.map(entry=><div className="prompt-list-card" key={entry.id} data-selected={activeId===entry.id}>
  <button className="prompt-card-select" disabled={saving} aria-pressed={activeId===entry.id} onClick={()=>{setSelected(entry.id);if(entry.id!==draft?.id)setDraft(null);}}>
    {entry.coverUrl&&<span className="prompt-list-cover"><img src={entry.coverUrl} alt=""/></span>}

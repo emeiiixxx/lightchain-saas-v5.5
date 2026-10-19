@@ -37,6 +37,8 @@ export const assets = {
   promptEdit: '/assets/prompts/edit.svg',
   promptCoverAddImage: '/assets/prompts/cover-add-image.svg',
   promptCoverReplace: '/assets/prompts/cover-replace.svg',
+  // Figma v5.2 476:103857, Beta Icon/System / Filled / delete.
+  promptSearchClear: '/assets/prompts/search-clear.svg',
   promptCollapse: '/assets/fusion/promptCollapse.svg',
   cutoutAi: '/assets/cutout/cutoutAi.svg',
   cutoutBrush: '/assets/cutout/cutoutBrush.svg',
