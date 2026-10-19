@@ -16,8 +16,43 @@ const colors = [
   { id: 'orange', token: '--status-warning' },
   { id: 'blue', token: '--dodger-blue-500' },
 ] as const;
+const eraserSizeCopy = {
+  'zh-CN': { size: '橡皮擦大小', decrease: '缩小橡皮擦', increase: '增大橡皮擦' },
+  en: { size: 'Eraser size', decrease: 'Decrease eraser size', increase: 'Increase eraser size' },
+  ja: { size: '消しゴムのサイズ', decrease: '消しゴムを小さくする', increase: '消しゴムを大きくする' },
+};
 type Gesture = { pointerId: number; kind: 'draw' } | { pointerId: number; kind: 'pan'; clientX: number; clientY: number; view: Viewport };
 type Props = { image: CanvasImage; locale: Locale; phase: 'enter' | 'exit'; onClose: () => void; onSave: (guide: DrawingGuide | undefined) => void };
+
+type SizeControlProps = {
+  tool: GuideTool;
+  value: number;
+  active: boolean;
+  disabled: boolean;
+  labels: { size: string; decrease: string; increase: string };
+  onChange: (value: number) => void;
+};
+
+function GuideSizeControl({ tool, value, active, disabled, labels, onChange }: SizeControlProps) {
+  const sliderId = useId();
+  const [dragging, setDragging] = useState(false);
+  const blocked = disabled || !active;
+  const progress = (value - 1) / 99 * 100;
+  useEffect(() => {
+    if (!active) setDragging(false);
+    const reset = () => setDragging(false);
+    window.addEventListener('blur', reset);
+    return () => window.removeEventListener('blur', reset);
+  }, [active]);
+  return <div className="draw-guide-size" data-size-tool={tool} data-active={active} inert={!active} aria-hidden={!active}>
+    <Button size="m" className="draw-guide-step" aria-label={labels.decrease} disabled={blocked || value <= 1} onClick={() => onChange(Math.max(1, value - 1))}><Icon name="guideMinus" size={24} /></Button>
+    <div className="draw-guide-range" data-active={active && dragging} style={{ '--slider-progress': `${progress}%` } as CSSProperties}>
+      <input id={sliderId} type="range" min={1} max={100} step={1} value={value} disabled={blocked} aria-label={labels.size} aria-valuetext={String(value)} onChange={event => onChange(Number(event.target.value))} onPointerDown={() => setDragging(true)} onPointerUp={() => setDragging(false)} onPointerCancel={() => setDragging(false)} onLostPointerCapture={() => setDragging(false)} onBlur={() => setDragging(false)} />
+      <output className="draw-guide-size-tooltip" htmlFor={sliderId} aria-hidden="true">{value}<img src={assets.guideTooltipArrow} width={8} height={4} alt="" /></output>
+    </div>
+    <Button size="m" className="draw-guide-step" aria-label={labels.increase} disabled={blocked || value >= 100} onClick={() => onChange(Math.min(100, value + 1))}><Icon name="guidePlus" size={24} /></Button>
+  </div>;
+}
 
 export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Props) {
   const t = copy[locale];
@@ -36,7 +71,8 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
   const cursor = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<GuideTool>('brush');
   const [color, setColor] = useState<(typeof colors)[number]['id']>('red');
-  const [size, setSize] = useState(10);
+  const [toolSizes, setToolSizes] = useState<Record<GuideTool, number>>({ brush: 10, eraser: 10 });
+  const size = toolSizes[tool];
   const [spaceDown, setSpaceDown] = useState(false);
   const spaceRef = useRef(false);
   const [panning, setPanning] = useState(false);
@@ -44,8 +80,6 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [attempt, setAttempt] = useState(0);
   const [notice, setNotice] = useState('');
-  const [sliderActive, setSliderActive] = useState(false);
-  const sliderId = useId();
   const [view, setView] = useState<Viewport>({ x: 0, y: 0, zoom: 1 });
   const viewRef = useRef(view);
   const readyRef = useRef(false); readyRef.current = loadState === 'ready' && phase !== 'exit';
@@ -110,7 +144,7 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(stage.current!);
-    const reset = () => { spaceRef.current = false; setSpaceDown(false); cancelGesture(); setSliderActive(false); };
+    const reset = () => { spaceRef.current = false; setSpaceDown(false); cancelGesture(); };
     const releaseSpace = (event: globalThis.KeyboardEvent) => { if (event.code === 'Space') { spaceRef.current = false; setSpaceDown(false); } };
     window.addEventListener('blur', reset);
     window.addEventListener('keyup', releaseSpace);
@@ -232,17 +266,8 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
   }
 
   const disabled = loadState !== 'ready' || drawing || panning || phase === 'exit';
-  const progress = (size - 1) / 99 * 100;
   const brush = <Button size="m" className="draw-guide-tool draw-guide-brush" aria-label={t.brush} aria-pressed={tool === 'brush'} disabled={disabled} onClick={() => chooseTool('brush')}><Icon name="guideMarker" size={24} /></Button>;
   const eraser = <Button size="m" className="draw-guide-tool draw-guide-eraser" aria-label={t.eraser} aria-pressed={tool === 'eraser'} disabled={disabled} onClick={() => chooseTool('eraser')}><Icon name="guideEraser" size={24} /></Button>;
-  const sizeControl = <div className="draw-guide-size">
-    <Button size="m" className="draw-guide-step" aria-label={t.decrease} disabled={disabled || size <= 1} onClick={() => setSize(value => Math.max(1, value - 1))}><Icon name="guideMinus" size={24} /></Button>
-    <div className="draw-guide-range" data-active={sliderActive} style={{ '--slider-progress': `${progress}%` } as CSSProperties}>
-      <input id={sliderId} type="range" min={1} max={100} step={1} value={size} disabled={disabled} aria-label={t.size} aria-valuetext={String(size)} onChange={event => setSize(Number(event.target.value))} onPointerDown={() => setSliderActive(true)} onPointerUp={() => setSliderActive(false)} onPointerCancel={() => setSliderActive(false)} onLostPointerCapture={() => setSliderActive(false)} onBlur={() => setSliderActive(false)} />
-      <output className="draw-guide-size-tooltip" htmlFor={sliderId} aria-hidden="true">{size}<img src={assets.guideTooltipArrow} width={8} height={4} alt="" /></output>
-    </div>
-    <Button size="m" className="draw-guide-step" aria-label={t.increase} disabled={disabled || size >= 100} onClick={() => setSize(value => Math.min(100, value + 1))}><Icon name="guidePlus" size={24} /></Button>
-  </div>;
   return <dialog ref={dialog} className="draw-guide-editor" data-phase={phase} data-node-id="12:108" inert={phase === 'exit'} aria-label={t.title} onCancel={event => { event.preventDefault(); cancelGesture(); onClose(); }} onKeyDown={keyDown}>
     <div ref={stage} className="draw-guide-stage" tabIndex={0} role="region" aria-label={t.title} data-panning={panning} data-hand={spaceDown} data-ready={loadState === 'ready'} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerEnter={showCursor} onPointerLeave={hideCursor} onPointerCancel={event => { if (gesture.current?.pointerId === event.pointerId) cancelGesture(); }} onLostPointerCapture={event => { if (gesture.current?.pointerId === event.pointerId) cancelGesture(); }} onContextMenu={event => event.preventDefault()}>
       <div className="draw-guide-image" style={{ width: dimensions.width, height: dimensions.height, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
@@ -267,7 +292,9 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
             {colors.map(item => <button key={item.id} type="button" className="draw-guide-color" disabled={disabled} aria-label={t[item.id]} aria-pressed={color === item.id} data-tooltip={t[item.id]} style={{ '--guide-color': `var(${item.token})` } as CSSProperties} onClick={() => { setColor(item.id); stage.current?.focus({ preventScroll: true }); }} />)}
           </div>
         </div>
-        {sizeControl}
+        <div className="draw-guide-size-slot">
+          {(['brush', 'eraser'] as const).map(sizeTool => <GuideSizeControl key={sizeTool} tool={sizeTool} value={toolSizes[sizeTool]} active={tool === sizeTool} disabled={disabled} labels={sizeTool === 'brush' ? t : eraserSizeCopy[locale]} onChange={value => setToolSizes(previous => ({ ...previous, [sizeTool]: value }))} />)}
+        </div>
         <span className="draw-guide-switch-divider" aria-hidden="true"><Divider vertical /></span>
         {eraser}
       </div>
