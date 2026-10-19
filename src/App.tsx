@@ -60,10 +60,10 @@ export default function App() {
     };
   }, []);
   const gridPatternId = useId();
-  const [locale, setLocale] = useState<Locale>(() => { const v = saved('lc-flow-locale', 'zh-CN'); return v === 'en' || v === 'ja' ? v : 'zh-CN'; });
-  const [theme, setTheme] = useState<Theme>(() => { const v = saved('lc-flow-theme', 'dark'); return v === 'light' || v === 'system' ? v : 'dark'; });
+  const [locale, setLocale] = useState<Locale>(() => { const v = saved('lc-v55-flow-locale', 'zh-CN'); return v === 'en' || v === 'ja' ? v : 'zh-CN'; });
+  const [theme, setTheme] = useState<Theme>(() => { const v = saved('lc-v55-flow-theme', 'dark'); return v === 'light' || v === 'system' ? v : 'dark'; });
   const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const [projectName, setProjectName] = useState(() => saved('lc-flow-project-name', 'Untitle'));
+  const [projectName, setProjectName] = useState(() => saved('lc-v55-flow-project-name', 'Untitle'));
   const [menu, setMenu] = useState<'language' | null>(null);
   const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number; worldX: number; worldY: number; kind?: 'image' } | null>(null);
   const closeCanvasMenu = useCallback(() => setCanvasMenu(null), []);
@@ -90,7 +90,7 @@ export default function App() {
     }
     return ids;
   }, [images, selectedIds, canvasReference]);
-  const [snapToGrid, setSnapToGrid] = useState(() => localStorage.getItem('lc-flow-grid-snap') !== 'off');
+  const [snapToGrid, setSnapToGrid] = useState(() => localStorage.getItem('lc-v55-flow-grid-snap') !== 'off');
   const [canvasMode, setCanvasMode] = useState<'select' | 'hand'>('select');
   const [snapGuide, setSnapGuide] = useState<SnapGuides | null>(null);
   const [selecting, setSelecting] = useState(false);
@@ -207,8 +207,8 @@ export default function App() {
     const listener = () => setSystemDark(media.matches);
     media.addEventListener('change', listener); return () => media.removeEventListener('change', listener);
   }, []);
-  useEffect(() => { document.documentElement.dataset.theme = resolvedTheme; document.documentElement.style.colorScheme = resolvedTheme; save('lc-flow-theme', theme); }, [theme, resolvedTheme]);
-  useEffect(() => { document.documentElement.lang = locale; save('lc-flow-locale', locale); }, [locale]);
+  useEffect(() => { document.documentElement.dataset.theme = resolvedTheme; document.documentElement.style.colorScheme = resolvedTheme; save('lc-v55-flow-theme', theme); }, [theme, resolvedTheme]);
+  useEffect(() => { document.documentElement.lang = locale; save('lc-v55-flow-locale', locale); }, [locale]);
   useEffect(() => {
     const element = canvas.current;
     if (!element) return;
@@ -227,7 +227,7 @@ export default function App() {
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  useEffect(() => { save('lc-flow-project-name', projectName); }, [projectName]);
+  useEffect(() => { save('lc-v55-flow-project-name', projectName); }, [projectName]);
   useEffect(() => {
     const blurProjectName = (event: PointerEvent) => {
       const input = projectInput.current;
@@ -825,7 +825,7 @@ export default function App() {
         <Button variant="primary" disabled={!canvasReference?.ids.length} onClick={() => { if (canvasReference) addReferences(canvasReference.target, images.filter(n => canvasReference.ids.includes(n.id))); setCanvasReference(null); }}>{t.confirm}</Button>
       </div>}
       {images.length > 0 && <CanvasChrome locale={locale} mode={spaceDown ? 'hand' : canvasMode} onMode={setCanvasMode} zoom={view.zoom} view={view} canvasSize={canvasSize} images={navigationNodes}
-        snapToGrid={snapToGrid} onToggleSnap={() => { setSnapGuide(null); setSnapToGrid(current => { localStorage.setItem('lc-flow-grid-snap', current ? 'off' : 'on'); return !current; }); }}
+        snapToGrid={snapToGrid} onToggleSnap={() => { setSnapGuide(null); setSnapToGrid(current => { localStorage.setItem('lc-v55-flow-grid-snap', current ? 'off' : 'on'); return !current; }); }}
         onNavigateMinimap={navigateMinimap} onMinimapInteraction={setDragging}
         canUndo={canUndo && !canvasReference} canRedo={canRedo && !canvasReference} onUndo={() => { if (!canvasReference) undo(); }} onRedo={() => { if (!canvasReference) redo(); }} onUpload={() => { if (!canvasReference) openUpload(); }} onZoom={changeZoom} onFit={fit} onArrange={() => { if (!canvasReference) arrange(); }}
         onHelp={() => setModal('help')} onDemo={() => announce(t.noBackend)} />}
@@ -855,11 +855,11 @@ export default function App() {
     {shownImprove.value && <ResultFeedbackPopover key={`${shownImprove.value.imageId}:${shownImprove.value.kind}`} kind={shownImprove.value.kind} anchor={shownImprove.value.anchor} locale={locale} phase={shownImprove.phase}
       onClose={() => setImproveTarget(null)} onSubmit={(text, reasons) => {
         try {
-          const raw: unknown = JSON.parse(localStorage.getItem('lc-result-feedback') || '[]');
+          const raw: unknown = JSON.parse(localStorage.getItem('lc-v55-result-feedback') || '[]');
           const records = Array.isArray(raw) ? raw : [];
           const imageId = shownImprove.value!.imageId;
           const editorId = imageRef.current.find(image => image.id === imageId)?.generatedByEditorId;
-          localStorage.setItem('lc-result-feedback', JSON.stringify([...records, { id: crypto.randomUUID(), imageId, editorId, kind: shownImprove.value!.kind, text, reasons, createdAt: new Date().toISOString() }]));
+          localStorage.setItem('lc-v55-result-feedback', JSON.stringify([...records, { id: crypto.randomUUID(), imageId, editorId, kind: shownImprove.value!.kind, text, reasons, createdAt: new Date().toISOString() }]));
           if (shownImprove.value!.kind === 'dislike') setResultFeedback(previous => ({ ...previous, [imageId]: 'dislike' }));
           announce(t.resultFeedbackSaved); return true;
         } catch { announce(t.resultFeedbackFailed); return false; }

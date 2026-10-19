@@ -1,6 +1,14 @@
-# Lightchain SaaS v5.3 · 万能穿搭融合
+# Lightchain SaaS v5.5 · Flow 画布交互优化
 
-独立的交互评审项目，使用 React 19、TypeScript、Vite 7 和 Tailwind CSS 4，按 Lightchain v5.3 Figma 设计与 v5.1 Beta 组件库实现。
+基于 Lightchain SaaS v5.3 的独立交互演示项目，使用 React 19、TypeScript、Vite 7 和 Tailwind CSS 4，沿用 v5.1 Beta 组件库。
+
+当前保留 v5.3 Flow 画布功能，已配置独立仓库、页面版本和发布路径。「添加示意」交互待 Figma 设计确定后实现。
+
+## 版本基础
+
+- 来源：[v5.3 仓库](https://github.com/emeiiixxx/lightchain-saas-v5.3)，基线提交 `b633be4`。
+- 当前仓库：[lightchain-saas-v5.5](https://github.com/emeiiixxx/lightchain-saas-v5.5)。
+- v5.3 仓库与分享地址继续保留；本项目不自动包含 v5.4 改动。
 
 ## 本地运行
 
@@ -27,9 +35,9 @@ npm run dev -- --port 4173
 
 这是前端交互演示，AI 融合生成、智能搜图、远程素材库及真实生成历史尚未接入后端。演示图片与关联记录不代表真实账号历史。手动抠图导出在浏览器本地完成。
 
-画布图片保存在当前页面会话，刷新后清空；提示词库、项目名称和部分偏好通过当前浏览器 localStorage 保存，不随 Git 仓库同步。
+画布图片保存在当前页面会话，刷新后清空；提示词库、项目名称和部分偏好通过当前浏览器 localStorage 保存，不随 Git 仓库同步。v5.5 使用独立的 `lc-v55-` 存储键，不读取或覆盖 v5.3 的本地数据。
 
-## 设计来源
+## 基线设计来源
 
 - [Lightchain SaaS v5.3](https://www.figma.com/design/lDDzsXpslev95eZ1ZpAHVt)
 - [Lightchain v5.1 libraries Beta](https://www.figma.com/design/FO7bCfBv6NPle8egsVaDvG)
@@ -46,11 +54,13 @@ npm run dev -- --port 4173
 
 ## 在线演示
 
-[打开 GitHub Pages 演示](https://emeiiixxx.github.io/lightchain-saas-v5.3/)
+[打开 v5.5 Flow 画布演示](https://emeiiixxx.github.io/lightchain-saas-v5.5/#/canvas)
 
 推送到 main 后，GitHub Actions 自动构建和部署。`node scripts/build-pages.mjs` 使用项目子路径构建，并处理演示素材的静态资源路径；本地开发地址不变。
 
-## 产品文档
+## 基线参考文档
+
+以下文档描述 v5.3 基线，不作为 v5.5 新增功能的需求说明。
 
 - [SaaS v5.3 产品需求文档](https://lightchain.feishu.cn/wiki/WpiswINzhiJLCxkrmZncdhRenxb)
 - [本地 Markdown 版本](docs/SaaS-v5.3-产品需求文档.md)

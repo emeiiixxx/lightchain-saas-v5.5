@@ -1,6 +1,10 @@
 # 项目交互规则
 
-- 产品版本统一为 SaaS v5.3，包版本为 5.3.0；仓库名及 GitHub Pages 路径统一为 `lightchain-saas-v5.3`。Lightchain SaaS v5.1 libraries Beta 是组件库依赖版本，保持原标识。
+- 产品版本统一为 SaaS v5.5，包版本为 5.5.0；仓库名及 GitHub Pages 路径统一为 `lightchain-saas-v5.5`。Lightchain SaaS v5.1 libraries Beta 是组件库依赖版本，保持原标识。
+
+- 本项目从 v5.3 的 `b633be4` 建立独立版本，保留其现有 Flow 画布交互；不自动引入 v5.4 改动。当前仅完成 v5.5 基础与发布配置，「添加示意」待用户提供 Figma 后实现。
+- 浏览器持久化键使用 `lc-v55-` 前缀，与 v5.3 数据隔离，不读取或覆盖旧版数据。历史 v5.3 PRD、Figma 来源与验证记录保留原版本，不代表 v5.5 已验证。
+- 用户要求：未经明确要求，不打开浏览器，不运行额外检查或测试；发布使用既有 GitHub Pages 构建流程。
 
 - UI 组件与图标以 Lightchain SaaS v5.1 libraries Beta 为准；不得引入旧版组件或用文字字符代替已有图标。
 - 普通交互动效统一为 `200ms ease-out`，集中维护在 `src/motion.css`。新交互必须沿用此规则，菜单、弹层与提示的退出需保留完整动画后再卸载。
