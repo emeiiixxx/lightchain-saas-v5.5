@@ -29,10 +29,11 @@
 .prompt-library aside>header {padding:16px;display:flex;flex-direction:column;gap:16px;border-bottom:1px solid var(--border-weak);}
 .prompt-library aside>header>div {gap:24px;}
 .prompt-library aside>header h2 {flex:1;min-width:0;padding-inline:8px;}
-.prompt-library-search {padding-inline:12px;}
+.prompt-library-search {padding-inline:12px var(--spacing-base);}
 .prompt-library aside>header>.prompt-library-search {gap:var(--spacing-base);}
 /* Figma 476:103857: 32px Ghost button, 20px original SVG, Text/tertiary. */
 .prompt-library-search-clear {flex-shrink:0;color:var(--text-tertiary);}
+.prompt-library-search .prompt-library-search-clear:hover:not(:disabled) {background:transparent;color:var(--text-primary);}
 .prompt-library nav {padding:12px;display:flex;flex-direction:column;gap:8px;overflow:auto;}
 .prompt-library nav .prompt-card-select {padding:var(--spacing-base);border:0;border-radius:12px;text-align:left;background:transparent;flex-shrink:0;}
 .prompt-library nav .prompt-list-card:is(:hover,:focus-within,:has(.prompt-card-more[aria-expanded='true'])) .prompt-card-select:not([aria-pressed='true']) {background:var(--state-hover);}
