@@ -68,3 +68,129 @@ test('source chains retain their relationships and standalone images occupy the 
  for(const id of ['solo','orphan']) assert(get(id).y>group.y+group.height);
  assert.deepEqual(arrangeImages(arranged,50),arranged);
 });
+
+const material = (id: string, extra: Partial<CanvasImage> = {}): CanvasImage => ({
+  id, name: id, url: `current:${id}`, x: 800, y: -100, width: 100, height: 150, ...extra,
+});
+const batchEditor = (id: string, inputs: CanvasImage[]): CanvasImage => ({
+  ...material(id), nodeOnly: true,
+  fusion: { kind: 'flat', batchFlat: true, prompt: 'preserve this prompt', ratio: 'auto', resolution: '2K',
+    references: inputs.map(input => ({ id: `ref:${input.id}`, name: input.name, sourceImageId: input.id, url: input.url })) },
+});
+const layoutPayload = (items: CanvasImage[]) => items.map(({ x: _x, y: _y, fusion, ...item }) => ({
+  ...item, fusion: fusion && { ...fusion, position: undefined },
+}));
+// An extremely tall, narrow viewport makes a single column the best fitting
+// arrangement, so these assertions test group order rather than packing choices.
+const singleColumnViewport = { width: 240, height: 100000 };
+function arrangeRegression(input: CanvasImage[], viewport = singleColumnViewport) {
+  const original = JSON.stringify(input);
+  const arranged = arrangeImages(input, 0, viewport);
+  assert.equal(JSON.stringify(input), original, 'layout must not mutate its input');
+  assert.deepEqual(arranged.map(item => item.id), input.map(item => item.id), 'layout must retain every record');
+  assert.deepEqual(layoutPayload(arranged), layoutPayload(input), 'layout must not rewrite stored relationships');
+  assert.deepEqual(arrangeImages(arranged, 0, viewport), arranged, 'repeated layout must be stable');
+  assertNoOverlap(arranged);
+  return arranged;
+}
+function visibleNode(items: CanvasImage[], id: string) {
+  const node = canvasNodes(items).find(item => item.id === id);
+  assert(node, `missing visible node ${id}`);
+  return node;
+}
+
+test('one task gathers old and new standalone inputs by image ID in reference order', () => {
+  const old = Array.from({ length: 4 }, (_, i) => material(`old-${i}`, { layoutTaskId: 'removed-task' }));
+  const recent = Array.from({ length: 4 }, (_, i) => material(`new-${i}`));
+  const referenceOrder = [recent[2], old[3], recent[0], old[0], old[2], recent[3], old[1], recent[1]];
+  const editor = batchEditor('batch', referenceOrder);
+  editor.fusion!.references = editor.fusion!.references!.map(reference => ({ ...reference, url: `restored:${reference.sourceImageId}` }));
+  editor.fusion!.references.push({ id: 'missing', name: 'deleted input', sourceImageId: 'missing-image', url: 'missing:url' });
+  const arranged = arrangeRegression([...old, ...recent, editor]);
+  const inputs = referenceOrder.map(input => visibleNode(arranged, input.id));
+  const task = visibleNode(arranged, 'batch:fusion');
+  for (const input of inputs) assert.equal(input.x + input.width + 80, task.x);
+  for (let i = 1; i < inputs.length; i++) assert.equal(inputs[i].y, inputs[i - 1].y + inputs[i - 1].height + 120);
+});
+
+test('a shared standalone input stays with its valid original owner even when another editor appears first', () => {
+  const shared = material('shared', { layoutTaskId: 'original' });
+  const firstOwn = material('first-own');
+  const originalOwn = material('original-own');
+  const first = batchEditor('first', [shared, firstOwn]);
+  const original = batchEditor('original', [originalOwn, shared]);
+  const arranged = arrangeRegression([shared, firstOwn, originalOwn, first, original]);
+  const sharedNode = visibleNode(arranged, shared.id);
+  const ownerInput = visibleNode(arranged, originalOwn.id);
+  const ownerEditor = visibleNode(arranged, 'original:fusion');
+  assert.equal(sharedNode.x, ownerInput.x);
+  assert.equal(sharedNode.y, ownerInput.y + ownerInput.height + 120);
+  assert.equal(sharedNode.x + sharedNode.width + 80, ownerEditor.x);
+  assert(visibleNode(arranged, 'first:fusion').x > ownerEditor.x, 'the consuming task follows its shared-input owner');
+});
+
+test('an invalid shared-input owner falls back to the first referencing editor', () => {
+  for (const staleOwner of ['deleted-editor', 'unrelated-editor']) {
+    const shared = material('shared', { layoutTaskId: staleOwner });
+    const firstOwn = material('first-own');
+    const secondOwn = material('second-own');
+    const unrelatedOwn = material('unrelated-own');
+    const unrelated = batchEditor('unrelated-editor', [unrelatedOwn]);
+    const first = batchEditor('first', [firstOwn, shared]);
+    const second = batchEditor('second', [shared, secondOwn]);
+    const arranged = arrangeRegression([shared, firstOwn, secondOwn, unrelatedOwn, unrelated, first, second]);
+    const sharedNode = visibleNode(arranged, shared.id);
+    const firstInput = visibleNode(arranged, firstOwn.id);
+    const firstEditor = visibleNode(arranged, 'first:fusion');
+    assert.equal(sharedNode.x, firstInput.x, staleOwner);
+    assert.equal(sharedNode.y, firstInput.y + firstInput.height + 120, staleOwner);
+    assert.equal(sharedNode.x + sharedNode.width + 80, firstEditor.x, staleOwner);
+    assert(visibleNode(arranged, 'second:fusion').x > firstEditor.x, staleOwner);
+  }
+});
+
+test('a cross-group reference does not adopt an existing single-input workflow tree', () => {
+  const source = material('source', { fusion: { prompt: 'original workflow', ratio: 'auto', resolution: '2K' } });
+  const output = material('output', { generatedByEditorId: source.id });
+  const fresh = material('fresh');
+  const consumer = batchEditor('consumer', [source, fresh]);
+  consumer.fusion!.references![0].url = 'restored:source';
+  const arranged = arrangeRegression([source, output, fresh, consumer]);
+  const originalSource = visibleNode(arranged, source.id);
+  const originalEditor = visibleNode(arranged, 'source:fusion');
+  const originalOutput = visibleNode(arranged, output.id);
+  const consumerInput = visibleNode(arranged, fresh.id);
+  const consumerEditor = visibleNode(arranged, 'consumer:fusion');
+  assert.equal(originalEditor.x, originalSource.x + originalSource.width + 80);
+  assert.equal(originalOutput.x, originalEditor.x + originalEditor.width + 80);
+  assert(consumerInput.x > originalOutput.x + originalOutput.width);
+  assert.equal(consumerEditor.x, consumerInput.x + consumerInput.width + 80);
+});
+
+test('complete groups follow editor creation order even when the later task uses older inputs', () => {
+  const oldA = material('old-a'), oldB = material('old-b');
+  const newA = material('new-a'), newB = material('new-b');
+  const first = batchEditor('first-task', [newB, newA]);
+  const second = batchEditor('second-task', [oldB, oldA]);
+  const arranged = arrangeRegression([oldA, oldB, newA, newB, first, second]);
+  const firstBounds = boundsOf(canvasNodes(arranged.filter(item => [newA.id, newB.id, first.id].includes(item.id))))!;
+  const secondBounds = boundsOf(canvasNodes(arranged.filter(item => [oldA.id, oldB.id, second.id].includes(item.id))))!;
+  assert.equal(firstBounds.x, secondBounds.x, 'the tall viewport must pack complete groups in one column');
+  assert(secondBounds.y >= firstBounds.y + firstBounds.height + 240);
+});
+
+test('direct-operation groups keep their first result order even after an editor is added later', () => {
+  for (const addEditor of [false, true]) {
+    const old = material('old');
+    const recent = material('recent');
+    const firstResult = material('first-result', { sourceImageId: recent.id, operation: 'cutout' });
+    const laterResult = material('later-result', { sourceImageId: old.id, operation: 'cutout' });
+    const addedEditor = material('added-editor', { nodeOnly: true, editorSourceId: recent.id,
+      fusion: { prompt: 'added after both results', ratio: 'auto', resolution: '2K' } });
+    const arranged = arrangeRegression([old, recent, firstResult, laterResult, ...(addEditor ? [addedEditor] : [])]);
+    const firstBounds = boundsOf(canvasNodes(arranged.filter(item => [recent.id, firstResult.id, addedEditor.id].includes(item.id))))!;
+    const secondBounds = boundsOf(canvasNodes(arranged.filter(item => [old.id, laterResult.id].includes(item.id))))!;
+    assert.equal(firstBounds.x, secondBounds.x, 'the tall viewport must pack direct-operation groups in one column');
+    assert(secondBounds.y >= firstBounds.y + firstBounds.height + 240, `added editor: ${addEditor}`);
+  }
+});

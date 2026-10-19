@@ -1,4 +1,4 @@
-import { isMultiInputWorkflow, type CanvasImage } from './canvas';
+import { isMultiInputWorkflow, workflowSources, type CanvasImage } from './canvas';
 
 export type LayoutBlock = { width: number; height: number; nodes: { id: string; x: number; y: number }[] };
 export const MERGE_OUTPUT_GAP = 160;
@@ -14,9 +14,8 @@ export function mergeGroupStages(items: CanvasImage[], blocks: LayoutBlock[]): L
     if (!item.fusion || !isMultiInputWorkflow(item.fusion)) continue;
     const target = owner.get(`${item.id}:fusion`);
     if (target === undefined) continue;
-    for (const reference of item.fusion.references ?? []) {
-      const source = reference.sourceImageId && items.find(image => !image.nodeOnly && image.id === reference.sourceImageId && image.url === reference.url);
-      const parent = source ? owner.get(source.id) : undefined;
+    for (const source of workflowSources(items, item)) {
+      const parent = owner.get(source.id);
       if (parent !== undefined && parent !== target) dependencies[target].add(parent);
     }
   }

@@ -42,8 +42,16 @@ export const CANVAS_GRID_SIZE = 32;
 
 export function workflowSources(items: CanvasImage[], editor: CanvasImage): CanvasImage[] {
   if (isMultiInputWorkflow(editor.fusion)) {
-    const references = fusionReferences(editor.fusion);
-    return items.filter(item => !item.nodeOnly && references.some(ref => ref.sourceImageId === item.id && ref.url === item.url));
+    const images = new Map(items.filter(item => !item.nodeOnly).map(item => [item.id, item]));
+    const seen = new Set<string>();
+    // A source ID is the connection identity. Asset URLs can change while the
+    // same image remains connected; reference order is the input order.
+    return fusionReferences(editor.fusion).flatMap(reference => {
+      const source = reference.sourceImageId ? images.get(reference.sourceImageId) : undefined;
+      if (!source || seen.has(source.id)) return [];
+      seen.add(source.id);
+      return [source];
+    });
   }
   const id = editor.editorSourceId ?? (!editor.nodeOnly ? editor.id : undefined);
   return items.filter(item => !item.nodeOnly && item.id === id);

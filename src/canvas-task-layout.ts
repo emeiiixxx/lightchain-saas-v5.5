@@ -1,4 +1,4 @@
-import { fusionReferences, isMultiInputWorkflow, type CanvasImage } from './canvas';
+import { fusionReferences, isMultiInputWorkflow, workflowSources, type CanvasImage } from './canvas';
 import type { LayoutBlock } from './canvas-merge-layout';
 
 // Remember which previously unconnected materials entered this task. Existing
@@ -21,25 +21,35 @@ const offset = (block: LayoutBlock, x: number, y: number) => block.nodes.map(nod
 const rootImage = (items: CanvasImage[], block: LayoutBlock) => items.find(item => !item.nodeOnly && block.nodes.some(node => node.id === item.id && node.x === 0));
 
 export function groupTaskBlocks(items: CanvasImage[], related: LayoutBlock[], tasks: LayoutBlock[]) {
+  const editors = items.filter(item => isMultiInputWorkflow(item.fusion));
+  const inputOwners = new Map<string, string>();
+  for (const editor of editors) {
+    for (const source of workflowSources(items, editor)) {
+      // Preserve an owner only while it still references this image. Otherwise
+      // the first current consumer owns a bare input, regardless of upload age.
+      if (!inputOwners.has(source.id) || source.layoutTaskId === editor.id) inputOwners.set(source.id, editor.id);
+    }
+  }
   const members = new Map<string, { block: LayoutBlock; taskId: string }>();
   for (const block of related) {
     const root = rootImage(items, block);
     if (root) members.set(root.id, { block, taskId: root.layoutTaskId ?? '' });
   }
-  for (const editor of items) {
-    if (!isMultiInputWorkflow(editor.fusion)) continue;
+  for (const editor of editors) {
     const task = tasks.find(block => block.nodes.some(node => node.id === `${editor.id}:fusion`));
     if (!task) continue;
     const adopted: LayoutBlock[] = [];
-    for (const ref of fusionReferences(editor.fusion)) {
-      const member = ref.sourceImageId ? members.get(ref.sourceImageId) : undefined;
-      if (!member || !items.some(item => item.id === ref.sourceImageId && item.url === ref.url)) continue;
-      // Single-image blocks support tasks created before ownership was recorded.
-      if (member.taskId ? member.taskId !== editor.id : member.block.nodes.length !== 1) continue;
+    for (const source of workflowSources(items, editor)) {
+      const member = members.get(source.id);
+      if (!member) continue;
+      // Bare inputs follow current connections, even with missing/stale ownership.
+      // Existing workflow trees stay intact when another task references them.
+      const owner = member.block.nodes.length === 1 ? inputOwners.get(source.id) : member.taskId;
+      if (owner !== editor.id) continue;
       if (!related.includes(member.block)) continue;
       adopted.push(member.block);
       related.splice(related.indexOf(member.block), 1);
-      members.delete(ref.sourceImageId!);
+      members.delete(source.id);
     }
     if (adopted.length) {
       const inputWidth = Math.max(...adopted.map(block => block.width));
@@ -55,9 +65,8 @@ export function groupTaskBlocks(items: CanvasImage[], related: LayoutBlock[], ta
   // cross-group stage that must be separated from every other workflow.
   for (const task of [...tasks]) {
     const ids = new Set(task.nodes.map(node => node.id));
-    const editors = items.filter(item => isMultiInputWorkflow(item.fusion) && ids.has(`${item.id}:fusion`));
-    const external = editors.some(editor => fusionReferences(editor.fusion).some(ref => ref.sourceImageId &&
-      !ids.has(ref.sourceImageId) && items.some(item => !item.nodeOnly && item.id === ref.sourceImageId && item.url === ref.url)));
+    const taskEditors = editors.filter(editor => ids.has(`${editor.id}:fusion`));
+    const external = taskEditors.some(editor => workflowSources(items, editor).some(source => !ids.has(source.id)));
     if (!external) { tasks.splice(tasks.indexOf(task), 1); related.push(task); }
   }
   // Direct batch operations have no shared editor: keep each source/result pair
@@ -79,4 +88,29 @@ export function groupTaskBlocks(items: CanvasImage[], related: LayoutBlock[], ta
     for (const block of blocks) related.splice(related.indexOf(block), 1);
     related.splice(index, 0, combined);
   }
+
+  // Group order follows the first editor (or direct operation result), not the
+  // oldest uploaded input. Adding an older material cannot move a task forward.
+  const imageOrder = new Map<string, number>(), editorOrder = new Map<string, number>(), resultOrder = new Map<string, number>();
+  const resultParents = new Map<string, string>();
+  items.forEach((item, index) => {
+    if (!item.nodeOnly) imageOrder.set(item.id, index);
+    if (item.fusion) editorOrder.set(`${item.id}:fusion`, index);
+    const parent = item.sourceImageId ?? (item.generatedByEditorId ? `${item.generatedByEditorId}:fusion` : undefined);
+    if (!item.nodeOnly && parent) { resultOrder.set(item.id, index); resultParents.set(item.id, parent); }
+  });
+  const firstOrder = (block: LayoutBlock, order: Map<string, number>) => Math.min(...block.nodes.map(node => order.get(node.id) ?? Infinity));
+  const groupOrder = (block: LayoutBlock) => {
+    const ids = new Set(block.nodes.map(node => node.id));
+    const firstResult = Math.min(...block.nodes.map(node => {
+      const parent = resultParents.get(node.id);
+      return parent && ids.has(parent) ? resultOrder.get(node.id)! : Infinity;
+    }));
+    const firstOperation = Math.min(firstOrder(block, editorOrder), firstResult);
+    return firstOperation !== Infinity ? firstOperation : firstOrder(block, imageOrder);
+  };
+  const orders = new Map([...related, ...tasks].map(block => [block, groupOrder(block)]));
+  const byCreation = (a: LayoutBlock, b: LayoutBlock) => orders.get(a)! - orders.get(b)!;
+  related.sort(byCreation);
+  tasks.sort(byCreation);
 }
