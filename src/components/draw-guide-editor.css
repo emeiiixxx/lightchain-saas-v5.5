@@ -152,6 +152,48 @@
 .draw-guide-tools,
 .draw-guide-actions { display: flex; align-items: center; flex-shrink: 0; gap: 4px; }
 
+/* Preserve the mounted controls while the palette and tool order change. */
+.draw-guide-tools { transition: grid-template-columns var(--motion-duration) var(--motion-easing); }
+.draw-guide-palette {
+  flex-shrink: 0;
+  width: 112px;
+  height: 40px;
+  margin-right: 0;
+  overflow: hidden;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    width var(--motion-duration) var(--motion-easing),
+    margin-right var(--motion-duration) var(--motion-easing),
+    opacity var(--motion-duration) var(--motion-easing),
+    visibility 0s linear;
+}
+.draw-guide-toolbar[data-tool='eraser'] .draw-guide-palette {
+  width: 0;
+  margin-right: -4px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition-delay: 0s, 0s, 0s, var(--motion-duration);
+}
+.draw-guide-switch-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 1px;
+  width: 1px;
+  height: 32px;
+}
+.draw-guide-size,
+.draw-guide-switch-divider { translate: 0; transition: translate var(--motion-duration) var(--motion-easing); }
+.draw-guide-eraser {
+  translate: 0;
+  transition-property: translate, color, background-color, border-color, outline-color, box-shadow, opacity;
+}
+.draw-guide-toolbar[data-tool='eraser'] .draw-guide-size { translate: 49px 0; }
+.draw-guide-toolbar[data-tool='eraser'] .draw-guide-switch-divider,
+.draw-guide-toolbar[data-tool='eraser'] .draw-guide-eraser { translate: -204px 0; }
+
 .draw-guide-title {
   display: flex;
   align-items: center;
@@ -349,6 +391,22 @@ html:not([lang='zh-CN']) .draw-guide-editor :is(.draw-guide-clear, .draw-guide-c
   .draw-guide-hint { top: max(24px, env(safe-area-inset-top)); font-size: 12px; line-height: 18px; }
   .draw-guide-tools,
   .draw-guide-actions { min-width: 0; }
+  .draw-guide-tools {
+    display: grid;
+    grid-template-columns: 40px 112px 40px;
+    grid-template-rows: 40px 40px;
+    justify-content: center;
+    width: 100%;
+  }
+  .draw-guide-toolbar[data-tool='eraser'] .draw-guide-tools { grid-template-columns: 40px 0px 40px; }
+  .draw-guide-brush { grid-column: 1; grid-row: 1; }
+  .draw-guide-palette { grid-column: 2; grid-row: 1; }
+  .draw-guide-eraser { grid-column: 3; grid-row: 1; }
+  .draw-guide-size { grid-column: 1 / 4; grid-row: 2; justify-self: center; }
+  .draw-guide-toolbar[data-tool] .draw-guide-palette { margin-right: 0; }
+  .draw-guide-toolbar[data-tool] .draw-guide-size,
+  .draw-guide-toolbar[data-tool] .draw-guide-eraser { translate: 0; }
+  .draw-guide-switch-divider,
   .draw-guide-tools > .divider,
   .draw-guide-actions > .divider { display: none; }
 }

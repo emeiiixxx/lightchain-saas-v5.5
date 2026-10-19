@@ -233,8 +233,8 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
 
   const disabled = loadState !== 'ready' || drawing || panning || phase === 'exit';
   const progress = (size - 1) / 99 * 100;
-  const brush = <Button size="m" className="draw-guide-tool" aria-label={t.brush} aria-pressed={tool === 'brush'} disabled={disabled} onClick={() => chooseTool('brush')}><Icon name="guideMarker" size={24} /></Button>;
-  const eraser = <Button size="m" className="draw-guide-tool" aria-label={t.eraser} aria-pressed={tool === 'eraser'} disabled={disabled} onClick={() => chooseTool('eraser')}><Icon name="guideEraser" size={24} /></Button>;
+  const brush = <Button size="m" className="draw-guide-tool draw-guide-brush" aria-label={t.brush} aria-pressed={tool === 'brush'} disabled={disabled} onClick={() => chooseTool('brush')}><Icon name="guideMarker" size={24} /></Button>;
+  const eraser = <Button size="m" className="draw-guide-tool draw-guide-eraser" aria-label={t.eraser} aria-pressed={tool === 'eraser'} disabled={disabled} onClick={() => chooseTool('eraser')}><Icon name="guideEraser" size={24} /></Button>;
   const sizeControl = <div className="draw-guide-size">
     <Button size="m" className="draw-guide-step" aria-label={t.decrease} disabled={disabled || size <= 1} onClick={() => setSize(value => Math.max(1, value - 1))}><Icon name="guideMinus" size={24} /></Button>
     <div className="draw-guide-range" data-active={sliderActive} style={{ '--slider-progress': `${progress}%` } as CSSProperties}>
@@ -262,9 +262,14 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
       <div className="draw-guide-title-group"><span className="draw-guide-title">{t.title}</span><Divider vertical /></div>
       <div className="draw-guide-tools">
         {brush}
-        {tool === 'brush' ? <><div className="draw-guide-colors" role="group" aria-label={t.colors}>
-          {colors.map(item => <button key={item.id} type="button" className="draw-guide-color" disabled={disabled} aria-label={t[item.id]} aria-pressed={color === item.id} data-tooltip={t[item.id]} style={{ '--guide-color': `var(${item.token})` } as CSSProperties} onClick={() => { setColor(item.id); stage.current?.focus({ preventScroll: true }); }} />)}
-        </div>{sizeControl}<Divider vertical />{eraser}</> : <><Divider vertical />{eraser}{sizeControl}</>}
+        <div className="draw-guide-palette" inert={tool === 'eraser'} aria-hidden={tool === 'eraser'}>
+          <div className="draw-guide-colors" role="group" aria-label={t.colors}>
+            {colors.map(item => <button key={item.id} type="button" className="draw-guide-color" disabled={disabled} aria-label={t[item.id]} aria-pressed={color === item.id} data-tooltip={t[item.id]} style={{ '--guide-color': `var(${item.token})` } as CSSProperties} onClick={() => { setColor(item.id); stage.current?.focus({ preventScroll: true }); }} />)}
+          </div>
+        </div>
+        {sizeControl}
+        <span className="draw-guide-switch-divider" aria-hidden="true"><Divider vertical /></span>
+        {eraser}
       </div>
       <div className="draw-guide-actions">
         <Divider vertical />
