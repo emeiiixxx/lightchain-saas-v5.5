@@ -86,12 +86,29 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
   const viewRef = useRef(view);
   const readyRef = useRef(false); readyRef.current = loadState === 'ready' && phase !== 'exit';
 
-  function changeView(next: Viewport) { viewRef.current = next; setView(next); }
+  function changeView(next: Viewport) { viewRef.current = next; setView(next); repaint(); }
   function repaint() {
     if (paintFrame.current !== null) return;
     paintFrame.current = requestAnimationFrame(() => {
       paintFrame.current = null;
-      if (layer.current) paintGuide(layer.current, strokeRef.current, active.current);
+      const canvas = layer.current;
+      const element = stage.current;
+      if (!canvas || !element) return;
+      const rect = element.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const pixelRatio = window.devicePixelRatio || 1;
+      const width = Math.ceil(rect.width * pixelRatio), height = Math.ceil(rect.height * pixelRatio);
+      // Rasterize the original stroke points at screen resolution. The backing
+      // follows the viewport, not the zoomed image's potentially enormous size.
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
+      const current = viewRef.current;
+      paintGuide(canvas, strokeRef.current, active.current, {
+        scale: current.zoom * pixelRatio,
+        offsetX: current.x * pixelRatio,
+        offsetY: current.y * pixelRatio,
+        bounds: dimensions,
+      });
     });
   }
   function hideCursor() {
@@ -154,6 +171,16 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(stage.current!);
+    window.addEventListener('resize', resize);
+    // A monitor change can alter pixel density without changing CSS dimensions.
+    let resolution = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+    const pixelRatioChanged = () => {
+      resolution.removeEventListener('change', pixelRatioChanged);
+      resize();
+      resolution = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+      resolution.addEventListener('change', pixelRatioChanged);
+    };
+    resolution.addEventListener('change', pixelRatioChanged);
     const reset = () => { spaceRef.current = false; setSpaceDown(false); finishGesture(true); };
     // Track an active gesture at window level so crossing the toolbar, leaving
     // the stage or losing pointer capture cannot drop its final samples/up.
@@ -173,9 +200,11 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
     window.addEventListener('pointermove', pointerMove, true);
     window.addEventListener('pointerup', pointerUp, true);
     window.addEventListener('pointercancel', pointerCancel, true);
-    paintGuide(layer.current!, strokeRef.current);
+    repaint();
     return () => {
       observer.disconnect();
+      window.removeEventListener('resize', resize);
+      resolution.removeEventListener('change', pixelRatioChanged);
       window.removeEventListener('blur', reset);
       window.removeEventListener('keyup', releaseModifier);
       window.removeEventListener('pointermove', pointerMove, true);
@@ -311,11 +340,16 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
   function saveGuide() {
     if (!readyRef.current || gesture.current || !layer.current) return;
     try {
-      const ctx = paintGuide(layer.current, strokeRef.current);
+      // Saving always includes the whole guide, even when the viewport is
+      // zoomed into a small area or panned away from existing strokes.
+      const preview = document.createElement('canvas');
+      preview.width = dimensions.width;
+      preview.height = dimensions.height;
+      const ctx = paintGuide(preview, strokeRef.current);
       const pixels = ctx.getImageData(0, 0, dimensions.width, dimensions.height).data;
       let hasContent = false;
       for (let i = 3; i < pixels.length; i += 4) { if (pixels[i]) { hasContent = true; break; } }
-      onSave(hasContent ? { sourceUrl: image.url, ...dimensions, strokes: strokeRef.current, previewUrl: layer.current.toDataURL('image/png') } : undefined);
+      onSave(hasContent ? { sourceUrl: image.url, ...dimensions, strokes: strokeRef.current, previewUrl: preview.toDataURL('image/png') } : undefined);
     } catch { setNotice(t.saveError); }
   }
 
@@ -326,8 +360,8 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
     <div ref={stage} className="draw-guide-stage" tabIndex={0} role="region" aria-label={t.title} data-panning={panning} data-hand={spaceDown} data-ready={loadState === 'ready'} onPointerDown={start} onPointerMove={event => { if (!gesture.current) showCursor(event); }} onPointerEnter={showCursor} onPointerLeave={hideCursor} onContextMenu={event => event.preventDefault()}>
       <div className="draw-guide-image" style={{ width: dimensions.width, height: dimensions.height, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
         <img key={attempt} src={image.url} alt={image.name} draggable={false} onLoad={() => setLoadState('ready')} onError={() => setLoadState('error')} />
-        <canvas ref={layer} width={dimensions.width} height={dimensions.height} aria-hidden="true" />
       </div>
+      <canvas ref={layer} className="draw-guide-ink" aria-hidden="true" />
       <div ref={cursor} className="draw-guide-cursor" style={{ '--guide-cursor-size': `${size * view.zoom}px` } as CSSProperties} aria-hidden="true" hidden>
         <span className="draw-guide-cursor-ring" />
       </div>

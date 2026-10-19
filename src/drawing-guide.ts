@@ -8,6 +8,12 @@ export type DrawingGuide = {
   strokes: GuideStroke[];
   previewUrl: string;
 };
+type GuideProjection = {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  bounds: { width: number; height: number };
+};
 
 // Keep drawing coordinates independent of viewport size, zoom and image pixels.
 export function guideDimensions(width: number, height: number) {
@@ -15,10 +21,18 @@ export function guideDimensions(width: number, height: number) {
   return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
 }
 
-export function paintGuide(canvas: HTMLCanvasElement, strokes: GuideStroke[], active?: GuideStroke | null) {
+export function paintGuide(canvas: HTMLCanvasElement, strokes: GuideStroke[], active?: GuideStroke | null, projection?: GuideProjection) {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('drawing_context_unavailable');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  if (projection) {
+    ctx.setTransform(projection.scale, 0, 0, projection.scale, projection.offsetX, projection.offsetY);
+    ctx.beginPath();
+    ctx.rect(0, 0, projection.bounds.width, projection.bounds.height);
+    ctx.clip();
+  }
   for (const stroke of active ? [...strokes, active] : strokes) {
     const first = stroke.points[0];
     if (!first) continue;
@@ -42,6 +56,7 @@ export function paintGuide(canvas: HTMLCanvasElement, strokes: GuideStroke[], ac
       }
     }
   }
+  ctx.restore();
   ctx.globalCompositeOperation = 'source-over';
   return ctx;
 }
