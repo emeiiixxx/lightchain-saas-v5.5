@@ -29,6 +29,7 @@ export function copyCanvasSelection(items: CanvasImage[], selected: string[]): C
         fusion: {
           kind: item.fusion.kind, position, prompt: item.fusion.prompt, ratio: item.fusion.ratio, resolution: item.fusion.resolution,
           batchFlat: item.fusion.batchFlat, flatRegion: item.fusion.flatRegion, flatFace: item.fusion.flatFace,
+          drawingGuide: sourceId && imageIds.has(sourceId) ? item.fusion.drawingGuide : undefined,
           references: isMultiInputWorkflow(item.fusion) ? [] : fusionReferences(item.fusion).map(reference => ({ ...reference,
             sourceImageId: reference.sourceImageId && imageIds.has(reference.sourceImageId) ? reference.sourceImageId : undefined })),
           directedPoints: item.fusion.directedPoints?.map(point => ({ ...point, reference: { ...point.reference } })),

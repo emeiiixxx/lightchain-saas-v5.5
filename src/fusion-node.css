@@ -11,7 +11,7 @@
 .fusion-content { display: flex; flex-direction: column; gap: 12px; }
 .fusion-main { height: 56px; padding: 8px; display: flex; align-items: center; gap: 8px; border-radius: 16px; background: var(--state-default); font-size: 12px; line-height: 16px; }
 .fusion-main > .progressive-image { width: 40px; height: 40px; border: 1px solid var(--border-weak); border-radius: 8px; object-fit: cover; }
-.fusion-main > span:not(.progressive-image) { flex: 1; }
+.fusion-main > span:not(.progressive-image):not(.fusion-main-preview) { flex: 1; }
 .fusion-main .fusion-mask { width: 32px; min-width: 32px; height: 32px; padding: 0; border-radius: 12px; }
 .fusion-field { display: flex; flex-direction: column; gap: 8px; }
 .fusion-label { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 400; line-height: 20px; }
@@ -132,3 +132,9 @@
 .batch-flat-images .fusion-reference > .progressive-image,
 .batch-flat-images .fusion-reference img { border-radius: 0; }
 .batch-flat-images .fusion-reference-remove { width: 16px; min-width: 16px; height: 16px; top: 4px; right: 4px; border-radius: 999px; }
+
+/* The saved guide belongs to this editor and overlays only its thumbnail. */
+.fusion-main > .fusion-main-preview { position: relative; display: block; flex: 0 0 40px; width: 40px; min-width: 40px; max-width: 40px; height: 40px; aspect-ratio: 1; overflow: hidden; border: 1px solid var(--border-weak); border-radius: 8px; }
+.fusion-main-preview > .progressive-image { display: block; width: 100%; height: 100%; }
+.fusion-main-preview > .fusion-guide-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .7; pointer-events: none; }
+.fusion-main .fusion-mask.has-guide { border-color: var(--border-brand); color: var(--text-brand); }

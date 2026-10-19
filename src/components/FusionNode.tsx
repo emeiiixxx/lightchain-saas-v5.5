@@ -28,14 +28,16 @@ const mergeCopy = {
   ja: { title: '結合して生成', tip: '複数の参考画像を結合して新しい画像を生成', uploaded: '最大4枚、追加済み' },
 };
 
-type Props = { image: CanvasImage; locale: Locale; onChange: (patch: Partial<FusionSettings>) => void; onAddMain: () => void; onReference: (source: 'upload' | 'canvas') => void; onDemo: () => void; onGenerate: () => void };
-export function FusionNode({ image, locale, onChange, onAddMain, onReference, onDemo, onGenerate }: Props) {
+type Props = { image: CanvasImage; locale: Locale; onChange: (patch: Partial<FusionSettings>) => void; onAddMain: () => void; onReference: (source: 'upload' | 'canvas') => void; onEditGuide: () => void; onGenerate: () => void };
+export function FusionNode({ image, locale, onChange, onAddMain, onReference, onEditGuide, onGenerate }: Props) {
   const settings = image.fusion!;
   const lingerie = settings.kind === 'lingerie';
   const merge = settings.kind === 'merge';
   const t = merge ? { ...copy[locale], ...mergeCopy[locale] } : lingerie ? { ...copy[locale], ...lingerieCopy[locale] } : copy[locale];
   const referenceLimit = workflowReferenceLimit(settings);
   const references = fusionReferences(settings);
+  const guide = settings.drawingGuide?.sourceUrl === image.url ? settings.drawingGuide : undefined;
+  const guideLabel = guide ? (locale === 'zh-CN' ? '编辑示意' : locale === 'ja' ? 'ガイドを編集' : 'Edit guide') : t.mask;
   const prompt = useRef<HTMLTextAreaElement>(null);
   const root = useRef<HTMLElement>(null);
   const [error, setError] = useState(false);
@@ -53,7 +55,7 @@ export function FusionNode({ image, locale, onChange, onAddMain, onReference, on
   return <section ref={root} className={`fusion-node${!merge && image.nodeOnly ? ' is-empty' : ''}${lingerie ? ' lingerie-node' : ''}${merge ? ' merge-node' : ''}`} data-overlay data-node-id={merge ? (!references.length ? '177:6191' : references.length === 4 ? '177:6100' : '177:7186') : lingerie ? (image.nodeOnly ? '136:17414' : '136:17371') : (image.nodeOnly ? '107:5118' : '35:6422')} data-source-image={image.id} aria-label={t.title}>
     <header className="fusion-header"><h2>{t.title}</h2><div className="fusion-tip"><img src={assets.fusionTip} alt="" width={20} height={20} /><span>{t.tip}</span></div></header>
     <div className="fusion-content">
-      {!merge && <>{image.nodeOnly ? <button className="fusion-add-main" onClick={onAddMain}><Icon name="fusionAddImage" size={20}/>{lingerie ? lingerieCopy[locale].addMain : locale === 'zh-CN' ? '添加主图' : locale === 'ja' ? 'メイン画像を追加' : 'Add main image'}</button> : <div className="fusion-main"><ProgressiveImage src={image.url} alt={t.main} width={40} height={40}/><span>{t.main}</span>{!lingerie && <Button variant="outline" className="fusion-mask" aria-label={t.mask} onClick={onDemo}><Icon name="fusionBrush" size={20}/></Button>}</div>}<Divider /></>}
+      {!merge && <>{image.nodeOnly ? <button className="fusion-add-main" onClick={onAddMain}><Icon name="fusionAddImage" size={20}/>{lingerie ? lingerieCopy[locale].addMain : locale === 'zh-CN' ? '添加主图' : locale === 'ja' ? 'メイン画像を追加' : 'Add main image'}</button> : <div className="fusion-main"><span className="fusion-main-preview"><ProgressiveImage src={image.url} alt={t.main} width={40} height={40}/>{guide && <img className="fusion-guide-preview" src={guide.previewUrl} alt="" aria-hidden="true" draggable={false}/>}</span><span>{t.main}</span>{!lingerie && <Button variant="outline" className={`fusion-mask${guide ? ' has-guide' : ''}`} aria-label={guideLabel} onClick={onEditGuide}><Icon name="fusionBrush" size={20}/></Button>}</div>}<Divider /></>}
       <div className="fusion-field"><span className="fusion-label">{t.reference}{merge ? <><span className="merge-count-divider"/><span className="merge-reference-count">{mergeCopy[locale].uploaded} <span>{references.length}</span>/{referenceLimit}</span></> : !lingerie && <span className="fusion-reference-count">{references.length} / {referenceLimit}</span>}</span>
         <div className="fusion-references">
           {references.map((reference, index) => <div className="fusion-reference-wrap" key={merge ? reference.id : reference.url}>
