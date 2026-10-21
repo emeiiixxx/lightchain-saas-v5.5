@@ -10,6 +10,7 @@ import { AssetPicker } from './AssetPicker';
 import { CanvasBackground } from './CanvasBackground';
 import { CanvasProjectPanel } from './CanvasProjectPanel';
 import { CanvasChrome } from './CanvasChrome';
+import { CanvasContextMenu } from './CanvasContextMenu';
 import { CutoutEditor } from './CutoutEditor';
 import { FullImageViewer } from './FullImageViewer';
 import { ProgressiveImage } from './ProgressiveImage';
@@ -40,9 +41,9 @@ const entries = [
   { id: 'videoEdit', nodeId: '64:2204' },
 ] as const;
 const mediaCopy = {
-  'zh-CN': { add: '点击或拖拽到此处添加图片或视频', drop: '将图片或视频拖放到这里', video: '视频', play: '播放', materials: '素材', limit: '每次最多添加20个素材。' },
-  en: { add: 'Click or drop images or videos here', drop: 'Drop images or videos here', video: 'Video', play: 'Play', materials: 'Assets', limit: 'Add up to 20 assets at a time.' },
-  ja: { add: 'クリック、または画像・動画をドロップして追加', drop: 'ここに画像・動画をドロップ', video: '動画', play: '再生', materials: '素材', limit: '一度に追加できる素材は20点までです。' },
+  'zh-CN': { add: '点击或拖拽到此处添加图片或视频', drop: '将图片或视频拖放到这里', upload: '上传素材', video: '视频', play: '播放', materials: '素材', limit: '每次最多添加20个素材。' },
+  en: { add: 'Click or drop images or videos here', drop: 'Drop images or videos here', upload: 'Upload assets', video: 'Video', play: 'Play', materials: 'Assets', limit: 'Add up to 20 assets at a time.' },
+  ja: { add: 'クリック、または画像・動画をドロップして追加', drop: 'ここに画像・動画をドロップ', upload: '素材をアップロード', video: '動画', play: '再生', materials: '素材', limit: '一度に追加できる素材は20点までです。' },
 };
 type Snapshot = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; selected: string[] };
 type WorkflowUpload = { id: string; field: 'main' | 'endFrame' | 'references' };
@@ -128,6 +129,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     try { return localStorage.getItem('lc-v55-video-grid-snap') !== 'off'; } catch { return true; }
   });
   const [guides, setGuides] = useState<SnapGuides | null>(null);
+  const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number } | null>(null);
+  const closeCanvasMenu = useCallback(() => setCanvasMenu(null), []);
   const [modal, setModal] = useState<Modal | null>(null);
   const [preview, setPreview] = useState<CanvasImage | null>(null);
   const [cutout, setCutout] = useState<CanvasImage | null>(null);
@@ -189,7 +192,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     previewEpoch.current++;
     videoPlayer.current?.pause();
     setReading(false); setModal(null); setPreview(null); setCutout(null); setWorkflowUpload(null); setVideoPreview(null); setDropActive(false);
-    setSpaceDown(false); setDragging(false); setSelecting(false); setGuides(null);
+    setSpaceDown(false); setDragging(false); setSelecting(false); setGuides(null); setCanvasMenu(null);
   }, [active, stopCamera]);
   useEffect(() => {
     activeRef.current = active;
@@ -274,7 +277,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     event.preventDefault(); event.stopPropagation(); setDropActive(false);
     void loadFiles(event.dataTransfer.files);
   }
-  function openAssets() { if (active && !reading) setModal('assets'); }
+  function openAssets() { closeCanvasMenu(); if (active && !reading) setModal('assets'); }
   function updateWorkflow(id: string, patch: Partial<VideoWorkflow>) {
     if (!current.current.workflows.some(node => node.id === id)) return;
     commit({ ...current.current, workflows: current.current.workflows.map(node => node.id === id ? { ...node, ...patch } : node) });
@@ -387,6 +390,13 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
 
   return <>
     <main ref={canvas} hidden={!active} inert={!active} tabIndex={-1} lang={locale} className={`canvas video-workspace${items.length ? '' : ' video-workspace--empty'}${spaceDown || mode === 'hand' ? ' is-panning' : ''}${dragging ? ' is-dragging' : ''}`} aria-label={v.title} data-node-id={items.length ? '76:5683' : '64:2057'}
+      onContextMenu={event => {
+        if (!active || reading || shownModal.value || shownPreview.value || shownCutout.value || shownWorkflowUpload.value || shownVideoPreview.value || !(event.target instanceof Element) || event.target.closest('[data-overlay], [data-image], .fusion-position, .selection-overlay')) return;
+        event.preventDefault();
+        setDragging(false); setSelecting(false); setGuides(null);
+        document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'canvas-context' }));
+        setCanvasMenu({ x: event.clientX, y: event.clientY });
+      }}
       onDragOver={event => { if (active && !modal && !preview && !cutout && !workflowUpload && !videoPreview && event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDropActive(true); } }}
       onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropActive(false); }} onDrop={drop}>
       <CanvasBackground view={view} />
@@ -463,6 +473,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       {reading && items.length > 0 && <div className="canvas-message" role="status">{t.reading}</div>}
       <span className="sr-only" role="status">{snapshot.images.length} {m.materials} · {snapshot.selected.length} {t.selected}</span>
     </main>
+    <CanvasContextMenu point={active ? canvasMenu : null} canPaste={false} locale={locale} uploadLabel={m.upload} onClose={closeCanvasMenu} onUpload={openAssets} />
     {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} />}
     {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} videoUploads={uploadedVideos} onUpload={rememberUpload} onVideoUpload={rememberVideo} onConfirm={image => addMedia([image])} onConfirmMediaBatch={addMedia} limitMessage={m.limit} onClose={closeModal} />}
     {active && shownWorkflowUpload.value && <AssetPicker key={`${shownWorkflowUpload.value.id}-${shownWorkflowUpload.value.field}`} locale={locale} phase={shownWorkflowUpload.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={applyWorkflowImage}
