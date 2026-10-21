@@ -51,7 +51,7 @@
     "designSize": { "width": 1920, "height": 1080 },
     "imageExample": { "x": 780, "y": 312, "width": 360, "height": 560, "radius": 16 },
     "imageContent": "Dynamic uploaded image, preserving its original aspect ratio.",
-    "toolbar": { "width": 454, "height": 40, "gapToImage": 16, "radius": 12 },
+    "toolbar": { "width": "max-content", "textButtonWidth": "auto", "textButtonPaddingInline": 8, "height": 40, "gapToImage": 16, "radius": 12 },
     "initialAlignment": "Center image and toolbar together inside the canvas below the 48px topbar; keep toolbar at UI scale.",
     "sideToolbar": { "width": 56, "height": 104, "padding": 8, "gap": 8, "buttonSize": 40 },
     "downloadMenu": {
