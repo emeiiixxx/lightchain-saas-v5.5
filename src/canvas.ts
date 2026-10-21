@@ -48,7 +48,7 @@ export function workflowHeight(settings?: FusionSettings) {
   const count = Math.min(MAX_DIRECTED_POINTS, settings.directedPoints?.length ?? 0);
   return 282 + count * 141 - (count === MAX_DIRECTED_POINTS ? 68 : 0);
 }
-export type CanvasImage = { id: string; name: string; url: string; x: number; y: number; width: number; height: number; role?: 'main'; layoutTaskId?: string; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
+export type CanvasImage = { id: string; name: string; url: string; x: number; y: number; width: number; height: number; naturalWidth?: number; naturalHeight?: number; role?: 'main'; layoutTaskId?: string; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
 export const CANVAS_GRID_SIZE = 32;
 
 export function workflowSources(items: CanvasImage[], editor: CanvasImage): CanvasImage[] {
@@ -112,7 +112,7 @@ export async function readImage(file: File): Promise<Omit<CanvasImage, 'x' | 'y'
     const image = new Image(); image.src = url; await image.decode();
     rememberImagePreview(url, image);
     const width = Math.min(360, image.naturalWidth);
-    return { id: crypto.randomUUID(), name: file.name, url, width, height: width * image.naturalHeight / image.naturalWidth };
+    return { id: crypto.randomUUID(), name: file.name, url, width, height: width * image.naturalHeight / image.naturalWidth, naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight };
   } catch (error) { URL.revokeObjectURL(url); throw error; }
 }
 

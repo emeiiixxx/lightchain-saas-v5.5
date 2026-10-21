@@ -23,7 +23,7 @@ import { VideoAssetToolbar } from './VideoAssetToolbar';
 import { VideoWorkflowNode } from './VideoWorkflowNode';
 import { ImageConnection } from './ImageConnection';
 import { createVideoWorkflow, videoWorkflowBox, VIDEO_NODE_WIDTH, VIDEO_NODE_HEIGHT, type VideoWorkflow, type VideoReference } from '../video-workflow';
-import { copyVideoCanvasSelection, pasteVideoCanvasSelection, readCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
+import { copyVideoCanvasSelection, pasteVideoCanvasSelection, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
 import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, writeCanvasClipboardEvent, writeCanvasClipboardSystem, type CanvasClipboard } from '../canvas-clipboard-session';
 import { videoReferenceUploadMessages, type UploadedVideo } from '../video-reference-upload';
 import { notify } from './Toast';
@@ -297,8 +297,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (video.url.startsWith('blob:')) ownedUrls.current.add(video.url);
     setUploadedVideos(previous => [...previous.filter(item => item.url !== video.url), video]);
   }
-  function addMedia(loaded: Omit<VideoCanvasMedia, 'x' | 'y'>[]) {
-    if (!activeRef.current || !loaded.length) return;
+  function addMedia(media: Omit<VideoCanvasMedia, 'x' | 'y'>[]) {
+    if (!activeRef.current || !media.length) return;
+    const loaded = media.map(item => sizeVideoCanvasMedia(item));
     const previous = current.current.images, bounds = boundsOf(sceneItems(current.current));
     let y = bounds ? bounds.y + bounds.height + 40 : 0;
     const additions: VideoCanvasMedia[] = [];
@@ -349,7 +350,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (canvas.current) animateView(fitImages([...(source ? [source] : []), videoWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });
   }
-  function applyWorkflowImage(image: Omit<CanvasImage, 'x' | 'y'>) {
+  function applyWorkflowImage(uploaded: Omit<CanvasImage, 'x' | 'y'>) {
+    const image = sizeVideoCanvasMedia(uploaded);
     const target = workflowUpload;
     const node = target && current.current.workflows.find(item => item.id === target.id);
     if (!target || !node || !activeRef.current) return;

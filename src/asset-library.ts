@@ -100,5 +100,5 @@ export async function prepareMainImage(asset: LibraryImage): Promise<Omit<Canvas
   image.src = asset.url;
   await image.decode();
   const width = Math.min(360, image.naturalWidth);
-  return { id: crypto.randomUUID(), name: asset.name, url: asset.url, width, height: width * image.naturalHeight / image.naturalWidth, role: 'main' };
+  return { id: crypto.randomUUID(), name: asset.name, url: asset.url, width, height: width * image.naturalHeight / image.naturalWidth, naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight, role: 'main' };
 }

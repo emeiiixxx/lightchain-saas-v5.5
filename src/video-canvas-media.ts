@@ -4,6 +4,15 @@ import { readVideoReference, type UploadedVideo } from './video-reference-upload
 
 export type VideoCanvasMedia = CanvasImage & { video?: UploadedVideo };
 
+// Size canvas geometry from intrinsic dimensions before arranging the assets.
+// Landscape media use a 360px height cap; portrait/square media keep the width cap.
+export function sizeVideoCanvasMedia<T extends Omit<VideoCanvasMedia, 'x' | 'y'>>(media: T): T {
+  const width = media.video?.width ?? media.naturalWidth ?? media.width;
+  const height = media.video?.height ?? media.naturalHeight ?? media.height;
+  const scale = Math.min(1, 360 / (width > height ? height : width));
+  return { ...media, width: width * scale, height: height * scale };
+}
+
 // Reuse the image canvas snapshot rules, retaining the original video rather
 // than copying only its poster. Canvas IDs and uploaded-file IDs are separate.
 export function copyVideoCanvasSelection(items: VideoCanvasMedia[], selected: string[]): VideoCanvasMedia[] {
@@ -16,8 +25,7 @@ export function copyVideoCanvasSelection(items: VideoCanvasMedia[], selected: st
 export { pasteCanvasSelection as pasteVideoCanvasSelection } from './canvas-clipboard';
 
 export function prepareVideoCanvasMedia(video: UploadedVideo): Omit<VideoCanvasMedia, 'x' | 'y'> {
-  const width = Math.min(360, video.width);
-  return { id: crypto.randomUUID(), name: video.name, url: video.posterUrl, width, height: width * video.height / video.width, video };
+  return sizeVideoCanvasMedia({ id: crypto.randomUUID(), name: video.name, url: video.posterUrl, width: video.width, height: video.height, video });
 }
 
 // The caller owns a successful image URL or video.url. Video posters are data
@@ -37,5 +45,5 @@ export async function readCanvasMedia(file: File, signal: AbortSignal): Promise<
     URL.revokeObjectURL(image.url);
     throw new DOMException('Aborted', 'AbortError');
   }
-  return image;
+  return sizeVideoCanvasMedia(image);
 }

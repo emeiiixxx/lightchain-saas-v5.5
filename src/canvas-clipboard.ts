@@ -18,6 +18,7 @@ export function copyCanvasSelection(items: CanvasImage[], selected: string[]): C
       const generatedByEditorId = item.sourceImageId == null && item.generatedByEditorId && editorIds.has(item.generatedByEditorId)
         ? `${item.generatedByEditorId}:fusion` : undefined;
       copies.push({ id: item.id, name: item.name, url: item.url, x: item.x, y: item.y, width: item.width, height: item.height,
+        naturalWidth: item.naturalWidth, naturalHeight: item.naturalHeight,
         sourceImageId, generatedByEditorId, generatedFromReferenceId: item.generatedFromReferenceId && imageIds.has(item.generatedFromReferenceId) ? item.generatedFromReferenceId : undefined });
     }
     if (item.fusion && editorIds.has(item.id)) {
