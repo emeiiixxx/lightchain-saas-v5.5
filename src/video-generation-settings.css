@@ -1,4 +1,9 @@
 /* Reuses v5.4 GenerationSettings and the original Beta ratio artwork. */
+.video-generation-settings-ratio-icon {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+}
 .video-generation-settings {
   position: fixed;
   inset: auto;

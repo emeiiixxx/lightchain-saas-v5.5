@@ -20,6 +20,9 @@
 .media-toolbar--video::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
 .media-toolbar--video > .lc-button { flex-shrink: 0; border: 0; }
 .media-toolbar--video > .divider { flex-shrink: 0; }
+.media-toolbar--video-asset { background: var(--surface-floating); }
+.canvas-image .video-canvas-play { border-radius: var(--radius-max); }
+.asset-video-marker { position: absolute; left: 8px; bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px; border-radius: 6px; background: var(--surface-media-overlay); color: #fff; pointer-events: none; font-size: 12px; line-height: 16px; }
 .video-workspace .canvas-side-toolbar { width: 56px; border: 0; }
 .video-workspace .canvas-side-toolbar::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
 .video-workspace .canvas-nav-toolbar { height: 48px; border: 0; }

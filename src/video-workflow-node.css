@@ -36,6 +36,5 @@
 .video-workflow-node .video-prompt-icon { flex: 0 0 24px; width: 24px; min-width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; }
 .video-prompt-assist .fusion-counter { flex: 0 0 auto; }
 .video-workflow-settings { height: 60px; }
-.video-workflow-settings .lc-setting-select::before { content: ''; display: block; flex: 0 0 16px; width: 16px; height: 16px; background: currentColor; mask: var(--video-setting-icon) center / contain no-repeat; }
 .video-workflow-settings .lc-setting-select-value { font-size: 12px; line-height: 16px; }
 .fusion-node-action.video-workflow-action { height: 57px; flex: 0 0 57px; margin: 0; padding: 12px; }

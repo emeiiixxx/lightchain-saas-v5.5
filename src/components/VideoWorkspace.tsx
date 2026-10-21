@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
-import { arrangeImages, boundsOf, DEFAULT_VIEW, fitImages, readImage, zoomAt, type CanvasImage, type Viewport } from '../canvas';
+import { arrangeImages, boundsOf, DEFAULT_VIEW, fitImages, zoomAt, type CanvasImage, type Viewport } from '../canvas';
 import { prepareMainImage, type LibraryImage } from '../asset-library';
 import type { SnapGuides } from '../canvas-snapping';
 import { messages, type Locale } from '../i18n';
@@ -17,9 +17,12 @@ import { ReactFlowCanvas } from './ReactFlowCanvas';
 import { VideoTemplateDialog } from './VideoTemplateDialog';
 import { VideoIcon } from './VideoIcon';
 import { VideoSelectionToolbar } from './VideoSelectionToolbar';
+import { VideoAssetToolbar } from './VideoAssetToolbar';
 import { VideoWorkflowNode } from './VideoWorkflowNode';
 import { ImageConnection } from './ImageConnection';
 import { createVideoWorkflow, videoWorkflowBox, VIDEO_NODE_WIDTH, VIDEO_NODE_HEIGHT, type VideoWorkflow, type VideoReference } from '../video-workflow';
+import { readCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
+import { videoReferenceUploadMessages, type UploadedVideo } from '../video-reference-upload';
 import { notify } from './Toast';
 import { Button, Dialog, Icon } from './ui';
 import '../video-workspace.css';
@@ -36,7 +39,12 @@ const entries = [
   { id: 'videoExtend', nodeId: '64:2065' },
   { id: 'videoEdit', nodeId: '64:2204' },
 ] as const;
-type Snapshot = { images: CanvasImage[]; workflows: VideoWorkflow[]; selected: string[] };
+const mediaCopy = {
+  'zh-CN': { add: '点击或拖拽到此处添加图片或视频', drop: '将图片或视频拖放到这里', video: '视频', play: '播放', materials: '素材', limit: '每次最多添加20个素材。' },
+  en: { add: 'Click or drop images or videos here', drop: 'Drop images or videos here', video: 'Video', play: 'Play', materials: 'Assets', limit: 'Add up to 20 assets at a time.' },
+  ja: { add: 'クリック、または画像・動画をドロップして追加', drop: 'ここに画像・動画をドロップ', video: '動画', play: '再生', materials: '素材', limit: '一度に追加できる素材は20点までです。' },
+};
+type Snapshot = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; selected: string[] };
 type WorkflowUpload = { id: string; field: 'main' | 'endFrame' | 'references' };
 type Modal = 'templates' | 'assets' | 'help';
 type Props = { locale: Locale; active: boolean; onBack: () => void };
@@ -57,7 +65,7 @@ function fitVideoImages(images: CanvasImage[], width: number, height: number): V
 }
 
 export function VideoWorkspace({ locale, active, onBack }: Props) {
-  const t = messages[locale], v = copy[locale];
+  const t = messages[locale], v = copy[locale], m = mediaCopy[locale];
   const canvas = useRef<HTMLElement>(null);
   const activeRef = useRef(active); activeRef.current = active;
   const [projectName, setProjectName] = useState(() => {
@@ -104,7 +112,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const measured = useRef({ width: 0, height: 0 });
   const [uploads, setUploads] = useState<LibraryImage[]>([]);
+  const [uploadedVideos, setUploadedVideos] = useState<UploadedVideo[]>([]);
   const ownedUrls = useRef(new Set<string>());
+  const pendingMediaRead = useRef<AbortController | null>(null);
   const uploadEpoch = useRef(0), uploadLocked = useRef(false);
   const [reading, setReading] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -166,7 +176,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     commit({ images: current.current.images.filter(image => !removed.has(image.id)),
       workflows: current.current.workflows.filter(node => !removed.has(node.id)).map(node => node.main?.sourceImageId && removed.has(node.main.sourceImageId) ? { ...node, main: undefined } : node), selected: [] });
   }, [commit]);
-  const closeModal = useCallback(() => { uploadEpoch.current++; uploadLocked.current = false; setReading(false); setModal(null); }, []);
+  const closeModal = useCallback(() => { uploadEpoch.current++; pendingMediaRead.current?.abort(); uploadLocked.current = false; setReading(false); setModal(null); }, []);
 
   useEffect(() => {
     try { localStorage.setItem('lc-v55-video-project-name', projectName); } catch { /* The canvas remains usable without storage. */ }
@@ -175,6 +185,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (active) return;
     stopCamera();
     uploadEpoch.current++; uploadLocked.current = false;
+    pendingMediaRead.current?.abort();
     previewEpoch.current++;
     videoPlayer.current?.pause();
     setReading(false); setModal(null); setPreview(null); setCutout(null); setWorkflowUpload(null); setVideoPreview(null); setDropActive(false);
@@ -184,6 +195,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     activeRef.current = active;
     return () => {
       activeRef.current = false; uploadEpoch.current++;
+      pendingMediaRead.current?.abort();
       ownedUrls.current.forEach(url => URL.revokeObjectURL(url)); ownedUrls.current.clear();
     };
   }, []);
@@ -223,11 +235,15 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (image.url.startsWith('blob:')) ownedUrls.current.add(image.url);
     setUploads(previous => [...previous.filter(item => item.url !== image.url), image]);
   }
-  function addImages(loaded: Omit<CanvasImage, 'x' | 'y'>[]) {
+  function rememberVideo(video: UploadedVideo) {
+    if (video.url.startsWith('blob:')) ownedUrls.current.add(video.url);
+    setUploadedVideos(previous => [...previous.filter(item => item.url !== video.url), video]);
+  }
+  function addMedia(loaded: Omit<VideoCanvasMedia, 'x' | 'y'>[]) {
     if (!activeRef.current || !loaded.length) return;
     const previous = current.current.images, bounds = boundsOf(sceneItems(current.current));
     let y = bounds ? bounds.y + bounds.height + 40 : 0;
-    const additions: CanvasImage[] = [];
+    const additions: VideoCanvasMedia[] = [];
     for (let row = 0; row < loaded.length; row += 5) {
       const items = loaded.slice(row, row + 5);
       let x = 0;
@@ -240,14 +256,17 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }
   async function loadFiles(files: FileList) {
     if (!activeRef.current || uploadLocked.current || !files.length) return;
-    if (files.length > 20) { notify(t.batchImageLimit, 'error'); return; }
+    if (files.length > 20) { notify(m.limit, 'error'); return; }
     const epoch = ++uploadEpoch.current;
+    const controller = new AbortController();
+    pendingMediaRead.current = controller;
     uploadLocked.current = true; setReading(true);
-    const results = await Promise.allSettled(Array.from(files).map(readImage));
+    const results = await Promise.allSettled(Array.from(files).map(file => readCanvasMedia(file, controller.signal)));
     const loaded = results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
-    if (epoch !== uploadEpoch.current || !activeRef.current) { loaded.forEach(image => URL.revokeObjectURL(image.url)); return; }
-    loaded.forEach(rememberUpload); addImages(loaded);
-    if (results.some(result => result.status === 'rejected')) notify(t.uploadError, 'error');
+    if (pendingMediaRead.current === controller) pendingMediaRead.current = null;
+    if (epoch !== uploadEpoch.current || !activeRef.current) { loaded.forEach(media => URL.revokeObjectURL(media.video?.url ?? media.url)); return; }
+    loaded.forEach(media => media.video ? rememberVideo(media.video) : rememberUpload(media)); addMedia(loaded);
+    if (results.some(result => result.status === 'rejected')) notify(videoReferenceUploadMessages[locale].error, 'error');
     uploadLocked.current = false; setReading(false);
   }
   function drop(event: DragEvent) {
@@ -292,10 +311,10 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     else updateWorkflow(node.id, { references: [...node.references, reference] });
     setWorkflowUpload(null);
   }
-  function applyWorkflowVideo(reference: VideoReference) {
+  function applyWorkflowVideo(reference: UploadedVideo) {
     const node = workflowUpload?.field === 'references' && current.current.workflows.find(item => item.id === workflowUpload.id);
-    if (!node || !activeRef.current) { URL.revokeObjectURL(reference.url); return; }
-    ownedUrls.current.add(reference.url);
+    if (!node || !activeRef.current) { if (!ownedUrls.current.has(reference.url)) URL.revokeObjectURL(reference.url); return; }
+    rememberVideo(reference);
     updateWorkflow(node.id, { references: [...node.references, reference] });
     setWorkflowUpload(null);
   }
@@ -310,7 +329,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   function arrangeScene() {
     const previous = current.current;
     if (!previous.workflows.length) {
-      commit({ ...previous, images: arrangeImages(previous.images) }); fit(); return;
+      const positions = new Map(arrangeImages(previous.images).map(image => [image.id, { x: image.x, y: image.y }]));
+      commit({ ...previous, images: previous.images.map(image => ({ ...image, ...positions.get(image.id)! })) }); fit(); return;
     }
     const positions = new Map<string, { x: number; y: number }>();
     const linked = new Set<string>();
@@ -337,7 +357,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   async function downloadSelected(format: DownloadFormat) {
     if (downloadLocked.current) return;
     const source = current.current.images.find(image => current.current.selected.includes(image.id));
-    if (!source) return;
+    if (!source || source.video) return;
     downloadLocked.current = true; setDownloading(true);
     try {
       const image = new Image();
@@ -348,6 +368,13 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       const unsupported = locale === 'zh-CN' ? '当前浏览器不支持此格式导出，请选择其他格式。' : locale === 'ja' ? 'このブラウザーはこの形式での書き出しに対応していません。別の形式を選んでください。' : 'This browser cannot export this format. Please choose another format.';
       notify(error instanceof ImageExportError && error.reason === 'unsupported' ? unsupported : t.downloadError, 'error');
     } finally { downloadLocked.current = false; setDownloading(false); }
+  }
+  function downloadSelectedVideo() {
+    const source = current.current.images.find(image => current.current.selected.includes(image.id));
+    if (!source?.video) return;
+    const link = document.createElement('a');
+    link.href = source.video.url; link.download = source.video.name;
+    document.body.appendChild(link); link.click(); link.remove();
   }
   function zoom(factor: number, animated = false) {
     const element = canvas.current;
@@ -373,11 +400,11 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
               <VideoIcon name={entry.id} /><span>{v[entry.id]}</span>{entry.id === 'templates' && <span className="entry-tool-badge video-entry-badge" data-node-id="64:2066">NEW</span>}
             </Button>)}
           </div>
-          <button type="button" className={`asset-upload video-upload${dropActive ? ' is-over' : ''}`} disabled={reading} aria-label={t.addImagesPrompt} onClick={openAssets} data-node-id="64:2068"
+          <button type="button" className={`asset-upload video-upload${dropActive ? ' is-over' : ''}`} disabled={reading} aria-label={m.add} onClick={openAssets} data-node-id="64:2068"
             onDragOver={event => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.stopPropagation(); setDropActive(true); } }} onDrop={drop}>
             <VideoIcon name="upload" size={32} />
-            <span className="asset-upload-title">{reading ? t.reading : dropActive ? t.dropImagesHere : t.addImagesPrompt}</span>
-            <span className="asset-upload-hint">{dropActive && !reading ? t.releaseToUpload : t.initialUploadFormats}</span>
+            <span className="asset-upload-title">{reading ? t.reading : dropActive ? m.drop : m.add}</span>
+            <span className="asset-upload-hint">{dropActive && !reading ? t.releaseToUpload : videoReferenceUploadMessages[locale].hint}</span>
           </button>
         </section>
       </div>}
@@ -386,9 +413,10 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
           onView={setView} onSelection={ids => replace({ ...current.current, selected: ids })}
           onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node) })}
           onDragStart={() => { saveUndo(); setDragging(true); }} onDragEnd={() => { setDragging(false); setGuides(null); }} onGuides={setGuides} onSelecting={setSelecting}>
-          {snapshot.images.map(image => <div key={image.id} data-image data-canvas-id={image.id} className={`canvas-image${snapshot.selected.includes(image.id) ? ' selected' : ''}`} style={{ left: image.x, top: image.y, width: image.width, height: image.height }} role="button" tabIndex={0} aria-label={`${t.image}: ${image.name}`} aria-pressed={snapshot.selected.includes(image.id)}
+          {snapshot.images.map(image => <div key={image.id} data-image data-canvas-id={image.id} data-node-id={image.video ? '97:6651' : undefined} className={`canvas-image${image.video ? ' canvas-video' : ''}${snapshot.selected.includes(image.id) ? ' selected' : ''}`} style={{ left: image.x, top: image.y, width: image.width, height: image.height }} role="button" tabIndex={0} aria-label={`${image.video ? m.video : t.image}: ${image.name}`} aria-pressed={snapshot.selected.includes(image.id)}
             onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: event.shiftKey ? current.current.selected.includes(image.id) ? current.current.selected.filter(id => id !== image.id) : [...current.current.selected, image.id] : [image.id] }); } }}>
-            <Button variant="tonal" className="image-preview-button nodrag nopan" title={t.viewFull} aria-label={`${t.viewFull} · ${image.name}`} onClick={event => { event.stopPropagation(); setPreview(image); }}><Icon name="viewFull" size={20} /></Button>
+            {image.video ? <Button variant="tonal" className="image-preview-button video-canvas-play nodrag nopan" title={m.play} aria-label={`${m.play} · ${image.name}`} data-node-id="97:6653" onClick={event => { event.stopPropagation(); setVideoPreview(image.video!); }}><VideoIcon name="playVideo" size={20} /></Button>
+              : <Button variant="tonal" className="image-preview-button nodrag nopan" title={t.viewFull} aria-label={`${t.viewFull} · ${image.name}`} onClick={event => { event.stopPropagation(); setPreview(image); }}><Icon name="viewFull" size={20} /></Button>}
             <ProgressiveImage src={image.url} alt={image.name} width={image.width} height={image.height} fit="contain" />
           </div>)}
           {snapshot.workflows.map(node => {
@@ -404,11 +432,14 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         </ReactFlowCanvas>
         {shownSingle.value && !selecting && <div className="selection-overlay" data-phase={shownSingle.phase} aria-label={t.selectionTools} style={{ left: shownSingle.value.x * view.zoom + view.x, top: shownSingle.value.y * view.zoom + view.y, width: shownSingle.value.width * view.zoom, height: shownSingle.value.height * view.zoom }}>
           <div className="media-toolbar-anchor" data-overlay inert={shownSingle.phase === 'exit'}>
-            <VideoSelectionToolbar key={shownSingle.value.id} locale={locale} downloading={downloading} onDownload={format => void downloadSelected(format)} onAction={action => {
+            {shownSingle.value.video ? <VideoAssetToolbar key={shownSingle.value.id} locale={locale} onDownload={downloadSelectedVideo}
+              onModify={() => notify(locale === 'zh-CN' ? '视频修改功能暂未接入。' : locale === 'ja' ? '動画編集はまだ接続されていません。' : 'Video editing is not connected yet.')}
+              onSave={() => notify(locale === 'zh-CN' ? '保存到资产功能暂未接入。' : locale === 'ja' ? '素材への保存はまだ接続されていません。' : 'Saving to assets is not connected yet.')} />
+              : <VideoSelectionToolbar key={shownSingle.value.id} locale={locale} downloading={downloading} onDownload={format => void downloadSelected(format)} onAction={action => {
               if (action === 'cutout') setCutout(singleSelection);
               else if (action === 'fashionVideo' && singleSelection) addWorkflow(singleSelection);
               else notify(locale === 'zh-CN' ? '此功能暂未接入。' : locale === 'ja' ? 'この機能はまだ接続されていません。' : 'This feature is not connected yet.');
-            }} />
+            }} />}
           </div>
         </div>}
         {shownGroup.value && !selecting && <div className="selection-overlay" data-phase={shownGroup.phase} aria-label={t.groupSelection} style={{ left: shownGroup.value.x * view.zoom + view.x, top: shownGroup.value.y * view.zoom + view.y, width: shownGroup.value.width * view.zoom, height: shownGroup.value.height * view.zoom }}><div className="group-selection-frame" /></div>}
@@ -428,15 +459,15 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
           onHelp={() => setModal('help')} onDemo={() => notify(v.pending)} />
         {shownReturn.value && <div className="canvas-return-hint" data-overlay data-phase={shownReturn.phase} inert={shownReturn.phase === 'exit'}><p>{t.noNodesInView}</p><Button variant="primary" onClick={fit}>{t.returnToNodes}</Button></div>}
       </>}
-      {shownDrop.value && <div className="drop-overlay flex items-center justify-center pointer-events-none" data-phase={shownDrop.phase}><span>{t.dropImagesHere}</span></div>}
+      {shownDrop.value && <div className="drop-overlay flex items-center justify-center pointer-events-none" data-phase={shownDrop.phase}><span>{m.drop}</span></div>}
       {reading && items.length > 0 && <div className="canvas-message" role="status">{t.reading}</div>}
-      <span className="sr-only" role="status">{snapshot.images.length} {t.image} · {snapshot.selected.length} {t.selected}</span>
+      <span className="sr-only" role="status">{snapshot.images.length} {m.materials} · {snapshot.selected.length} {t.selected}</span>
     </main>
     {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} />}
-    {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={image => addImages([image])} onConfirmBatch={addImages} onClose={closeModal} />}
+    {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} videoUploads={uploadedVideos} onUpload={rememberUpload} onVideoUpload={rememberVideo} onConfirm={image => addMedia([image])} onConfirmMediaBatch={addMedia} limitMessage={m.limit} onClose={closeModal} />}
     {active && shownWorkflowUpload.value && <AssetPicker key={`${shownWorkflowUpload.value.id}-${shownWorkflowUpload.value.field}`} locale={locale} phase={shownWorkflowUpload.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={applyWorkflowImage}
       excludedUrls={shownWorkflowUpload.value.field === 'references' ? snapshot.workflows.find(node => node.id === shownWorkflowUpload.value!.id)?.references.map(reference => reference.url) : undefined}
-      onConfirmVideo={shownWorkflowUpload.value.field === 'references' ? applyWorkflowVideo : undefined} onClose={() => setWorkflowUpload(null)} />}
+      videoUploads={uploadedVideos} onConfirmVideo={shownWorkflowUpload.value.field === 'references' ? applyWorkflowVideo : undefined} onClose={() => setWorkflowUpload(null)} />}
     {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p></Dialog>}
     {active && shownPreview.value && <FullImageViewer image={shownPreview.value} locale={locale} phase={shownPreview.phase} onClose={() => setPreview(null)} />}
     {active && shownVideoPreview.value && <Dialog title={shownVideoPreview.value.name} closeLabel={t.close} phase={shownVideoPreview.phase} className="video-reference-preview-dialog" onClose={() => { videoPlayer.current?.pause(); setVideoPreview(null); }}>

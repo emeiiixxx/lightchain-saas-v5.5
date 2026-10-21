@@ -143,7 +143,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
         {error && <p className="sr-only" id={`${promptId}-error`} role="alert">{t.required}</p>}
       </div>
       <div className="fusion-field video-workflow-settings"><span className="fusion-label">{t.settings}</span>
-        <div className="fusion-settings" style={{ '--video-setting-icon': `url("${videoNodeAssets.auto}")` } as CSSProperties}>
+        <div className="fusion-settings">
           <VideoGenerationSettings locale={locale} value={node} onChange={onChange} />
         </div>
       </div>

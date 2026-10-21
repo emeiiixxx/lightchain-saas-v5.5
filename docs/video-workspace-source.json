@@ -4,6 +4,7 @@
   "nodes": {
     "initial": "64:2057",
     "singleImageCanvas": "76:5683",
+    "uploadedVideoCanvas": "97:6649",
     "singleImageToolbar": "76:5775",
     "singleImage": "76:5776",
     "fashionVideoFirstLastFrame": "84:6110",
@@ -18,6 +19,14 @@
   "assets": {
     "directory": "public/assets/video-workspace",
     "initialIcons": "64:2057",
+    "uploadedVideoIcons": {
+      "directory": "public/assets/video-canvas",
+      "modify": { "nodeId": "103:6927", "file": "modify.svg" },
+      "saveAsset": { "nodeId": "64:2261", "file": "save-asset.svg" },
+      "download": { "nodeId": "64:2227", "file": "download.svg" },
+      "play": { "nodeId": "103:6933", "file": "play.svg" },
+      "size": 20
+    },
     "upscaleIcon": { "nodeId": "80:77", "path": "public/assets/video-workspace/upscale.svg", "displaySize": 16 },
     "fashionVideoIcon": { "nodeId": "64:4169", "path": "public/assets/video-workspace/fashion-short-video.svg", "displaySize": 20 },
     "storyboardIcon": { "nodeId": "64:4168", "path": "public/assets/video-workspace/storyboard-to-video.svg", "displaySize": 20 },
@@ -67,6 +76,17 @@
     },
     "assetAction": { "instance": "I76:5775;1675:2985;76:5762", "iconMaster": "64:2261", "meaning": "Save to assets, based on the asset-center icon master." }
   },
+  "uploadedVideoCanvas": {
+    "nodeId": "97:6649",
+    "exampleSize": { "width": 360, "height": 560 },
+    "content": "Uploaded video's actual first frame, retaining natural aspect ratio; decoded locally, never auto-playing on the canvas.",
+    "toolbar": { "height": 40, "width": "max-content", "gapToVideo": 16, "actions": ["modifyVideo", "saveAsset", "download"] },
+    "playButton": { "size": 32, "inset": 8, "radius": 999, "iconSize": 20 },
+    "upload": "Opt-in mixed image/video AssetPicker batch up to 20 files; direct canvas drop also supported. Videos stay out of image-only pickers.",
+    "download": "Original local video URL, filename and format; no image conversion or format menu.",
+    "canvas": "Shared Flow selection, movement, zoom, delete, arrange, fit and undo/redo. Retain video URLs across history and release on workspace unmount.",
+    "preview": "Reuse video preview Dialog and native playback controls; pause on close or workspace switch."
+  },
   "fashionVideoWorkflow": {
     "width": 280,
     "height": 608,
@@ -83,6 +103,7 @@
     "defaultSettings": { "resolution": "1080p", "duration": "5s", "ratio": "9:16" },
     "generationSettings": {
       "summaryOrder": ["ratio", "resolution", "duration"],
+      "summaryIcon": "Uses the same original SVG as the selected ratio option; auto icon only for auto.",
       "source": "v5.4 src/components/GenerationSettings.tsx, src/workbench.css, public/assets/parameter-*.svg",
       "component": "src/components/VideoGenerationSettings.tsx",
       "assetDirectory": "public/assets/video-settings",
@@ -96,7 +117,7 @@
     "interaction": "Source image and prompt shared across modes; last-frame and multiple-reference assets retained separately. Shared single-image picker optionally accepts one local video. Nodes participate in Flow navigation, selection, connections and undo.",
     "generation": "Configuration UI only; generation and AI prompt services are not connected."
   },
-  "scope": ["topbar entry", "canvas initialization", "image uploads", "single image canvas and toolbar", "fashion video workflow modes", "reference image and video uploads", "template dialog and reference image states"],
+  "scope": ["topbar entry", "canvas initialization", "image and video uploads", "single image canvas and toolbar", "uploaded video canvas and toolbar", "fashion video workflow modes", "reference image and video uploads", "template dialog and reference image states"],
   "userOverrides": {
     "workflowMainImageRemoval": "Neither fashion-video mode offers main-image deletion inside the node. Delete the source image on the canvas to clear the main slot and connection; keep the node, description and references, with undo restoring the source and link.",
     "desktopDialogHeight": 720,

@@ -11,6 +11,7 @@ const ratios = ['auto', '3:4', '9:16', '1:1', '4:3', '16:9'];
 const resolutions = ['480p', '720p', '1080p'];
 const durations = ['5s', '10s', '15s'];
 const assetBase = `${import.meta.env.BASE_URL}assets/video-settings/`;
+const ratioIcon = (ratio: string) => `${assetBase}parameter-${ratio.replace(':', '-')}.svg`;
 const copy = {
   'zh-CN': { settings: '生成设置', ratio: '视频比例', resolution: '选择清晰度', duration: '视频时长', auto: '智能' },
   en: { settings: 'Generation settings', ratio: 'Aspect ratio', resolution: 'Resolution', duration: 'Duration', auto: 'Auto' },
@@ -112,6 +113,7 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
       onKeyDown={event => {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Tab' && open && !event.shiftKey) { event.preventDefault(); event.stopPropagation(); expand(true); }
       }}>
+      <span className="icon video-generation-settings-ratio-icon" aria-hidden="true" style={{ '--icon-url': `url("${ratioIcon(value.ratio)}")` } as CSSProperties} />
       <span className="lc-setting-select-value">{summary}</span><Icon name="imgChevron" size={16} className="lc-setting-select-chevron" />
     </button>
     {shown.value && createPortal(<div ref={panel} id={id} className="video-generation-settings nodrag nopan nowheel" popover="manual" role="dialog" aria-label={t.settings}
@@ -123,7 +125,7 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
         if (document.activeElement === edge) { event.preventDefault(); setOpen(false); trigger.current?.focus(); }
       }}>
       <section><h3>{t.ratio}</h3><ParameterSegments label={t.ratio} vertical value={value.ratio} onChange={ratio => onChange({ ratio })}
-        options={ratios.map(ratio => ({ value: ratio, label: ratio === 'auto' ? t.auto : ratio, icon: `${assetBase}parameter-${ratio.replace(':', '-')}.svg` }))} /></section>
+        options={ratios.map(ratio => ({ value: ratio, label: ratio === 'auto' ? t.auto : ratio, icon: ratioIcon(ratio) }))} /></section>
       <section><h3>{t.resolution}</h3><ParameterSegments label={t.resolution} value={value.resolution} onChange={resolution => onChange({ resolution })}
         options={resolutions.map(resolution => ({ value: resolution, label: resolution }))} /></section>
       <section><h3>{t.duration}</h3><ParameterSegments label={t.duration} value={value.duration} onChange={duration => onChange({ duration })}

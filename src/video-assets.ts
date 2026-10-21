@@ -14,6 +14,11 @@ export const videoAssets = {
   upscale: `${videoAssetBase}upscale.svg`,
   videoExtend: `${videoAssetBase}videoExtend.svg`,
   videoEdit: `${videoAssetBase}videoEdit.svg`,
+  // Original 97:6649 uploaded-video controls, each exported at 20×20.
+  modifyVideo: `${import.meta.env.BASE_URL}assets/video-canvas/modify.svg`,
+  saveVideoAsset: `${import.meta.env.BASE_URL}assets/video-canvas/save-asset.svg`,
+  downloadVideo: `${import.meta.env.BASE_URL}assets/video-canvas/download.svg`,
+  playVideo: `${import.meta.env.BASE_URL}assets/video-canvas/play.svg`,
   upload: `${videoAssetBase}upload.svg`,
   // Pure VIDEO-fill layers 76:5023 / 76:5591, exported without player controls.
   portraitPoster: `${videoAssetBase}portraitPoster.png`,

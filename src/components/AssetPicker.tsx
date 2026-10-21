@@ -5,10 +5,12 @@ import { demoAssets, multiDemoAssets, prepareMainImage, type LibraryImage } from
 import { readImage, type CanvasImage } from '../canvas';
 import { messages, type Locale } from '../i18n';
 import { promptCoverMessages, readPromptCoverImage } from '../prompt-cover-image';
-import { readVideoReference, videoReferenceUploadMessages } from '../video-reference-upload';
-import type { VideoReference } from '../video-workflow';
+import { readVideoReference, videoReferenceUploadMessages, type UploadedVideo } from '../video-reference-upload';
+import { prepareVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
 
 const sources = ['historyUploads', 'generationHistory', 'personalAssets', 'teamAssets', 'platformAssets'] as const;
+type PickerAsset = LibraryImage | UploadedVideo;
+function isVideoAsset(asset: PickerAsset): asset is UploadedVideo { return 'kind' in asset && asset.kind === 'video'; }
 type Props = {
   allowSvg?: boolean;
   maxCount?: number;
@@ -17,19 +19,23 @@ type Props = {
   locale: Locale;
   phase: 'enter' | 'exit';
   uploads: LibraryImage[];
+  videoUploads?: UploadedVideo[];
   onUpload: (image: LibraryImage) => void;
+  onVideoUpload?: (video: UploadedVideo) => void;
   onConfirm: (image: Omit<CanvasImage, 'x' | 'y'>) => void;
-  onConfirmVideo?: (video: VideoReference) => void;
+  onConfirmVideo?: (video: UploadedVideo) => void;
   onConfirmBatch?: (images: Omit<CanvasImage, 'x' | 'y'>[]) => void;
+  onConfirmMediaBatch?: (media: Omit<VideoCanvasMedia, 'x' | 'y'>[]) => void;
   onClose: () => void;
 };
 
-export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onConfirmVideo, onConfirmBatch, onClose, maxCount = 20, excludedUrls = [], limitMessage, allowSvg = false }: Props) {
+export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUpload, onVideoUpload, onConfirm, onConfirmVideo, onConfirmBatch, onConfirmMediaBatch, onClose, maxCount = 20, excludedUrls = [], limitMessage, allowSvg = false }: Props) {
   const t = messages[locale];
-  const multiple = !!onConfirmBatch;
-  const allowVideo = !!onConfirmVideo && !multiple;
+  const multiple = !!onConfirmBatch || !!onConfirmMediaBatch;
+  const allowVideo = !!onConfirmMediaBatch || (!!onConfirmVideo && !multiple);
   const videoText = videoReferenceUploadMessages[locale];
-  const [chosen, setChosen] = useState<LibraryImage[]>([]);
+  const [chosen, setChosen] = useState<PickerAsset[]>([]);
+  const [localVideos, setLocalVideos] = useState<UploadedVideo[]>([]);
   const [source, setSource] = useState<(typeof sources)[number]>('historyUploads');
   const [query, setQuery] = useState('');
   const [usingId, setUsingId] = useState<string | null>(null);
@@ -41,12 +47,22 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
   const locked = useRef(false);
   const active = useRef(true);
   const pendingVideoRead = useRef<AbortController | null>(null);
+  const unclaimedVideos = useRef(new Map<string, UploadedVideo>());
   useEffect(() => {
     active.current = phase === 'enter';
-    return () => { active.current = false; request.current++; pendingVideoRead.current?.abort(); };
+    return () => {
+      active.current = false; request.current++; pendingVideoRead.current?.abort();
+      unclaimedVideos.current.forEach(video => URL.revokeObjectURL(video.url));
+      unclaimedVideos.current.clear();
+    };
   }, [phase]);
-  const candidates = source === 'historyUploads' ? [...new Map([...uploads, ...(multiple ? multiDemoAssets : demoAssets)].map(asset => [asset.url, asset])).values()] : [];
+  const historyAssets: PickerAsset[] = [...uploads, ...(allowVideo ? [...videoUploads, ...localVideos] : []), ...(multiple ? multiDemoAssets : demoAssets)];
+  const candidates = source === 'historyUploads' ? [...new Map(historyAssets.map(asset => [asset.url, asset])).values()] : [];
   const visible = candidates.filter(asset => !excludedUrls.includes(asset.url)).filter(asset => asset.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+
+  function close() {
+    active.current = false; request.current++; pendingVideoRead.current?.abort(); onClose();
+  }
 
   async function upload(files: FileList | File[]) {
     if (!active.current || locked.current || !files.length) return;
@@ -54,10 +70,10 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
     const id = ++request.current;
     locked.current = true; setBusy(true); setError(null);
     try {
-      if (allowVideo && onConfirmVideo && files[0].type.startsWith('video/')) {
+      if (!multiple && allowVideo && onConfirmVideo && files[0].type.startsWith('video/')) {
         const controller = new AbortController();
         pendingVideoRead.current = controller;
-        let video: VideoReference | undefined;
+        let video: UploadedVideo | undefined;
         try {
           video = await readVideoReference(files[0], controller.signal);
           if (!active.current || id !== request.current || controller.signal.aborted) return;
@@ -69,10 +85,17 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
         }
         return;
       }
-      const results = await Promise.allSettled(Array.from(files).map(allowSvg ? readPromptCoverImage : readImage));
-      const loaded = results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
+      const controller = new AbortController();
+      pendingVideoRead.current = controller;
+      const results = await Promise.allSettled(Array.from(files).map(file => allowVideo && file.type.startsWith('video/') ? readVideoReference(file, controller.signal) : (allowSvg ? readPromptCoverImage : readImage)(file)));
+      if (pendingVideoRead.current === controller) pendingVideoRead.current = null;
+      const loaded: PickerAsset[] = results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
       if (!active.current || id !== request.current) { loaded.forEach(asset => URL.revokeObjectURL(asset.url)); return; }
-      loaded.forEach(onUpload);
+      loaded.forEach(asset => {
+        if (!isVideoAsset(asset)) onUpload(asset);
+        else if (onVideoUpload) onVideoUpload(asset);
+        else { unclaimedVideos.current.set(asset.url, asset); setLocalVideos(previous => [...previous, asset]); }
+      });
       if (!multiple && loaded[0]) {
         const image = await prepareMainImage(loaded[0]);
         if (active.current && id === request.current) onConfirm(image);
@@ -87,19 +110,23 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
     finally { if (active.current && id === request.current) { locked.current = false; setBusy(false); } }
   }
 
-  async function useAsset(asset: LibraryImage) {
+  async function useAsset(asset: PickerAsset) {
     if (locked.current || !active.current) return;
     const id = ++request.current;
     locked.current = true; setBusy(true); setError(null);
     try {
       setUsingId(asset.id);
+      if (isVideoAsset(asset)) {
+        if (onConfirmVideo) { unclaimedVideos.current.delete(asset.url); onConfirmVideo(asset); }
+        return;
+      }
       const image = await prepareMainImage(asset);
       if (active.current && id === request.current) onConfirm(image);
     } catch { if (active.current && id === request.current) setError('read'); }
     finally { if (active.current && id === request.current) { locked.current = false; setBusy(false); } }
   }
 
-  function toggleAsset(asset: LibraryImage) {
+  function toggleAsset(asset: PickerAsset) {
     if (locked.current || !active.current) return;
     if (chosen.some(item => item.id === asset.id)) {
       setChosen(previous => previous.filter(item => item.id !== asset.id)); setError(null);
@@ -108,17 +135,21 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
   }
 
   async function confirmBatch() {
-    if (!onConfirmBatch || !chosen.length || chosen.length > maxCount || locked.current || !active.current) return;
+    if ((!onConfirmBatch && !onConfirmMediaBatch) || !chosen.length || chosen.length > maxCount || locked.current || !active.current) return;
     const id = ++request.current;
     locked.current = true; setBusy(true); setError(null);
     try {
-      const prepared = await Promise.all(chosen.map(prepareMainImage));
-      if (active.current && id === request.current) onConfirmBatch(prepared);
+      const prepared = await Promise.all(chosen.map(asset => isVideoAsset(asset) ? prepareVideoCanvasMedia(asset) : prepareMainImage(asset)));
+      if (active.current && id === request.current) {
+        chosen.forEach(asset => { if (isVideoAsset(asset)) unclaimedVideos.current.delete(asset.url); });
+        if (onConfirmMediaBatch) onConfirmMediaBatch(prepared);
+        else onConfirmBatch?.(prepared);
+      }
     } catch { if (active.current && id === request.current) setError('read'); }
     finally { if (active.current && id === request.current) { locked.current = false; setBusy(false); } }
   }
 
-  return <Dialog title={t.chooseAssets} closeLabel={t.close} onClose={() => { pendingVideoRead.current?.abort(); onClose(); }} phase={phase} className="asset-picker">
+  return <Dialog title={t.chooseAssets} closeLabel={t.close} onClose={close} phase={phase} className="asset-picker">
     <div className="asset-filters" data-node-id={multiple ? "17:1864" : "50:24167"}>
       <div className="asset-tabs" role="tablist" aria-label={t.assetSources}>
         {sources.map((item, index) => <button type="button" key={item} role="tab" id={`asset-tab-${item}`} aria-controls="asset-grid" aria-selected={source === item} tabIndex={source === item ? 0 : -1}
@@ -138,10 +169,12 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
         <Icon name="upload" size={32} /><span className="asset-upload-title">{busy ? t.reading : dragOver ? (allowVideo ? videoText.drop : t.dropImagesHere) : t.localUpload}</span><span className="asset-upload-hint">{dragOver && !busy ? t.releaseToUpload : allowVideo ? videoText.hint : allowSvg ? promptCoverMessages[locale].formats : t.localUploadHint}</span>
       </button>}
       {visible.map(asset => multiple ? <button type="button" key={asset.id} className="asset-card asset-card--multiple" aria-label={asset.name} aria-pressed={chosen.some(item => item.id === asset.id)} disabled={busy} onClick={() => toggleAsset(asset)}>
-        <ProgressiveImage src={asset.url} alt="" />
+        <ProgressiveImage src={isVideoAsset(asset) ? asset.posterUrl : asset.url} alt="" />
+        {isVideoAsset(asset) && <span className="asset-video-marker" aria-hidden="true"><Icon name="historyVideo" size={16} /></span>}
         <span className="asset-checkbox" aria-hidden="true"><Icon name="selectionCheck" size={24} /></span>
       </button> : <div key={asset.id} className="asset-card" onClick={() => void useAsset(asset)}>
-        <ProgressiveImage src={asset.url} alt={asset.name} />
+        <ProgressiveImage src={isVideoAsset(asset) ? asset.posterUrl : asset.url} alt={asset.name} />
+        {isVideoAsset(asset) && <span className="asset-video-marker" aria-hidden="true"><Icon name="historyVideo" size={16} /></span>}
         <span className="asset-card-scrim" aria-hidden="true" />
         <div className="asset-card-actions">
           <Button variant="primary" size="m" disabled={busy} aria-label={`${t.useAsset} · ${asset.name}`}>
@@ -152,10 +185,10 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
       {!visible.length && (source !== 'historyUploads' || query.trim()) && <div className="asset-empty">{query.trim() ? t.noSearchResults : t.noAssets}</div>}
     </div>
     <input ref={input} type="file" hidden multiple={multiple} accept={allowVideo ? 'image/png,image/jpeg,image/webp,video/*' : allowSvg ? 'image/png,image/jpeg,image/webp,image/svg+xml' : 'image/png,image/jpeg,image/webp'} onChange={event => { if (event.target.files) void upload(event.target.files); event.target.value = ''; }} />
-    {error && <p className="asset-error error-message" role="alert">{error === 'limit' ? (multiple ? (limitMessage || t.batchImageLimit) : allowVideo ? videoText.limit : allowSvg ? promptCoverMessages[locale].limit : t.mainImageLimit) : allowVideo ? videoText.error : allowSvg ? promptCoverMessages[locale].error : t.uploadError}</p>}
+    {error && <p className="asset-error error-message" role="alert">{error === 'limit' ? (multiple ? (limitMessage || (allowVideo ? videoText.batchLimit.replace('{count}', String(maxCount)) : t.batchImageLimit)) : allowVideo ? videoText.limit : allowSvg ? promptCoverMessages[locale].limit : t.mainImageLimit) : allowVideo ? videoText.error : allowSvg ? promptCoverMessages[locale].error : t.uploadError}</p>}
     {multiple && <footer className="asset-footer" data-node-id="17:1865">
       <div className="asset-counter" role="status"><span>{t.selectedCount}</span><strong>{chosen.length} / {maxCount}</strong></div>
-      <Button variant="secondary" size="m" onClick={onClose}>{t.cancel}</Button>
+      <Button variant="secondary" size="m" onClick={close}>{t.cancel}</Button>
       <Button variant="primary" size="m" disabled={!chosen.length || busy} onClick={() => void confirmBatch()}>{busy ? t.reading : t.confirm}</Button>
     </footer>}
   </Dialog>;
