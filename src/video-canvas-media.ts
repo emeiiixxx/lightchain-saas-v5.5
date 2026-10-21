@@ -5,10 +5,12 @@ import { readVideoReference, type UploadedVideo } from './video-reference-upload
 export type VideoCanvasMedia = CanvasImage & { video?: UploadedVideo };
 
 // Size canvas geometry from intrinsic dimensions before arranging the assets.
-// Landscape media use a 360px height cap; portrait/square media keep the width cap.
+// Landscape media cap height at 360px, portrait media cap width at 360px,
+// and square media use a fixed 360 × 360 canvas box.
 export function sizeVideoCanvasMedia<T extends Omit<VideoCanvasMedia, 'x' | 'y'>>(media: T): T {
   const width = media.video?.width ?? media.naturalWidth ?? media.width;
   const height = media.video?.height ?? media.naturalHeight ?? media.height;
+  if (width === height) return { ...media, width: 360, height: 360 };
   const scale = Math.min(1, 360 / (width > height ? height : width));
   return { ...media, width: width * scale, height: height * scale };
 }
