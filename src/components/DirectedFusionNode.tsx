@@ -33,8 +33,8 @@ export function DirectedFusionNode({ image, locale, onChange, onAddMain, onChoos
       <Divider />
       {points.map((point, index) => <div key={point.id} className="directed-point" data-phase="enter">
         <div className="directed-point-header">
-          <div className="directed-point-title"><span>{t.point}{index + 1}</span><Button className="directed-point-action" aria-label={`${t.replace} ${index + 1}`} onClick={() => onChoosePoint(point.id)}><Icon name="directedReplace" size={20} /></Button></div>
-          <Button className="directed-point-action" aria-label={`${t.remove} ${index + 1}`} onClick={() => onChange({ directedPoints: points.filter(item => item.id !== point.id) })}><Icon name="contextTrash" size={20} /></Button>
+          <div className="directed-point-title"><span>{t.point}{index + 1}</span><Button className="directed-point-action" aria-label={`${t.replace} ${index + 1}`} title={t.replace} onClick={() => onChoosePoint(point.id)}><Icon name="directedReplace" size={20} /></Button></div>
+          <Button className="directed-point-action" aria-label={`${t.remove} ${index + 1}`} title={t.remove} onClick={() => onChange({ directedPoints: points.filter(item => item.id !== point.id) })}><Icon name="contextTrash" size={20} /></Button>
         </div>
         <Divider />
         <div className="directed-point-preview">

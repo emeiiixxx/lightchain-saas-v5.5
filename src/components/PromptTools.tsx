@@ -120,7 +120,7 @@ function PromptLibrary({phase,entries,onStore,onApply,onClose}:{phase:'enter'|'e
    {entry.coverUrl&&<span className="prompt-list-cover"><img src={entry.coverUrl} alt=""/></span>}
    <span className="prompt-card-context"><strong>{entry.pinned&&<span className="prompt-pinned-tag">置顶</span>}<span className="prompt-card-title">{entry.name||'Untitled'}</span></strong><span className="prompt-card-description">{entry.content||'请输入提示词内容...'}</span></span>
  </button>
- {entries.some(e=>e.id===entry.id)&&<Button className="prompt-card-more" disabled={saving} aria-label={`更多 · ${entry.name||'Untitled'}`} aria-haspopup="menu" aria-expanded={menu?.entry.id===entry.id} onClick={e=>setMenu(menu?.entry.id===entry.id?null:{entry,anchor:e.currentTarget})}><Icon name="promptMore" size={20}/></Button>}
+ {entries.some(e=>e.id===entry.id)&&<Button className="prompt-card-more" disabled={saving} aria-label={`更多 · ${entry.name||'Untitled'}`} title="更多" aria-haspopup="menu" aria-expanded={menu?.entry.id===entry.id} onClick={e=>setMenu(menu?.entry.id===entry.id?null:{entry,anchor:e.currentTarget})}><Icon name="promptMore" size={20}/></Button>}
  </div>)}{!visible.length&&entries.length>0&&<p className="prompt-empty">没有匹配的提示词</p>}</nav></aside>
  {menu&&<PromptCardMenu anchor={menu.anchor} pinned={!!menu.entry.pinned} onClose={()=>setMenu(null)} onPin={()=>void togglePin()} onDelete={()=>void removeEntry(menu.entry.id)}/>}
  <section className={isEmpty?'prompt-library-initial':undefined} data-node-id={isEmpty?'171:4333':undefined}>

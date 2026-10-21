@@ -24,7 +24,6 @@ export function CanvasChrome(p: Props) {
   const minimapId = `${instanceId}-minimap`;
   const searchId = `${instanceId}-smart-search`;
   const isMac = /Mac/i.test(navigator.platform);
-  const shortcutModifier = isMac ? '⌘' : 'Ctrl';
   const shortcutKey = isMac ? 'Meta' : 'Control';
   const [map, setMap] = useState(false);
   const [search, setSearch] = useState(false);
@@ -54,8 +53,8 @@ export function CanvasChrome(p: Props) {
       {iconButton(t.selectTool, 'move', () => p.onMode('select'), { 'aria-pressed': p.mode === 'select' })}
       {iconButton(t.handTool, 'hand', () => p.onMode('hand'), { 'aria-pressed': p.mode === 'hand' })}
       {iconButton(t.upload, 'canvasUpload', p.onUpload)}<Divider vertical />
-      {iconButton(t.undo, 'undoIcon', p.onUndo, { disabled: !p.canUndo, title: `${t.undo} ${shortcutModifier}+Z`, 'aria-keyshortcuts': `${shortcutKey}+Z` })}
-      {iconButton(t.redo, 'redoIcon', p.onRedo, { disabled: !p.canRedo, title: `${t.redoHint} · ${shortcutModifier}+Shift+Z`, 'aria-keyshortcuts': `${shortcutKey}+Shift+Z` })}
+      {iconButton(t.undo, 'undoIcon', p.onUndo, { disabled: !p.canUndo, 'aria-keyshortcuts': `${shortcutKey}+Z` })}
+      {iconButton(t.redo, 'redoIcon', p.onRedo, { disabled: !p.canRedo, 'aria-description': t.redoHint, 'aria-keyshortcuts': `${shortcutKey}+Shift+Z` })}
     </div>
     <div className="canvas-side-toolbar" data-overlay role="toolbar" aria-label={t.assetSources}>
       {p.sideActions ?? iconButton(t.platformAssets, 'platformIcon', p.onUpload)}
@@ -92,7 +91,7 @@ export function CanvasChrome(p: Props) {
         </div>}
       </div>
       <div className="canvas-floating-icon canvas-grid-control" data-node-id="89:3864">
-        <ToggleButton label={t.gridSnap} icon={p.snapToGrid ? 'gridSnapOn' : 'gridSnapOff'} pressed={p.snapToGrid} onClick={p.onToggleSnap} data-node-id="89:3865" title={`${t.gridSnap} · ${p.snapToGrid ? t.snapOn : t.snapOff} · ${isMac ? 'Option' : 'Alt'} ${t.snapBypass}`} />
+        <ToggleButton label={t.gridSnap} icon={p.snapToGrid ? 'gridSnapOn' : 'gridSnapOff'} pressed={p.snapToGrid} onClick={p.onToggleSnap} data-node-id="89:3865" aria-description={`${p.snapToGrid ? t.snapOn : t.snapOff} · ${isMac ? 'Option' : 'Alt'} ${t.snapBypass}`} />
       </div>
       <div className="canvas-floating-icon">{iconButton(t.canvasGuide, 'guideIcon', p.onHelp)}</div>
       <div className="canvas-floating-icon">{iconButton(t.shortcuts, 'keyboardIcon', p.onHelp)}</div>

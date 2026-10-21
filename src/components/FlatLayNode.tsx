@@ -34,7 +34,7 @@ export function FlatLayNode({ image, locale, onChange, onAddMain, onReference, o
         <div className="batch-flat-images" data-canvas-scroll>
           {references.map((reference, index) => <div className="fusion-reference-wrap" key={reference.id}>
             <div className="fusion-reference"><ProgressiveImage src={reference.url} alt={reference.name} /></div>
-            <Button variant="tonal" className="fusion-reference-remove" aria-label={`${removeLabel} ${index + 1}`} onClick={() => onChange({ references: references.filter((_, i) => i !== index), reference: undefined })}><Icon name="close" size={12} /></Button>
+            <Button variant="tonal" className="fusion-reference-remove" aria-label={`${removeLabel} ${index + 1}`} title={removeLabel} onClick={() => onChange({ references: references.filter((_, i) => i !== index), reference: undefined })}><Icon name="close" size={12} /></Button>
           </div>)}
           {references.length < 20 && <ReferenceSourceMenu addLabel={t.addMain} canvasLabel={canvasLabel} onChoose={onReference} />}
         </div>

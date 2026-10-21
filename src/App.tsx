@@ -908,7 +908,7 @@ export default function App() {
         }}>
           {canvasReferencePreviews.map(image => <div className="canvas-reference-preview" role="listitem" key={image.id}>
             <ProgressiveImage src={image.url} alt={image.name} width={56} height={56} fit="contain" />
-            <Button variant="tonal" className="canvas-reference-remove" aria-label={`${locale === 'en' ? 'Remove from selection' : locale === 'ja' ? '選択を解除' : '取消选择'}：${image.name}`} onClick={() => {
+            <Button variant="tonal" className="canvas-reference-remove" title={locale === 'en' ? 'Remove from selection' : locale === 'ja' ? '選択を解除' : '取消选择'} aria-label={`${locale === 'en' ? 'Remove from selection' : locale === 'ja' ? '選択を解除' : '取消选择'}：${image.name}`} onClick={() => {
               setCanvasReference(current => current ? { ...current, ids: current.ids.filter(id => id !== image.id) } : null);
             }}><Icon name="close" size={12} /></Button>
           </div>)}

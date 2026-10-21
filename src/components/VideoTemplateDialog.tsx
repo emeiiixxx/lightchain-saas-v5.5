@@ -86,8 +86,8 @@ function TemplateImageField({ locale, slot, value, onChange, onUpload, onChoose,
         <div className="video-template-thumbnail">
           <img src={value.url} alt={value.name} />
           <div className="video-template-image-actions">
-            <Button aria-label={`${t.replace} · ${label}`} aria-haspopup="dialog" disabled={!active} onClick={choose}><Icon name="promptCoverReplace" size={16} /></Button>
-            <Button aria-label={`${t.remove} · ${label}`} disabled={!active} onClick={() => { request.current++; setBusy(false); onChange(); requestAnimationFrame(() => emptyButton.current?.focus()); }}><Icon name="promptTrash" size={16} /></Button>
+            <Button title={t.replace} aria-label={`${t.replace} · ${label}`} aria-haspopup="dialog" disabled={!active} onClick={choose}><Icon name="promptCoverReplace" size={16} /></Button>
+            <Button title={t.remove} aria-label={`${t.remove} · ${label}`} disabled={!active} onClick={() => { request.current++; setBusy(false); onChange(); requestAnimationFrame(() => emptyButton.current?.focus()); }}><Icon name="promptTrash" size={16} /></Button>
           </div>
         </div>
         <p className="video-template-file-name">{value.name}</p>

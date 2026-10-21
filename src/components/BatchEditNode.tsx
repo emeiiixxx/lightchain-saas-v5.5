@@ -83,7 +83,7 @@ export function BatchEditNode({ image, locale, onChange, onMainImages, onReferen
         {mainImages.map((main, index) => <div className="batch-main-card" key={main.id}>
           <span className="batch-main-preview"><ProgressiveImage src={main.url} alt={main.name} width={40} height={40} /></span>
           <span className="batch-main-label">{t.main}{index + 1}</span>
-          <Button variant="tonal" className="batch-main-remove" aria-label={`${t.removeMain} ${index + 1}`} onClick={() => onChange({ mainImages: mainImages.filter((_, i) => i !== index) })}><Icon name="batchClose" size={16 * 2 / 3} /></Button>
+          <Button variant="tonal" className="batch-main-remove" aria-label={`${t.removeMain} ${index + 1}`} title={t.removeMain} onClick={() => onChange({ mainImages: mainImages.filter((_, i) => i !== index) })}><Icon name="batchClose" size={16 * 2 / 3} /></Button>
         </div>)}
       </div>
       <div className="batch-edit-fields">
@@ -92,7 +92,7 @@ export function BatchEditNode({ image, locale, onChange, onMainImages, onReferen
           <div className="batch-references">
             {references.map((reference, index) => <div className="fusion-reference-wrap" key={reference.id}>
               <div className="fusion-reference"><ProgressiveImage src={reference.url} alt={reference.name} width={48} height={48} /></div>
-              <Button variant="tonal" className="fusion-reference-remove" aria-label={`${t.removeReference} ${index + 1}`} onClick={() => onChange({ references: references.filter((_, i) => i !== index), reference: undefined })}><Icon name="batchClose" size={16 * 2 / 3} /></Button>
+              <Button variant="tonal" className="fusion-reference-remove" aria-label={`${t.removeReference} ${index + 1}`} title={t.removeReference} onClick={() => onChange({ references: references.filter((_, i) => i !== index), reference: undefined })}><Icon name="batchClose" size={16 * 2 / 3} /></Button>
             </div>)}
             {references.length < MAX_FUSION_REFERENCES && <ReferenceSourceMenu addLabel={t.addReference} canvasLabel={t.canvas} onChoose={onReference}><Icon name="batchAddImage" size={20} /></ReferenceSourceMenu>}
           </div>

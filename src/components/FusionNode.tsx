@@ -60,7 +60,7 @@ export function FusionNode({ image, locale, onChange, onAddMain, onReference, on
         <div className="fusion-references">
           {references.map((reference, index) => <div className="fusion-reference-wrap" key={merge ? reference.id : reference.url}>
             <div className="fusion-reference"><ProgressiveImage src={reference.url} alt={reference.name} /></div>
-            <Button variant="tonal" className="fusion-reference-remove" aria-label={`${t.remove} ${index + 1}`} onClick={() => onChange({ references: references.filter((_, i) => i !== index), reference: undefined })}><Icon name="close" size={merge ? 12 : 16} /></Button>
+            <Button variant="tonal" className="fusion-reference-remove" aria-label={`${t.remove} ${index + 1}`} title={t.remove} onClick={() => onChange({ references: references.filter((_, i) => i !== index), reference: undefined })}><Icon name="close" size={merge ? 12 : 16} /></Button>
           </div>)}
           {references.length < referenceLimit && <ReferenceSourceMenu addLabel={t.add} canvasLabel={t.canvas} onChoose={onReference} />}
         </div>

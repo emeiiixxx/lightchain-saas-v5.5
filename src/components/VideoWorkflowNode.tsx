@@ -123,7 +123,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
             <button type="button" className="video-reference-preview" aria-label={`${t.preview} ${reference.name}`} onClick={() => onPreview(reference)}>
               {reference.kind === 'video' ? <><video src={reference.url} muted playsInline preload="metadata" /><span className="video-reference-video-mark"><VideoIcon name="videoGeneration" size={16} /></span></> : <ProgressiveImage src={reference.url} alt={reference.name} width={64} height={64} />}
             </button>
-            <Button variant="tonal" className="video-reference-remove" aria-label={`${t.remove} ${index + 1}`} onClick={() => onChange(frames ? { endFrame: undefined } : { references: node.references.filter(item => item.id !== reference.id) })}><Icon name="close" size={12} /></Button>
+            <Button variant="tonal" className="video-reference-remove" title={t.remove} aria-label={`${t.remove} ${index + 1}`} onClick={() => onChange(frames ? { endFrame: undefined } : { references: node.references.filter(item => item.id !== reference.id) })}><Icon name="close" size={12} /></Button>
           </div>)}
           {(!frames || references.length === 0) && <button type="button" className="fusion-reference video-workflow-reference-add" aria-label={frames ? t.addEnd : t.addReference} data-tooltip={frames ? t.addEnd : t.addReference} onClick={onReference}><Icon name="fusionAddImage" size={20} /></button>}
         </div>
