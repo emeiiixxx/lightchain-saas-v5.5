@@ -4,8 +4,6 @@
 .video-template-dialog::backdrop { background: var(--overlay-scrim); backdrop-filter: none; }
 .video-template-dialog > .divider--vertical { height: 100%; }
 .video-template-sidebar { display: flex; flex: 0 0 256px; flex-direction: column; min-height: 0; background: var(--surface-secondary); transition-property: flex-basis, background-color; }
-.video-template-dialog--empty .video-template-sidebar { flex-basis: 320px; }
-.video-template-dialog--empty .video-template-tabs { padding: 12px; }
 .video-template-sidebar h2 { flex-shrink: 0; margin: 0; padding: 24px; color: var(--text-primary); font-size: 20px; font-weight: 700; line-height: 28px; }
 .video-template-tabs { display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 0 16px 16px; overflow-y: auto; overscroll-behavior: contain; }
 .video-template-tabs button { flex-shrink: 0; width: 100%; min-height: 36px; padding: 8px; border: 0; border-radius: var(--radius-base); background: transparent; color: var(--text-secondary); font-size: 14px; font-weight: 400; line-height: 20px; text-align: left; overflow-wrap: anywhere; }
@@ -53,7 +51,7 @@
 .video-template-empty h3 { margin: 0; color: var(--text-tertiary); font-size: 16px; font-weight: 500; line-height: 24px; }
 .video-template-empty p { margin: 4px 0 0; color: var(--text-placeholder); font-size: 12px; line-height: 16px; }
 @media (max-width: 1050px) {
-  .video-template-sidebar, .video-template-dialog--empty .video-template-sidebar { flex-basis: 208px; }
+  .video-template-sidebar { flex-basis: 208px; }
   .video-template-content { gap: 16px; }
   .video-template-details { flex-basis: 288px; }
   .video-template-actions > .lc-button { padding-inline: 16px; }
@@ -61,7 +59,7 @@
 }
 @media (max-width: 760px) {
   .lc-dialog.video-template-dialog { height: calc(100dvh - 32px); }
-  .video-template-sidebar, .video-template-dialog--empty .video-template-sidebar { flex-basis: 152px; }
+  .video-template-sidebar { flex-basis: 152px; }
   .video-template-sidebar h2 { padding: 20px 16px; font-size: 16px; line-height: 24px; }
   .video-template-tabs { padding-inline: 8px; }
   .video-template-content:not(.is-empty) { position: relative; flex-direction: column; overflow-y: auto; }
@@ -73,7 +71,7 @@
   .video-template-actions > .generate-task-button { min-width: 152px; }
 }
 @media (max-width: 460px) {
-  .video-template-sidebar, .video-template-dialog--empty .video-template-sidebar { flex-basis: 112px; }
+  .video-template-sidebar { flex-basis: 112px; }
   .video-template-sidebar h2 { padding: 16px 12px; }
   .video-template-tabs button { font-size: 12px; line-height: 18px; }
   .video-template-content { padding: 12px; }

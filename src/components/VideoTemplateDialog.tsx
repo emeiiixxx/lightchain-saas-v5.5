@@ -162,10 +162,9 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
     setImagePicker(null);
   }
 
-  return <><Dialog title={t.title} closeLabel={t.close} onClose={close} phase={phase} className={`video-template-dialog${template.preview ? '' : ' video-template-dialog--empty'}`} header={false} labelledBy={`${id}-title`}>
+  return <><Dialog title={t.title} closeLabel={t.close} onClose={close} phase={phase} className="video-template-dialog" header={false} labelledBy={`${id}-title`}>
     <aside className="video-template-sidebar">
       <h2 id={`${id}-title`}>{t.title}</h2>
-      {!template.preview && <Divider />}
       <div className="video-template-tabs" role="tablist" aria-orientation="vertical" aria-label={t.categories}>
         {videoTemplates.map((item, index) => <button key={item.id} ref={element => { tabs.current[index] = element; }} type="button" role="tab" id={`${id}-tab-${item.id}`} aria-selected={selected === item.id} aria-controls={`${id}-content`} tabIndex={selected === item.id ? 0 : -1}
           onClick={() => selectTemplate(item.id)} onKeyDown={event => selectWithKeyboard(event, index)}>{item.label[locale]}</button>)}
