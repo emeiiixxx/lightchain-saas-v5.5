@@ -7,6 +7,9 @@ export const videoAssets = {
   templates: `${videoAssetBase}templates.svg`,
   imageGeneration: `${videoAssetBase}imageGeneration.svg`,
   videoGeneration: `${videoAssetBase}videoGeneration.svg`,
+  // Icon/Business/Video masters 64:4169 / 64:4168 in the revised single-image toolbar.
+  fashionVideo: `${videoAssetBase}fashion-short-video.svg`,
+  storyboard: `${videoAssetBase}storyboard-to-video.svg`,
   // Icon/ImageEditingTool / upscale, master 80:77 in the single-image canvas.
   upscale: `${videoAssetBase}upscale.svg`,
   videoExtend: `${videoAssetBase}videoExtend.svg`,

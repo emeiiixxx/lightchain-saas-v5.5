@@ -6,6 +6,8 @@
     "singleImageCanvas": "76:5683",
     "singleImageToolbar": "76:5775",
     "singleImage": "76:5776",
+    "fashionVideoFirstLastFrame": "84:6110",
+    "fashionVideoMultipleReferences": "91:6434",
     "canvasSideToolbar": "76:5745",
     "templateWithoutUploads": "64:4219",
     "templateWithUploads": "76:5003",
@@ -17,6 +19,9 @@
     "directory": "public/assets/video-workspace",
     "initialIcons": "64:2057",
     "upscaleIcon": { "nodeId": "80:77", "path": "public/assets/video-workspace/upscale.svg", "displaySize": 16 },
+    "fashionVideoIcon": { "nodeId": "64:4169", "path": "public/assets/video-workspace/fashion-short-video.svg", "displaySize": 20 },
+    "storyboardIcon": { "nodeId": "64:4168", "path": "public/assets/video-workspace/storyboard-to-video.svg", "displaySize": 20 },
+    "workflowIcons": { "directory": "public/assets/video-workflow", "info": "64:2228", "expandText": "3:868", "imageToPrompt": "3:876", "auto": "84:6078", "displaySize": 16 },
     "portraitPoster": { "nodeId": "76:5023", "width": 386, "height": 686 },
     "landscapePoster": { "nodeId": "76:5591", "width": 645, "height": 359 },
     "emptyIllustration": { "nodeId": "6:317", "width": 384, "height": 384, "displaySize": 128 }
@@ -62,14 +67,32 @@
     },
     "assetAction": { "instance": "I76:5775;1675:2985;76:5762", "iconMaster": "64:2261", "meaning": "Save to assets, based on the asset-center icon master." }
   },
-  "scope": ["topbar entry", "canvas initialization", "image uploads", "single image canvas and toolbar", "template dialog and reference image states"],
+  "fashionVideoWorkflow": {
+    "width": 280,
+    "height": 608,
+    "resolvedHeaderHeight": 44,
+    "tabsHeight": 34,
+    "contentTopGap": 4,
+    "contentHeight": 469,
+    "footerHeight": 57,
+    "geometrySource": "Resolved Plugin API instance geometry; generated code header 64 and parent frame height 602 do not match the actual node.",
+    "modes": ["frames", "references"],
+    "sourceGap": 80,
+    "referenceTileSize": 64,
+    "promptLimit": 2000,
+    "defaultSettings": { "resolution": "1080p", "duration": "5s", "ratio": "9:16" },
+    "costLabel": "999",
+    "interaction": "Source image and prompt shared across modes; last-frame and multiple-reference assets retained separately. Shared single-image picker optionally accepts one local video. Nodes participate in Flow navigation, selection, connections and undo.",
+    "generation": "Configuration UI only; generation and AI prompt services are not connected."
+  },
+  "scope": ["topbar entry", "canvas initialization", "image uploads", "single image canvas and toolbar", "fashion video workflow modes", "reference image and video uploads", "template dialog and reference image states"],
   "userOverrides": {
     "desktopDialogHeight": 720,
     "templateSidebar": "Use the same sidebar in content and empty states: 256px desktop width, shared spacing and selection styles, no horizontal divider below the title.",
     "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",
     "referenceImageHover": "Clip the image and hover overlay inside rounded containers."
   },
-  "deferred": ["multiple image visual design", "video workflow nodes", "template editing workflow", "video generation", "image generation", "upscale", "save to assets", "send image"],
+  "deferred": ["multiple image visual design", "storyboard workflow", "template editing workflow", "video generation service", "image generation", "upscale", "save to assets", "send image", "additional generation settings", "AI prompt expansion", "image to prompt"],
   "verification": {
     "browser": "not run, per user instruction",
     "localBuildAndTests": "not run, per project instruction",
