@@ -3,7 +3,7 @@
   position: fixed;
   inset: auto;
   margin: 0;
-  width: 560px;
+  width: 416px;
   max-width: calc(100vw - 32px);
   max-height: calc(100dvh - 96px);
   overflow-y: auto;
@@ -73,7 +73,7 @@
   background: var(--state-selected-tab-sliding);
 }
 .video-parameter-segments button:focus-visible { outline-offset: -2px; }
-.video-parameter-segments--ratios { min-width: 528px; }
+.video-parameter-segments--ratios { min-width: 384px; }
 .video-parameter-segments--ratios button {
   flex-direction: column;
   height: var(--height-4xl);
