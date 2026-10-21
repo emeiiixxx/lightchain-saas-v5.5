@@ -41,7 +41,7 @@
   "userOverrides": {
     "desktopDialogHeight": 720,
     "templateSidebar": "Use the same sidebar in content and empty states: 256px desktop width, shared spacing and selection styles, no horizontal divider below the title.",
-    "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images.",
+    "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",
     "referenceImageHover": "Clip the image and hover overlay inside rounded containers."
   },
   "deferred": ["video workflow nodes", "template editing workflow", "video generation"],

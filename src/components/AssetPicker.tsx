@@ -52,6 +52,11 @@ export function AssetPicker({ locale, phase, uploads, onUpload, onConfirm, onCon
       const loaded = results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
       if (!active.current || id !== request.current) { loaded.forEach(asset => URL.revokeObjectURL(asset.url)); return; }
       loaded.forEach(onUpload);
+      if (!multiple && loaded[0]) {
+        const image = await prepareMainImage(loaded[0]);
+        if (active.current && id === request.current) onConfirm(image);
+        return;
+      }
       if (multiple) setChosen(previous => [...previous, ...loaded]);
       if (results.some(result => result.status === 'rejected')) setError('read');
       setSource('historyUploads'); setQuery('');
