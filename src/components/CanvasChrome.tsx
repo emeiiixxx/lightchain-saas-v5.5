@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Button, Divider, Icon, type IconName } from './ui';
 import { messages, type Locale } from '../i18n';
 import { usePresence } from '../usePresence';
@@ -9,6 +9,7 @@ import { CanvasTaskList, type CanvasTask } from './CanvasTaskList';
 
 type Props = { locale: Locale; mode: 'select' | 'hand'; onMode: (mode: 'select' | 'hand') => void; zoom: number;
   tasks?: CanvasTask[];
+  showSmartSearch?: boolean;
   snapToGrid: boolean; onToggleSnap: () => void;
   view: Viewport; canvasSize: { width: number; height: number };
   onNavigateMinimap: (x: number, y: number) => void; onMinimapInteraction: (active: boolean) => void;
@@ -17,6 +18,10 @@ type Props = { locale: Locale; mode: 'select' | 'hand'; onMode: (mode: 'select' 
 };
 export function CanvasChrome(p: Props) {
   const t = messages[p.locale];
+  const instanceId = useId();
+  const zoomMenuId = `${instanceId}-zoom-menu`;
+  const minimapId = `${instanceId}-minimap`;
+  const searchId = `${instanceId}-smart-search`;
   const isMac = /Mac/i.test(navigator.platform);
   const shortcutModifier = isMac ? '⌘' : 'Ctrl';
   const shortcutKey = isMac ? 'Meta' : 'Control';
@@ -61,10 +66,10 @@ export function CanvasChrome(p: Props) {
       <div ref={zoomControl} className="canvas-zoom-control" data-node-id="89:3854">
         <div className="canvas-zoom-buttons" data-node-id="57:25924">
           {iconButton(t.zoomOut, 'zoomOutIcon', () => p.onZoom(1 / 1.2))}
-          <Button className="canvas-zoom-value" aria-haspopup="menu" aria-controls="canvas-zoom-menu" aria-expanded={zoomMenu} onClick={() => setZoomMenu(!zoomMenu)}>{Math.round(p.zoom * 100)}%<Icon name="imgChevron" size={16} /></Button>
+          <Button className="canvas-zoom-value" aria-haspopup="menu" aria-controls={zoomMenuId} aria-expanded={zoomMenu} onClick={() => setZoomMenu(!zoomMenu)}>{Math.round(p.zoom * 100)}%<Icon name="imgChevron" size={16} /></Button>
           {iconButton(t.zoomIn, 'zoomInIcon', () => p.onZoom(1.2))}
         </div>
-        {shownZoom.value && <div id="canvas-zoom-menu" role="menu" className="popover canvas-zoom-menu" data-node-id="57:26492" data-phase={shownZoom.phase} inert={shownZoom.phase === 'exit'}
+        {shownZoom.value && <div id={zoomMenuId} role="menu" className="popover canvas-zoom-menu" data-node-id="57:26492" data-phase={shownZoom.phase} inert={shownZoom.phase === 'exit'}
           onKeyDown={event => {
             const options = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button'));
             const index = options.indexOf(document.activeElement as HTMLButtonElement);
@@ -79,9 +84,9 @@ export function CanvasChrome(p: Props) {
       </div>
       <div className="canvas-floating-icon" data-node-id="89:3860">{iconButton(t.arrange, 'arrangeIcon', p.onArrange)}</div>
       <div className="canvas-map-control"><div className="canvas-floating-icon" data-node-id="89:3862">
-        <ToggleButton label={t.minimap} icon="mapIcon" pressed={map} onClick={() => setMap(!map)} aria-expanded={map} aria-controls="canvas-minimap" data-node-id="89:3863" />
+        <ToggleButton label={t.minimap} icon="mapIcon" pressed={map} onClick={() => setMap(!map)} aria-expanded={map} aria-controls={minimapId} data-node-id="89:3863" />
       </div>
-        {shownMap.value && <div id="canvas-minimap" className="canvas-minimap" data-phase={shownMap.phase} inert={shownMap.phase === 'exit'}>
+        {shownMap.value && <div id={minimapId} className="canvas-minimap" data-phase={shownMap.phase} inert={shownMap.phase === 'exit'}>
           <CanvasMinimap images={p.images} view={p.view} canvasSize={p.canvasSize} label={t.minimap} viewportLabel={t.visibleArea} onNavigate={p.onNavigateMinimap} onInteraction={p.onMinimapInteraction} />
         </div>}
       </div>
@@ -91,16 +96,16 @@ export function CanvasChrome(p: Props) {
       <div className="canvas-floating-icon">{iconButton(t.canvasGuide, 'guideIcon', p.onHelp)}</div>
       <div className="canvas-floating-icon">{iconButton(t.shortcuts, 'keyboardIcon', p.onHelp)}</div>
     </div>
-    <section className={`canvas-search-widget ${search ? 'is-expanded' : ''}`} data-overlay aria-label={t.smartSearch} data-node-id={shownSearch.value ? '103:4783' : '103:4747'}>
+    {p.showSmartSearch !== false && <section className={`canvas-search-widget ${search ? 'is-expanded' : ''}`} data-overlay aria-label={t.smartSearch} data-node-id={shownSearch.value ? '103:4783' : '103:4747'}>
       <header><div className="canvas-search-label"><Icon name="smartSearch" size={20} /><span>{t.smartSearch}</span></div>
         {iconButton(t.history, 'historyIcon', p.onDemo)}{iconButton(t.newSearch, 'newChat', p.onUpload)}<Divider vertical />
-        {iconButton(search ? t.collapse : t.expand, 'panelChevron', () => setSearch(!search), {'aria-expanded': search, 'aria-controls': 'canvas-smart-search-content'})}
+        {iconButton(search ? t.collapse : t.expand, 'panelChevron', () => setSearch(!search), {'aria-expanded': search, 'aria-controls': searchId})}
       </header>
-      {shownSearch.value && <div id="canvas-smart-search-content" className="canvas-search-content" data-phase={shownSearch.phase} inert={shownSearch.phase === 'exit'}>
+      {shownSearch.value && <div id={searchId} className="canvas-search-content" data-phase={shownSearch.phase} inert={shownSearch.phase === 'exit'}>
         <div className="canvas-search-intro"><img src="/assets/canvas/smartSearchIntro.svg" width={64} height={64} alt="" className="canvas-search-intro-icon" /><p>{t.smartSearchIntro}</p></div>
         <button type="button" className="canvas-search-tile" onClick={p.onUpload}><Icon name="fusionAddImage" size={32} /><span>{t.smartSearchUpload}</span></button>
         <button type="button" className="canvas-search-tile" onClick={p.onDemo}><Icon name="chooseFromCanvas" size={32} /><span>{t.smartSearchCanvas}</span></button>
       </div>}
-    </section>
+    </section>}
   </>;
 }

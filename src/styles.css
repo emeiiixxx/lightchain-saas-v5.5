@@ -38,6 +38,8 @@ button:disabled { cursor: not-allowed; color: var(--text-disabled); }
 .wordmark { height: 10px !important; }
 .language-trigger { color: var(--text-primary); white-space: nowrap; }
 .language-trigger:hover, .zoom-value:hover { background: var(--state-hover); }
+.video-workspace-link[aria-current='page'] { background: var(--state-selected); color: var(--text-primary); }
+:root[data-focus-navigation='keyboard'] .demo-page-link:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 3px; }
 .lc-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 500; color: var(--text-secondary); border: 1px solid transparent; white-space: nowrap; }
 .lc-button--s { min-width: 32px; height: 32px; padding: 0 12px; gap: 4px; border-radius: var(--radius-base); font-size: 12px; line-height: 20px; }
 .lc-button--m { min-width: 40px; height: 40px; padding: 0 16px; gap: 8px; border-radius: var(--radius-base); font-size: 14px; line-height: 20px; }
@@ -131,6 +133,7 @@ button:disabled { cursor: not-allowed; color: var(--text-disabled); }
   .support-button { display: none; }
   .purchase-button { padding-inline: 8px; }
   .language-label { display: none; }
+  .canvas-return-link span { display: none; }
   .topbar-actions { gap: 4px; }
   .project-panel { left: 12px; top: 12px; width: min(280px, calc(100% - 24px)); }
   .empty-state { max-width: calc(100% - 32px); width: 100%; gap: 24px; }
@@ -138,6 +141,14 @@ button:disabled { cursor: not-allowed; color: var(--text-disabled); }
   .tool-grid { display: grid; grid-template-columns: repeat(2, 144px); gap: 12px; }
   .canvas-toolbox { left: 12px; bottom: 70px; }
   .canvas-controls { right: 12px; bottom: 12px; }
+}
+@media (max-width: 540px) {
+  .topbar > div:first-child { gap: 6px; }
+  .topbar .purchase-button > span:first-child, .topbar .purchase-button > .divider { display: none; }
+  .topbar .purchase-button { padding-inline: 6px; }
+  .topbar .avatar { width: 24px; height: 24px; }
+  .topbar .avatar img { width: 24px; height: 24px; }
+  .video-workspace-link { max-width: 132px; overflow: hidden; text-overflow: ellipsis; }
 }
 @media (max-height: 500px) {
   .empty-state { top: 64%; gap: 16px; }

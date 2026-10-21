@@ -127,7 +127,7 @@
 .canvas-search-tile:hover:not(:disabled) { background: var(--state-hover); color: var(--text-primary); }
 .canvas-search-tile:disabled { background: var(--state-default); border-color: var(--border-weak); color: var(--text-disabled); }
 .canvas-search-widget [aria-expanded='true'] .icon { rotate: 180deg; }
-.canvas-search-widget button[aria-controls='canvas-smart-search-content']:focus-visible { outline: none; }
+.canvas-search-widget header button[aria-expanded]:focus-visible { outline: none; }
 .is-dragging .selection-overlay { transition-duration: 0ms; }
 @media (min-width: 681px) and (max-width: 1100px) {
   .canvas-nav-toolbar { bottom: 76px; }

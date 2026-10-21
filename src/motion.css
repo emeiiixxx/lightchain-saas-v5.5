@@ -17,7 +17,7 @@
 .canvas { transition-property: background-color; }
 /* Resize the shell immediately with disclosure state; retain content for its exit. */
 .canvas-search-widget { transition-property: width, height, background-color, border-color, box-shadow; }
-.canvas-search-widget button[aria-controls='canvas-smart-search-content'] .icon { transition-property: background-color, rotate; }
+.canvas-search-widget header button[aria-expanded] .icon { transition-property: background-color, rotate; }
 /* SVG patternTransform participates in CSS transform transitions too.
    Exclude the grid camera transform from the global 200ms state animation. */
 .canvas-grid pattern { transition: none; }

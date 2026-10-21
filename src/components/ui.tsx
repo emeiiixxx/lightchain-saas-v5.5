@@ -1,4 +1,4 @@
-import { isValidElement, useEffect, useRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react';
+import { isValidElement, useEffect, useId, useRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react';
 import { assets } from '../assets';
 
 export type IconName = keyof typeof assets;
@@ -22,20 +22,21 @@ export function Divider({ vertical = false }: { vertical?: boolean }) {
   return <span aria-hidden="true" className={vertical ? 'divider divider--vertical' : 'divider'} />;
 }
 
-export function Dialog({ title, children, onClose, closeLabel, phase = 'enter', className = '' }: { title: string; children: ReactNode; onClose: () => void; closeLabel: string; phase?: 'enter' | 'exit'; className?: string }) {
+export function Dialog({ title, children, onClose, closeLabel, phase = 'enter', className = '', header, labelledBy }: { title: string; children: ReactNode; onClose: () => void; closeLabel: string; phase?: 'enter' | 'exit'; className?: string; header?: ReactNode | false; labelledBy?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const dialog = ref.current;
     dialog?.showModal();
-    return () => { dialog?.close(); previous?.focus(); };
+    return () => { dialog?.close(); if (previous?.isConnected && !previous.closest('[hidden], [inert]')) previous.focus(); };
   }, []);
-  return <dialog ref={ref} className={`lc-dialog ${className}`} data-phase={phase} inert={phase === 'exit'} aria-labelledby="dialog-title" onCancel={event => { event.preventDefault(); onClose(); }}
+  return <dialog ref={ref} className={`lc-dialog ${className}`} data-phase={phase} inert={phase === 'exit'} aria-labelledby={labelledBy ?? (header === undefined ? titleId : undefined)} aria-label={!labelledBy && header !== undefined ? title : undefined} onCancel={event => { event.preventDefault(); onClose(); }}
     onClick={event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) onClose(); } }}>
-    <div className="dialog-header flex items-center justify-between gap-4 mb-6">
-      <h2 id="dialog-title" className="text-base font-medium">{title}</h2>
+    {header === undefined ? <div className="dialog-header flex items-center justify-between gap-4 mb-6">
+      <h2 id={titleId} className="text-base font-medium">{title}</h2>
       <Button onClick={onClose} aria-label={closeLabel} className="!w-8 !p-0"><Icon name="close" size={20} /></Button>
-    </div>
+    </div> : header}
     {children}
   </dialog>;
 }

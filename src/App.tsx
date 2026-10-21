@@ -1,13 +1,16 @@
 import { AiTryOnPage } from './components/AiTryOnPage';
+import { VideoWorkspace } from './components/VideoWorkspace';
+import { CanvasBackground } from './components/CanvasBackground';
+import { CanvasProjectPanel } from './components/CanvasProjectPanel';
 import { ProgressiveImage } from './components/ProgressiveImage';
 import { notify, ToastHost } from './components/Toast';
 import { CutoutEditor } from './components/CutoutEditor';
 import { DrawingGuideEditor } from './components/DrawingGuideEditor';
 import { isMultiInputWorkflow, fusionReferences, batchMainImages, workflowInputs, workflowReferenceLimit, workflowWidth, workflowHeight, workflowSources, createMergeEditor, createBatchEditor, isWorkflowDescendant, MERGE_OUTPUT_GAP, MAX_FUSION_REFERENCES, MAX_BATCH_MAIN_IMAGES, MAX_DIRECTED_POINTS, type WorkflowKind, type FusionReference } from './canvas';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { assets } from './assets';
 import { Button, Dialog, Divider, Icon, type IconName } from './components/ui';
-import { DEFAULT_VIEW, createFusionEditor, relatedCanvasIds, deleteCanvasSelection, CANVAS_GRID_SIZE, canvasSafeArea, GROUP_GAP, canvasNodes, defaultFusion, fusionPosition, arrangeImages, boundsOf, fitImages, readImage, zoomAt, type CanvasImage, type FusionSettings, type Viewport } from './canvas';
+import { DEFAULT_VIEW, createFusionEditor, relatedCanvasIds, deleteCanvasSelection, canvasSafeArea, GROUP_GAP, canvasNodes, defaultFusion, fusionPosition, arrangeImages, boundsOf, fitImages, readImage, zoomAt, type CanvasImage, type FusionSettings, type Viewport } from './canvas';
 import { locales, messages, type Locale } from './i18n';
 import { usePresence } from './usePresence';
 import { type SnapGuides } from './canvas-snapping';
@@ -32,6 +35,8 @@ import { createImageResults } from './canvas-image-results';
 import { PromptLibraryProvider } from './PromptLibraryContext';
 
 type Theme = 'dark' | 'light' | 'system';
+type Page = 'canvas' | 'tryon' | 'video';
+const currentPage = (): Page => window.location.hash === '#/video-workspace' ? 'video' : window.location.hash === '#/ai-try-on' ? 'tryon' : 'canvas';
 type Tool = 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat';
 type Modal = Tool | 'upload' | 'help' | 'support' | 'credits' | 'project' | null;
 type PendingImage = Omit<CanvasImage, 'x' | 'y'>;
@@ -49,7 +54,7 @@ function save(key: string, value: string) { try { localStorage.setItem(key, valu
 const isField = (target: EventTarget | null) => target instanceof HTMLElement && !!target.closest('input, textarea, select, [contenteditable="true"]');
 
 export default function App() {
-  const [page, setPage] = useState<'canvas' | 'tryon'>(() => window.location.hash === '#/ai-try-on' ? 'tryon' : 'canvas');
+  const [page, setPage] = useState<Page>(currentPage);
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.focusNavigation = 'pointer';
@@ -65,7 +70,6 @@ export default function App() {
       delete root.dataset.focusNavigation;
     };
   }, []);
-  const gridPatternId = useId();
   const [locale, setLocale] = useState<Locale>(() => { const v = saved('lc-v55-flow-locale', 'zh-CN'); return v === 'en' || v === 'ja' ? v : 'zh-CN'; });
   const [theme, setTheme] = useState<Theme>(() => { const v = saved('lc-v55-flow-theme', 'dark'); return v === 'light' || v === 'system' ? v : 'dark'; });
   const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -130,7 +134,6 @@ export default function App() {
   useEffect(() => () => {
     if (cameraFrame.current !== null) cancelAnimationFrame(cameraFrame.current);
   }, []);
-  const canvasTransform = `matrix(${view.zoom}, 0, 0, ${view.zoom}, ${view.x}, ${view.y})`;
   const [canvasSize, setCanvasSize] = useState({ width: window.innerWidth, height: window.innerHeight - 48 });
   const measuredCanvasSize = useRef(canvasSize);
   const [reading, setReading] = useState(false);
@@ -143,7 +146,6 @@ export default function App() {
   const t = messages[locale];
   const resolvedTheme = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
   const canvas = useRef<HTMLDivElement>(null);
-  const projectInput = useRef<HTMLInputElement>(null);
   const ownedUrls = useRef(new Set<string>());
   type Snapshot = { images: CanvasImage[]; selectedIds: string[] };
   const history = useRef<Snapshot[]>([]);
@@ -213,8 +215,9 @@ export default function App() {
 
   useEffect(() => {
     const route = () => {
-      setPage(window.location.hash === '#/ai-try-on' ? 'tryon' : 'canvas');
+      setPage(currentPage());
       setMenu(null); setCanvasMenu(null); setDirectedTarget(null); setSpaceDown(false); setDragging(false); setSelecting(false); setSnapGuide(null); setCanvasReference(null);
+      setModal(null); setReferenceTarget(null); setMainTarget(null); setCutoutImage(null); setPreviewImage(null);
       document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'page-navigation' }));
     };
     window.addEventListener('hashchange', route);
@@ -247,15 +250,6 @@ export default function App() {
     return () => observer.disconnect();
   }, []);
   useEffect(() => { save('lc-v55-flow-project-name', projectName); }, [projectName]);
-  useEffect(() => {
-    const blurProjectName = (event: PointerEvent) => {
-      const input = projectInput.current;
-      if (input && document.activeElement === input && event.target !== input) input.blur();
-    };
-    // Run before canvas gestures prevent the browser's default focus transfer.
-    document.addEventListener('pointerdown', blurProjectName, true);
-    return () => document.removeEventListener('pointerdown', blurProjectName, true);
-  }, []);
   useEffect(() => () => { for (const url of ownedUrls.current) URL.revokeObjectURL(url); }, []);
   useEffect(() => {
     if (!menu) return;
@@ -742,7 +736,8 @@ export default function App() {
           <img src={assets.imgContainerLightchainLogo01} alt="" width="24" height="24" />
           <Icon name="imgContainerLightchainLogo02" size={113} className="wordmark" />
         </div>
-        {page !== 'canvas' && <a className="demo-page-link" href="#/canvas"><Icon name="imgIcon1" size={16} /><span>{locale === 'en' ? 'Back to canvas' : locale === 'ja' ? 'キャンバスへ' : '返回画布'}</span></a>}
+        {page !== 'canvas' && <a className="demo-page-link canvas-return-link" href="#/canvas" aria-label={locale === 'en' ? 'Back to canvas' : locale === 'ja' ? 'キャンバスへ' : '返回画布'}><Icon name="imgIcon1" size={16} /><span>{locale === 'en' ? 'Back to canvas' : locale === 'ja' ? 'キャンバスへ' : '返回画布'}</span></a>}
+        <a className="demo-page-link video-workspace-link" href="#/video-workspace" aria-current={page === 'video' ? 'page' : undefined}>{locale === 'en' ? 'Video workspace' : locale === 'ja' ? '動画ワークスペース' : '视频工作台'}</a>
         <div className="flex items-center gap-2">
         <div className="relative" data-menu>
           <button className="language-trigger flex items-center gap-2 h-8 px-2 rounded-lg" aria-label={t.language} aria-expanded={menu === 'language'} onClick={() => setMenu(menu === 'language' ? null : 'language')}>
@@ -791,25 +786,10 @@ export default function App() {
       onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropActive(false); }}
       onDrop={e => { e.preventDefault(); setDropActive(false); void loadFiles(e.dataTransfer.files); }}>
 
-      <svg className="canvas-grid" aria-hidden="true" width="100%" height="100%">
-        <defs><pattern id={gridPatternId} width={CANVAS_GRID_SIZE} height={CANVAS_GRID_SIZE} patternUnits="userSpaceOnUse" patternTransform={canvasTransform}>
-          <circle cx="1" cy="1" r="1" fill="var(--canvas-dot)" />
-        </pattern></defs>
-        <rect width="100%" height="100%" fill={`url(#${gridPatternId})`} />
-      </svg>
-      <section className="project-panel" data-overlay data-node-id="12:3128" aria-label={t.project}>
-        <div className="project-heading flex items-center gap-1 px-3 py-2">
-          <div className="workspace-icon relative size-5 shrink-0"><img src={assets.img} alt="" width="20" height="20" /><img className="workspace-artwork" src={assets.imgIcon} alt="" width="20" height="20" /></div>
-          <span className="text-xs leading-4 text-muted">{t.workspace}</span>
-        </div>
-        <div className="mx-3"><Divider /></div>
-        <div className="flex items-center gap-2 p-2">
-          <Button size="m" icon="imgIcon1" className="!w-8 !p-0" aria-label={t.back} title={t.back} onClick={() => setModal('project')} />
-          <Divider vertical />
-          <input ref={projectInput} className="project-input min-w-0 flex-1" aria-label={t.projectName} placeholder={t.rename} value={projectName} maxLength={80}
-            onChange={e => setProjectName(e.target.value)} onBlur={() => { if (!projectName.trim()) setProjectName('Untitle'); }} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} />
-        </div>
-      </section>
+      <CanvasBackground view={view} />
+      <CanvasProjectPanel title={t.workspace} projectLabel={t.project} nameLabel={t.projectName} projectName={projectName}
+        onProjectNameChange={setProjectName} onBack={() => setModal('project')} backLabel={t.back} renameLabel={t.rename} nodeId="12:3128"
+        icon={<><img src={assets.img} alt="" width="20" height="20" /><img className="workspace-artwork" src={assets.imgIcon} alt="" width="20" height="20" /></>} />
 
       {images.length === 0 && <section className="empty-state flex flex-col items-center gap-8" data-overlay data-node-id="14:3674">
         <p className="empty-intro font-medium text-base leading-6 text-muted text-center">{t.intro}</p>
@@ -959,6 +939,7 @@ export default function App() {
     </main>
 
     <AiTryOnPage active={page === 'tryon'} locale={locale} uploads={uploads} onUpload={rememberUpload} />
+    <VideoWorkspace active={page === 'video'} locale={locale} onBack={() => { window.location.hash = '#/canvas'; }} />
 
     <CanvasContextMenu point={canvasMenu} canPaste={!!canvasClipboard.current} locale={locale} onClose={closeCanvasMenu}
       onDownload={() => { closeCanvasMenu(); void downloadSelected(); }}

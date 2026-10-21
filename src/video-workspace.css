@@ -1,0 +1,34 @@
+/* Figma v5.5 64:2057. Shared controls retain the v5.1 Beta tokens. */
+.video-workspace[hidden] { display: none; }
+.video-workspace-mark { position: relative; display: block; flex: 0 0 20px; width: 20px; height: 20px; }
+.video-workspace-mark > img { position: absolute; inset: 0; width: 20px; height: 20px; border-radius: 5px; object-fit: cover; }
+.video-empty-scroll { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; padding: 24px 24px 72px; overflow: auto; touch-action: pan-y; }
+.video-empty { display: flex; flex-direction: column; align-items: center; gap: 32px; width: 784px; max-width: 100%; flex: 0 0 auto; }
+.video-empty-headline { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; text-align: center; }
+.video-empty-headline h1 { margin: 0; color: var(--text-secondary); font-size: 24px; font-weight: 700; line-height: 32px; }
+.video-empty-headline p { margin: 0; color: var(--text-tertiary); font-size: 16px; font-weight: 500; line-height: 24px; text-wrap: balance; }
+.video-entry-tools { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; width: 100%; }
+.video-entry-tool { position: relative; width: 144px; height: 48px; gap: 8px; }
+.video-entry-tool > .video-icon { flex-shrink: 0; }
+.video-entry-tool .video-entry-badge { top: -8px; left: 109px; right: auto; }
+.video-entry-tool:lang(en), .video-entry-tool:lang(ja) { padding-inline: 8px; font-size: 14px; }
+.video-entry-tool:lang(ja) > span:not(.icon):not(.entry-tool-badge) { font-size: 12px; }
+.video-upload { width: 100%; height: 360px; flex: 0 0 auto; border-radius: var(--radius-xl); -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); }
+.video-upload .asset-upload-hint { color: var(--text-placeholder); text-wrap: balance; }
+.video-canvas-actions { position: absolute; z-index: 15; top: 16px; right: 16px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: calc(100% - 328px); }
+.video-canvas-actions .lc-button { gap: 4px; }
+.video-canvas-help { margin: 0; font-size: 14px; line-height: 24px; }
+@media (max-width: 850px), (max-height: 760px) {
+  .video-empty-scroll { align-items: safe center; padding-top: 120px; padding-bottom: 32px; }
+}
+@media (max-width: 680px) {
+  .video-empty-scroll { padding-inline: 16px; }
+  .video-empty { gap: 24px; }
+  .video-empty-headline h1 { font-size: 22px; line-height: 30px; }
+  .video-empty-headline p { font-size: 14px; line-height: 22px; }
+  .video-entry-tools { gap: 12px; }
+  .video-entry-tool { width: min(144px, calc((100vw - 44px) / 2)); }
+  .video-entry-tool .video-entry-badge { left: auto; right: -4px; }
+  .video-upload { height: 280px; }
+  .video-canvas-actions { top: 112px; right: 12px; left: 12px; max-width: none; justify-content: flex-start; }
+}
