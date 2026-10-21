@@ -12,6 +12,7 @@ export function copyVideoCanvasSelection(items: VideoCanvasMedia[], selected: st
     const video = originals.get(item.id)?.video;
     return { ...item, ...(video ? { video: { ...video } } : {}) };
   });
+}
 export { pasteCanvasSelection as pasteVideoCanvasSelection } from './canvas-clipboard';
 
 export function prepareVideoCanvasMedia(video: UploadedVideo): Omit<VideoCanvasMedia, 'x' | 'y'> {
