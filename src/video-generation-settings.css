@@ -1,0 +1,87 @@
+/* Reuses v5.4 GenerationSettings and the original Beta ratio artwork. */
+.video-generation-settings {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 96px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--surface-floating);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-weak);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-l);
+}
+.video-generation-settings::backdrop { pointer-events: none; }
+.video-generation-settings section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  min-width: 0;
+}
+.video-generation-settings h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+.video-parameter-segments-scroll {
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+  border-radius: var(--radius-l);
+}
+.video-parameter-segments {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(var(--segments), minmax(0, 1fr));
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  background: var(--state-default);
+  border-radius: var(--radius-l);
+}
+/* Beta Tabs/Item S: 24px; ratio items: 48px with the icon above the label. */
+.video-parameter-segments button {
+  min-width: 0;
+  height: var(--height-xl);
+  min-height: var(--height-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  border: 0;
+  border-radius: var(--radius-base);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.video-parameter-segments button:hover {
+  color: var(--text-primary);
+  background: var(--state-hover);
+}
+.video-parameter-segments button[aria-checked='true'] {
+  color: var(--text-primary);
+  background: var(--state-selected-tab-sliding);
+}
+.video-parameter-segments button:focus-visible { outline-offset: -2px; }
+.video-parameter-segments--ratios { min-width: 528px; }
+.video-parameter-segments--ratios button {
+  flex-direction: column;
+  height: var(--height-4xl);
+  min-height: var(--height-4xl);
+  padding: var(--spacing-xs);
+  gap: var(--spacing-xs);
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.video-parameter-segments--ratios .icon { flex-shrink: 0; }

@@ -6,7 +6,7 @@ import { Button, Divider, Icon } from './ui';
 import { GenerateTaskButton } from './GenerateTaskButton';
 import { ProgressiveImage } from './ProgressiveImage';
 import { PromptTools } from './PromptTools';
-import { SettingSelect } from './SettingSelect';
+import { VideoGenerationSettings } from './VideoGenerationSettings';
 import { VideoIcon } from './VideoIcon';
 import { notify } from './Toast';
 import '../video-workflow-node.css';
@@ -70,7 +70,6 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
   const [error, setError] = useState(false);
   const id = useId();
   const promptId = `${id}-prompt`;
-  const setting = `${node.resolution} ｜ ${node.duration} ｜ ${node.ratio}`;
 
   useEffect(() => {
     const blur = (event: PointerEvent) => {
@@ -145,7 +144,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
       </div>
       <div className="fusion-field video-workflow-settings"><span className="fusion-label">{t.settings}</span>
         <div className="fusion-settings" style={{ '--video-setting-icon': `url("${videoNodeAssets.auto}")` } as CSSProperties}>
-          <SettingSelect label={t.settings} value={setting} options={[{ value: setting, label: setting }]} onChange={() => {}} />
+          <VideoGenerationSettings locale={locale} value={node} onChange={onChange} />
         </div>
       </div>
     </div>

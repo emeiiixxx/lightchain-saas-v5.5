@@ -81,6 +81,16 @@
     "referenceTileSize": 64,
     "promptLimit": 2000,
     "defaultSettings": { "resolution": "1080p", "duration": "5s", "ratio": "9:16" },
+    "generationSettings": {
+      "source": "v5.4 src/components/GenerationSettings.tsx, src/workbench.css, public/assets/parameter-*.svg",
+      "component": "src/components/VideoGenerationSettings.tsx",
+      "assetDirectory": "public/assets/video-settings",
+      "panelWidth": 560,
+      "ratios": ["auto", "2:3", "3:4", "4:5", "9:16", "1:1", "3:2", "4:3", "5:4", "16:9", "21:9"],
+      "resolutions": ["480p", "720p", "1080p"],
+      "durations": ["5s", "10s", "15s"],
+      "interaction": "Apply each selection immediately without closing; retain per node across modes with canvas undo/redo. Outside click or Escape closes; use original segmented controls, keyboard selection and shared 200ms motion."
+    },
     "costLabel": "999",
     "interaction": "Source image and prompt shared across modes; last-frame and multiple-reference assets retained separately. Shared single-image picker optionally accepts one local video. Nodes participate in Flow navigation, selection, connections and undo.",
     "generation": "Configuration UI only; generation and AI prompt services are not connected."
@@ -93,7 +103,7 @@
     "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",
     "referenceImageHover": "Clip the image and hover overlay inside rounded containers."
   },
-  "deferred": ["multiple image visual design", "storyboard workflow", "template editing workflow", "video generation service", "image generation", "upscale", "save to assets", "send image", "additional generation settings", "AI prompt expansion", "image to prompt"],
+  "deferred": ["multiple image visual design", "storyboard workflow", "template editing workflow", "video generation service", "image generation", "upscale", "save to assets", "send image", "AI prompt expansion", "image to prompt"],
   "verification": {
     "browser": "not run, per user instruction",
     "localBuildAndTests": "not run, per project instruction",
