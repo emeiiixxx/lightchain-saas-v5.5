@@ -285,7 +285,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       {reading && snapshot.images.length > 0 && <div className="canvas-message" role="status">{t.reading}</div>}
       <span className="sr-only" role="status">{snapshot.images.length} {t.image} · {snapshot.selected.length} {t.selected}</span>
     </main>
-    {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} />}
+    {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} />}
     {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={image => addImages([image])} onConfirmBatch={addImages} onClose={closeModal} />}
     {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p></Dialog>}
     {active && shownPreview.value && <FullImageViewer image={shownPreview.value} locale={locale} phase={shownPreview.phase} onClose={() => setPreview(null)} />}
