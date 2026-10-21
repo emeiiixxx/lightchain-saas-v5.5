@@ -87,6 +87,7 @@
   },
   "scope": ["topbar entry", "canvas initialization", "image uploads", "single image canvas and toolbar", "fashion video workflow modes", "reference image and video uploads", "template dialog and reference image states"],
   "userOverrides": {
+    "workflowMainImageRemoval": "Neither fashion-video mode offers main-image deletion inside the node. Delete the source image on the canvas to clear the main slot and connection; keep the node, description and references, with undo restoring the source and link.",
     "desktopDialogHeight": 720,
     "templateSidebar": "Use the same sidebar in content and empty states: 256px desktop width, shared spacing and selection styles, no horizontal divider below the title.",
     "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",
