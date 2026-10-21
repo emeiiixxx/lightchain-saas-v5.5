@@ -7,7 +7,7 @@ import { Icon } from './ui';
 import '../video-generation-settings.css';
 
 // Reuse v5.4 GenerationSettings ratio order, original SVGs and segmented controls.
-const ratios = ['auto', '2:3', '3:4', '9:16', '1:1', '3:2', '4:3', '16:9'];
+const ratios = ['auto', '3:4', '9:16', '1:1', '4:3', '16:9'];
 const resolutions = ['480p', '720p', '1080p'];
 const durations = ['5s', '10s', '15s'];
 const assetBase = `${import.meta.env.BASE_URL}assets/video-settings/`;
