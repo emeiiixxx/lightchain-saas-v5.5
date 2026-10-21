@@ -5,7 +5,7 @@ import type { SnapGuides } from '../canvas-snapping';
 import { messages, type Locale } from '../i18n';
 import { usePresence } from '../usePresence';
 import { videoAssets } from '../video-assets';
-import { downloadImages } from '../download-images';
+import { exportImage, ImageExportError, type DownloadFormat } from '../download-image';
 import { AssetPicker } from './AssetPicker';
 import { CanvasBackground } from './CanvasBackground';
 import { CanvasProjectPanel } from './CanvasProjectPanel';
@@ -102,6 +102,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const ownedUrls = useRef(new Set<string>());
   const uploadEpoch = useRef(0), uploadLocked = useRef(false);
   const [reading, setReading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const downloadLocked = useRef(false);
   const [dropActive, setDropActive] = useState(false);
   const [mode, setMode] = useState<'select' | 'hand'>('select');
   const [spaceDown, setSpaceDown] = useState(false);
@@ -238,11 +240,20 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     void loadFiles(event.dataTransfer.files);
   }
   function openAssets() { if (active && !reading) setModal('assets'); }
-  async function downloadSelected() {
-    const images = current.current.images.filter(image => current.current.selected.includes(image.id));
+  async function downloadSelected(format: DownloadFormat) {
+    if (downloadLocked.current) return;
+    const source = current.current.images.find(image => current.current.selected.includes(image.id));
+    if (!source) return;
+    downloadLocked.current = true; setDownloading(true);
     try {
-      await downloadImages(images.map(image => ({ url: image.url, name: /\.[a-z0-9]+$/i.test(image.name) ? image.name : `${image.name}.png` })), 'video-workspace-images.zip');
-    } catch { notify(t.downloadError, 'error'); }
+      const image = new Image();
+      image.crossOrigin = 'anonymous'; image.src = source.url;
+      await image.decode();
+      await exportImage(image, source.name, format);
+    } catch (error) {
+      const unsupported = locale === 'zh-CN' ? '当前浏览器不支持此格式导出，请选择其他格式。' : locale === 'ja' ? 'このブラウザーはこの形式での書き出しに対応していません。別の形式を選んでください。' : 'This browser cannot export this format. Please choose another format.';
+      notify(error instanceof ImageExportError && error.reason === 'unsupported' ? unsupported : t.downloadError, 'error');
+    } finally { downloadLocked.current = false; setDownloading(false); }
   }
   function zoom(factor: number, animated = false) {
     const element = canvas.current;
@@ -289,7 +300,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         </ReactFlowCanvas>
         {shownSingle.value && !selecting && <div className="selection-overlay" data-phase={shownSingle.phase} aria-label={t.selectionTools} style={{ left: shownSingle.value.x * view.zoom + view.x, top: shownSingle.value.y * view.zoom + view.y, width: shownSingle.value.width * view.zoom, height: shownSingle.value.height * view.zoom }}>
           <div className="media-toolbar-anchor" data-overlay inert={shownSingle.phase === 'exit'}>
-            <VideoSelectionToolbar locale={locale} onDownload={() => void downloadSelected()} onAction={action => {
+            <VideoSelectionToolbar key={shownSingle.value.id} locale={locale} downloading={downloading} onDownload={format => void downloadSelected(format)} onAction={action => {
               if (action === 'cutout') setCutout(singleSelection);
               else notify(locale === 'zh-CN' ? '此功能暂未接入。' : locale === 'ja' ? 'この機能はまだ接続されていません。' : 'This feature is not connected yet.');
             }} />

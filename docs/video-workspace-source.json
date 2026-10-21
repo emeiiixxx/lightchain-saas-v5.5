@@ -49,6 +49,17 @@
     "toolbar": { "width": 454, "height": 40, "gapToImage": 16, "radius": 12 },
     "initialAlignment": "Center image and toolbar together inside the canvas below the 48px topbar; keep toolbar at UI scale.",
     "sideToolbar": { "width": 56, "height": 104, "padding": 8, "gap": 8, "buttonSize": 40 },
+    "downloadMenu": {
+      "source": "v5.4 src/components/DownloadFormatMenu.tsx, src/workbench.css, src/full-image-viewer.css, src/download-image.ts",
+      "formats": ["PNG", "JPG", "AVIF"],
+      "labels": "Format names only, without a Download prefix.",
+      "width": 144,
+      "padding": 4,
+      "gap": 4,
+      "rowHeight": 32,
+      "radius": 12,
+      "export": "Original pixel dimensions; white background for JPG; validate actual encoded MIME and report unsupported formats."
+    },
     "assetAction": { "instance": "I76:5775;1675:2985;76:5762", "iconMaster": "64:2261", "meaning": "Save to assets, based on the asset-center icon master." }
   },
   "scope": ["topbar entry", "canvas initialization", "image uploads", "single image canvas and toolbar", "template dialog and reference image states"],
