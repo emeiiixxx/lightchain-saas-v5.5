@@ -47,7 +47,7 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
   const panel = useRef<HTMLDivElement>(null);
   const keyboardOpen = useRef(false);
   const id = useId();
-  const summary = `${value.resolution} ｜ ${value.duration} ｜ ${value.ratio === 'auto' ? t.auto : value.ratio}`;
+  const summary = `${value.ratio === 'auto' ? t.auto : value.ratio} ｜ ${value.resolution} ｜ ${value.duration}`;
 
   useEffect(() => {
     if (!open) return;

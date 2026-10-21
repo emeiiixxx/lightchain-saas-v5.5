@@ -82,6 +82,7 @@
     "promptLimit": 2000,
     "defaultSettings": { "resolution": "1080p", "duration": "5s", "ratio": "9:16" },
     "generationSettings": {
+      "summaryOrder": ["ratio", "resolution", "duration"],
       "source": "v5.4 src/components/GenerationSettings.tsx, src/workbench.css, public/assets/parameter-*.svg",
       "component": "src/components/VideoGenerationSettings.tsx",
       "assetDirectory": "public/assets/video-settings",
