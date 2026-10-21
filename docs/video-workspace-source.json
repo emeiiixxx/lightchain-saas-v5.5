@@ -18,9 +18,24 @@
   },
   "media": {
     "player": "native HTML video controls with contain sizing",
-    "portraitSource": null,
-    "landscapeSource": null,
-    "fallback": "Original Figma media-layer poster and an unavailable notice. No substitute video."
+    "portraitSource": {
+      "asset": "public/assets/video-workspace/ecommerce.mp4",
+      "userFile": "视频工作台-2026-10-21 13-39-09.mp4",
+      "width": 720,
+      "height": 1280,
+      "durationSeconds": 10.078,
+      "bytes": 3212665
+    },
+    "landscapeSource": {
+      "asset": "public/assets/video-workspace/brand-story.mp4",
+      "userFile": "视频工作台-2026-10-21 13-38-58.mp4",
+      "width": 1928,
+      "height": 1072,
+      "durationSeconds": 15.25,
+      "bytes": 11079896
+    },
+    "mapping": "User-supplied original MP4 files matched by orientation; copied without transcoding.",
+    "fallback": "Original Figma media-layer poster and a loading-error notice."
   },
   "scope": ["topbar entry", "canvas initialization", "image uploads", "template dialog and reference image states"],
   "deferred": ["video workflow nodes", "template editing workflow", "video generation"],

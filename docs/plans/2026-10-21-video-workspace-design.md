@@ -26,6 +26,6 @@
 
 共用 `CanvasBackground`、`CanvasProjectPanel`、`ReactFlowCanvas`、`CanvasChrome`、`AssetPicker`、`Dialog`、`Button`、`GenerateTaskButton` 与主题 token。视频工作台使用独立业务状态，不扩展图片融合参数。
 
-图标、封面与缺省插画来自 Figma 原始资源。播放器使用浏览器原生控件；未取得影片文件时展示原始封面和不可播放提示，不替换无关视频。
+图标、封面与缺省插画来自 Figma 原始资源。预览使用用户提供的原始 MP4，竖屏对应电商视频，横屏对应品牌故事。播放器使用浏览器原生控件，保留视频原比例；加载失败时展示原封面和错误提示。
 
 设计来源：文件 `1dBgOC793NRsKgbNIaLZMK`，初始化 `64:2057`，未上传 `64:4219`，已上传 `76:5003`，横屏 `76:5477`，缺省 `64:4644`，上传状态 `76:5455`。
