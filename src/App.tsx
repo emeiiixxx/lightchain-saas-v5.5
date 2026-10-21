@@ -29,6 +29,7 @@ import { FlatLayNode } from './components/FlatLayNode';
 import { createWorkflowExample, workflowExampleResult } from './workflow-examples';
 import { ImageConnection } from './components/ImageConnection';
 import { copyCanvasSelection, pasteCanvasSelection } from './canvas-clipboard';
+import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, writeCanvasClipboardEvent, writeCanvasClipboardSystem, type CanvasClipboard } from './canvas-clipboard-session';
 import { CanvasContextMenu } from './components/CanvasContextMenu';
 import { standaloneTaskInputs } from './canvas-task-layout';
 import { createImageResults } from './canvas-image-results';
@@ -150,7 +151,7 @@ export default function App() {
   type Snapshot = { images: CanvasImage[]; selectedIds: string[] };
   const history = useRef<Snapshot[]>([]);
   const future = useRef<Snapshot[]>([]);
-  const canvasClipboard = useRef<{ token: string; items: CanvasImage[]; pastes: number } | null>(null);
+  const canvasClipboard = useRef<CanvasClipboard<CanvasImage> | null>(null);
   const selectedRef = useRef(selectedIds); selectedRef.current = selectedIds;
   const viewRef = useRef(view); viewRef.current = view;
   const animateView = useCallback((target: Viewport) => {
@@ -296,18 +297,11 @@ export default function App() {
   const pasteCopiedItems = useCallback((point?: { x: number; y: number }, sourceItems?: CanvasImage[]) => {
     const clipboard = sourceItems ? { items: sourceItems, pastes: 0 } : canvasClipboard.current;
     if (!clipboard || !canvas.current) return;
-    const v = viewRef.current;
-    const offset = 32 * (clipboard.pastes + 1) / v.zoom;
-    let created = pasteCanvasSelection(clipboard.items, offset, offset);
-    const bounds = boundsOf(canvasNodes(created))!;
-    const area = canvasSafeArea(canvas.current.clientWidth, canvas.current.clientHeight);
-    if (point || bounds.x * v.zoom + v.x > area.x + area.width || (bounds.x + bounds.width) * v.zoom + v.x < area.x
-      || bounds.y * v.zoom + v.y > area.y + area.height || (bounds.y + bounds.height) * v.zoom + v.y < area.y) {
-      const dx = point ? point.x - bounds.x : (area.x + area.width / 2 - v.x) / v.zoom - bounds.width / 2 - bounds.x;
-      const dy = point ? point.y - bounds.y : (area.y + area.height / 2 - v.y) / v.zoom - bounds.height / 2 - bounds.y;
-      created = created.map(item => ({ ...item, x: item.x + dx, y: item.y + dy,
-        fusion: item.fusion ? { ...item.fusion, position: { x: item.x + dx, y: item.y + dy } } : undefined }));
-    }
+    const bounds = boundsOf(canvasNodes(clipboard.items));
+    if (!bounds) return;
+    const offset = getCanvasPasteOffset(bounds, viewRef.current,
+      { width: canvas.current.clientWidth, height: canvas.current.clientHeight }, clipboard.pastes, point);
+    const created = pasteCanvasSelection(clipboard.items, offset.x, offset.y);
     clipboard.pastes++;
     remember(imageRef.current);
     const next = [...imageRef.current, ...created];
@@ -324,23 +318,17 @@ export default function App() {
   async function copySelectedFromMenu() {
     const items = copyCanvasSelection(imageRef.current, selectedRef.current);
     if (!items.length) return;
-    const token = crypto.randomUUID();
-    canvasClipboard.current = { token, items, pastes: 0 };
+    const clipboard = createCanvasClipboard(items);
+    canvasClipboard.current = clipboard;
     closeCanvasMenu();
     try {
-      // Keep readable names in the OS clipboard; HTML carries only a session
-      // marker so pasting unrelated external text never inserts stale images.
-      await navigator.clipboard.write([new ClipboardItem({
-        'text/plain': new Blob([items.map(item => item.name).join('\n')], { type: 'text/plain' }),
-        'text/html': new Blob([`<span data-lightchain-canvas="${token}"></span>`], { type: 'text/html' }),
-      })]);
+      await writeCanvasClipboardSystem(clipboard, items.map(item => item.name).join('\n'));
     } catch {
       announce(locale === 'zh-CN' ? '已复制，可右键画布选择「粘贴」' : locale === 'ja' ? 'コピーしました。キャンバスを右クリックして貼り付けできます' : 'Copied. Right-click the canvas to paste.');
     }
   }
 
   useEffect(() => {
-    const mime = 'application/x-lightchain-canvas';
     const blocked = (event: ClipboardEvent) => page !== 'canvas' || isField(event.target) || isField(document.activeElement)
       || !!(modal || referenceTarget || mainTarget || canvasReference || menu || previewImage || cutoutImage || drawingImage)
       || !!document.querySelector('dialog[open], [popover]:popover-open:not([data-canvas-context-menu])');
@@ -348,17 +336,15 @@ export default function App() {
       if (canvasMenu || blocked(event) || !event.clipboardData || window.getSelection()?.toString()) return;
       const items = copyCanvasSelection(imageRef.current, selectedRef.current);
       if (!items.length) return;
-      const token = crypto.randomUUID();
-      event.clipboardData.setData(mime, token);
-      event.clipboardData.setData('text/plain', items.map(item => item.fusion ? item.fusion.prompt : item.name).join('\n'));
-      canvasClipboard.current = { token, items, pastes: 0 };
+      const clipboard = createCanvasClipboard(items);
+      writeCanvasClipboardEvent(event.clipboardData, clipboard, items.map(item => item.fusion ? item.fusion.prompt : item.name).join('\n'));
+      canvasClipboard.current = clipboard;
       event.preventDefault();
     };
     const paste = (event: ClipboardEvent) => {
       const clipboard = canvasClipboard.current;
       if (blocked(event) || !clipboard || !event.clipboardData || !canvas.current) return;
-      const htmlToken = new DOMParser().parseFromString(event.clipboardData.getData('text/html'), 'text/html').querySelector('[data-lightchain-canvas]')?.getAttribute('data-lightchain-canvas');
-      if (event.clipboardData.getData(mime) !== clipboard.token && htmlToken !== clipboard.token) return;
+      if (!matchesCanvasClipboard(event.clipboardData, clipboard)) return;
       event.preventDefault();
       pasteCopiedItems(canvasMenu && !canvasMenu.kind ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : undefined);
       closeCanvasMenu();

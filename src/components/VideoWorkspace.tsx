@@ -22,7 +22,8 @@ import { VideoAssetToolbar } from './VideoAssetToolbar';
 import { VideoWorkflowNode } from './VideoWorkflowNode';
 import { ImageConnection } from './ImageConnection';
 import { createVideoWorkflow, videoWorkflowBox, VIDEO_NODE_WIDTH, VIDEO_NODE_HEIGHT, type VideoWorkflow, type VideoReference } from '../video-workflow';
-import { readCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
+import { copyVideoCanvasSelection, pasteVideoCanvasSelection, readCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
+import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, writeCanvasClipboardEvent, writeCanvasClipboardSystem, type CanvasClipboard } from '../canvas-clipboard-session';
 import { videoReferenceUploadMessages, type UploadedVideo } from '../video-reference-upload';
 import { notify } from './Toast';
 import { Button, Dialog, Icon } from './ui';
@@ -50,6 +51,7 @@ type WorkflowUpload = { id: string; field: 'main' | 'endFrame' | 'references' };
 type Modal = 'templates' | 'assets' | 'help';
 type Props = { locale: Locale; active: boolean; onBack: () => void };
 const sceneItems = (snapshot: Snapshot) => [...snapshot.images, ...snapshot.workflows.map(videoWorkflowBox)];
+const isField = (target: EventTarget | null) => target instanceof HTMLElement && !!target.closest('input,textarea,select,[contenteditable="true"]');
 
 function fitVideoImages(images: CanvasImage[], width: number, height: number): Viewport {
   if (images.length !== 1) return fitImages(images, width, height);
@@ -129,7 +131,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     try { return localStorage.getItem('lc-v55-video-grid-snap') !== 'off'; } catch { return true; }
   });
   const [guides, setGuides] = useState<SnapGuides | null>(null);
-  const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number } | null>(null);
+  const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number; worldX: number; worldY: number; kind?: 'image' } | null>(null);
+  const canvasClipboard = useRef<CanvasClipboard<VideoCanvasMedia> | null>(null);
+  const [canPaste, setCanPaste] = useState(false);
   const closeCanvasMenu = useCallback(() => setCanvasMenu(null), []);
   const [modal, setModal] = useState<Modal | null>(null);
   const [preview, setPreview] = useState<CanvasImage | null>(null);
@@ -181,6 +185,55 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }, [commit]);
   const closeModal = useCallback(() => { uploadEpoch.current++; pendingMediaRead.current?.abort(); uploadLocked.current = false; setReading(false); setModal(null); }, []);
 
+  const pasteCopiedItems = useCallback((point?: { x: number; y: number }, sourceItems?: VideoCanvasMedia[]) => {
+    const clipboard = sourceItems ? { items: sourceItems, pastes: 0 } : canvasClipboard.current;
+    const element = canvas.current;
+    if (!activeRef.current || !clipboard?.items.length || !element) return;
+    const bounds = boundsOf(clipboard.items)!;
+    const offset = getCanvasPasteOffset(bounds, viewRef.current, { width: element.clientWidth, height: element.clientHeight }, clipboard.pastes, point);
+    const created: VideoCanvasMedia[] = pasteVideoCanvasSelection(clipboard.items, offset.x, offset.y);
+    clipboard.pastes++;
+    commit({ ...current.current, images: [...current.current.images, ...created], selected: created.map(item => item.id) });
+    element.focus({ preventScroll: true });
+  }, [commit]);
+  const duplicateSelected = useCallback(() => {
+    const copied = copyVideoCanvasSelection(current.current.images, current.current.selected);
+    if (copied.length) pasteCopiedItems(undefined, copied);
+  }, [pasteCopiedItems]);
+  async function copySelectedFromMenu() {
+    const copied = copyVideoCanvasSelection(current.current.images, current.current.selected);
+    if (!copied.length) return;
+    const clipboard = createCanvasClipboard(copied);
+    canvasClipboard.current = clipboard; setCanPaste(true); closeCanvasMenu();
+    try { await writeCanvasClipboardSystem(clipboard, copied.map(item => item.name).join('\n')); }
+    catch { notify(locale === 'zh-CN' ? '已复制，可右键画布选择「粘贴」' : locale === 'ja' ? 'コピーしました。キャンバスを右クリックして貼り付けできます' : 'Copied. Right-click the canvas to paste.'); }
+  }
+
+  useEffect(() => {
+    if (!active) return;
+    const blocked = (event: ClipboardEvent) => isField(event.target) || isField(document.activeElement)
+      || reading || !!(shownModal.value || shownPreview.value || shownCutout.value || shownWorkflowUpload.value || shownVideoPreview.value)
+      || !!document.querySelector('dialog[open], [popover]:popover-open:not([data-canvas-context-menu])');
+    const copy = (event: ClipboardEvent) => {
+      if (canvasMenu || blocked(event) || !event.clipboardData || window.getSelection()?.toString()) return;
+      const copied = copyVideoCanvasSelection(current.current.images, current.current.selected);
+      if (!copied.length) return;
+      const clipboard = createCanvasClipboard(copied);
+      writeCanvasClipboardEvent(event.clipboardData, clipboard, copied.map(item => item.name).join('\n'));
+      canvasClipboard.current = clipboard; setCanPaste(true);
+      event.preventDefault();
+    };
+    const paste = (event: ClipboardEvent) => {
+      const clipboard = canvasClipboard.current;
+      if (blocked(event) || !clipboard || !event.clipboardData || !matchesCanvasClipboard(event.clipboardData, clipboard)) return;
+      event.preventDefault();
+      pasteCopiedItems(canvasMenu && !canvasMenu.kind ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : undefined);
+      closeCanvasMenu();
+    };
+    window.addEventListener('copy', copy); window.addEventListener('paste', paste);
+    return () => { window.removeEventListener('copy', copy); window.removeEventListener('paste', paste); };
+  }, [active, reading, shownModal.value, shownPreview.value, shownCutout.value, shownWorkflowUpload.value, shownVideoPreview.value, canvasMenu, pasteCopiedItems, closeCanvasMenu]);
+
   useEffect(() => {
     try { localStorage.setItem('lc-v55-video-project-name', projectName); } catch { /* The canvas remains usable without storage. */ }
   }, [projectName]);
@@ -217,9 +270,12 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   useEffect(() => {
     if (!active || shownModal.value || shownPreview.value || shownCutout.value || shownWorkflowUpload.value || shownVideoPreview.value) return;
     const keydown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.target instanceof Element && event.target.closest('input,textarea,select,button,[contenteditable="true"],dialog,[role="menu"]')) return;
+      if (event.defaultPrevented || event.isComposing || event.target instanceof Element && event.target.closest('input,textarea,select,button,[contenteditable="true"],dialog,[role="menu"]')) return;
+      if (canvasMenu) { if (event.key === 'Escape') { event.preventDefault(); closeCanvasMenu(); } return; }
+      if (document.querySelector('[popover]:popover-open')) return;
       const command = event.ctrlKey || event.metaKey;
       if (event.code === 'Space') { event.preventDefault(); setSpaceDown(true); }
+      else if (command && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelected(); }
       else if (command && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); }
       else if (command && event.key.toLowerCase() === 'a') { event.preventDefault(); replace({ ...current.current, selected: sceneItems(current.current).map(image => image.id) }); }
       else if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); removeSelected(); }
@@ -232,7 +288,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const blur = () => { setSpaceDown(false); setDragging(false); setSelecting(false); setGuides(null); };
     window.addEventListener('keydown', keydown); window.addEventListener('keyup', keyup); window.addEventListener('blur', blur);
     return () => { window.removeEventListener('keydown', keydown); window.removeEventListener('keyup', keyup); window.removeEventListener('blur', blur); };
-  }, [active, shownModal.value, shownPreview.value, shownCutout.value, shownWorkflowUpload.value, shownVideoPreview.value, undo, redo, replace, removeSelected, fit]);
+  }, [active, shownModal.value, shownPreview.value, shownCutout.value, shownWorkflowUpload.value, shownVideoPreview.value, canvasMenu, closeCanvasMenu, duplicateSelected, undo, redo, replace, removeSelected, fit]);
 
   function rememberUpload(image: LibraryImage) {
     if (image.url.startsWith('blob:')) ownedUrls.current.add(image.url);
@@ -394,8 +450,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         if (!active || reading || shownModal.value || shownPreview.value || shownCutout.value || shownWorkflowUpload.value || shownVideoPreview.value || !(event.target instanceof Element) || event.target.closest('[data-overlay], [data-image], .fusion-position, .selection-overlay')) return;
         event.preventDefault();
         setDragging(false); setSelecting(false); setGuides(null);
+        const rect = event.currentTarget.getBoundingClientRect(), viewport = viewRef.current;
         document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'canvas-context' }));
-        setCanvasMenu({ x: event.clientX, y: event.clientY });
+        setCanvasMenu({ x: event.clientX, y: event.clientY, worldX: (event.clientX - rect.left - viewport.x) / viewport.zoom, worldY: (event.clientY - rect.top - viewport.y) / viewport.zoom });
       }}
       onDragOver={event => { if (active && !modal && !preview && !cutout && !workflowUpload && !videoPreview && event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDropActive(true); } }}
       onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropActive(false); }} onDrop={drop}>
@@ -424,6 +481,16 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
           onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node) })}
           onDragStart={() => { saveUndo(); setDragging(true); }} onDragEnd={() => { setDragging(false); setGuides(null); }} onGuides={setGuides} onSelecting={setSelecting}>
           {snapshot.images.map(image => <div key={image.id} data-image data-canvas-id={image.id} data-node-id={image.video ? '97:6651' : undefined} className={`canvas-image${image.video ? ' canvas-video' : ''}${snapshot.selected.includes(image.id) ? ' selected' : ''}`} style={{ left: image.x, top: image.y, width: image.width, height: image.height }} role="button" tabIndex={0} aria-label={`${image.video ? m.video : t.image}: ${image.name}`} aria-pressed={snapshot.selected.includes(image.id)}
+            onContextMenu={event => {
+              event.preventDefault(); event.stopPropagation();
+              if (!active || reading || !canvas.current || shownModal.value || shownPreview.value || shownCutout.value || shownWorkflowUpload.value || shownVideoPreview.value) return;
+              const selected = current.current.selected.includes(image.id) ? current.current.selected.filter(id => current.current.images.some(item => item.id === id)) : [image.id];
+              replace({ ...current.current, selected });
+              setDragging(false); setSelecting(false); setGuides(null);
+              const rect = canvas.current.getBoundingClientRect(), viewport = viewRef.current;
+              document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'canvas-context' }));
+              setCanvasMenu({ kind: 'image', x: event.clientX, y: event.clientY, worldX: (event.clientX - rect.left - viewport.x) / viewport.zoom, worldY: (event.clientY - rect.top - viewport.y) / viewport.zoom });
+            }}
             onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: event.shiftKey ? current.current.selected.includes(image.id) ? current.current.selected.filter(id => id !== image.id) : [...current.current.selected, image.id] : [image.id] }); } }}>
             {image.video ? <Button variant="tonal" className="image-preview-button video-canvas-play nodrag nopan" title={m.play} aria-label={`${m.play} · ${image.name}`} data-node-id="97:6653" onClick={event => { event.stopPropagation(); setVideoPreview(image.video!); }}><VideoIcon name="playVideo" size={20} /></Button>
               : <Button variant="tonal" className="image-preview-button nodrag nopan" title={t.viewFull} aria-label={`${t.viewFull} · ${image.name}`} onClick={event => { event.stopPropagation(); setPreview(image); }}><Icon name="viewFull" size={20} /></Button>}
@@ -473,7 +540,11 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       {reading && items.length > 0 && <div className="canvas-message" role="status">{t.reading}</div>}
       <span className="sr-only" role="status">{snapshot.images.length} {m.materials} · {snapshot.selected.length} {t.selected}</span>
     </main>
-    <CanvasContextMenu point={active ? canvasMenu : null} canPaste={false} locale={locale} uploadLabel={m.upload} onClose={closeCanvasMenu} onUpload={openAssets} />
+    <CanvasContextMenu point={active ? canvasMenu : null} canPaste={canPaste} locale={locale} uploadLabel={m.upload} itemMenuLabel={locale === 'zh-CN' ? '素材菜单' : locale === 'ja' ? '素材メニュー' : 'Asset menu'} onClose={closeCanvasMenu} onUpload={openAssets}
+      onCopy={() => { void copySelectedFromMenu(); }}
+      onDuplicate={() => { duplicateSelected(); closeCanvasMenu(); }}
+      onDelete={() => { removeSelected(); closeCanvasMenu(); }}
+      onPaste={() => { if (canvasMenu) pasteCopiedItems({ x: canvasMenu.worldX, y: canvasMenu.worldY }); closeCanvasMenu(); }} />
     {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} />}
     {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} videoUploads={uploadedVideos} onUpload={rememberUpload} onVideoUpload={rememberVideo} onConfirm={image => addMedia([image])} onConfirmMediaBatch={addMedia} limitMessage={m.limit} onClose={closeModal} />}
     {active && shownWorkflowUpload.value && <AssetPicker key={`${shownWorkflowUpload.value.id}-${shownWorkflowUpload.value.field}`} locale={locale} phase={shownWorkflowUpload.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={applyWorkflowImage}

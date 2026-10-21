@@ -9,6 +9,7 @@ type Props = {
   canPaste: boolean;
   locale: Locale;
   uploadLabel?: string;
+  itemMenuLabel?: string;
   onClose: () => void;
   onUpload: () => void;
   onPaste?: () => void;
@@ -18,7 +19,7 @@ type Props = {
   onDelete?: () => void;
 };
 
-export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, onClose, onUpload, onPaste, onDownload, onCopy, onDuplicate, onDelete }: Props) {
+export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMenuLabel, onClose, onUpload, onPaste, onDownload, onCopy, onDuplicate, onDelete }: Props) {
   const shown = usePresence(point);
   const ref = useRef<HTMLDivElement>(null);
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -53,7 +54,7 @@ export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, onClos
     };
   }, [point, onClose]);
   if (!shown.value) return null;
-  return createPortal(<div ref={ref} popover="manual" data-canvas-context-menu data-image-menu={imageMenu || undefined} data-overlay role="menu" aria-label={imageMenu ? imageLabels[0] : labels[0]}
+  return createPortal(<div ref={ref} popover="manual" data-canvas-context-menu data-image-menu={imageMenu || undefined} data-overlay role="menu" aria-label={imageMenu ? itemMenuLabel ?? imageLabels[0] : labels[0]}
     className="lc-select-popup canvas-context-menu" data-phase={shown.phase} inert={shown.phase === 'exit'}
     onContextMenu={event => event.preventDefault()}
     onKeyDown={event => {
@@ -71,8 +72,8 @@ export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, onClos
       if (event.key === 'Tab') onClose();
     }}>
     {imageMenu ? <>
-      <button type="button" role="menuitem" className="lc-select-option" onClick={onDownload}><Icon name="contextDownload" size={20} /><span className="canvas-context-label">{imageLabels[1]}</span></button>
-      <div className="canvas-context-divider" role="separator" />
+      {onDownload && <><button type="button" role="menuitem" className="lc-select-option" onClick={onDownload}><Icon name="contextDownload" size={20} /><span className="canvas-context-label">{imageLabels[1]}</span></button>
+      <div className="canvas-context-divider" role="separator" /></>}
       <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts={isMac ? 'Meta+C' : 'Control+C'} onClick={onCopy}><Icon name="contextCopy" size={20} /><span className="canvas-context-label">{imageLabels[2]}</span><span className="canvas-context-shortcut">Ctrl/⌘ + C</span></button>
       <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts={isMac ? 'Meta+D' : 'Control+D'} onClick={onDuplicate}><Icon name="contextCopy" size={20} /><span className="canvas-context-label">{imageLabels[3]}</span><span className="canvas-context-shortcut">Ctrl/⌘ + D</span></button>
       <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts="Backspace Delete" onClick={onDelete}><Icon name="contextTrash" size={20} /><span className="canvas-context-label">{imageLabels[4]}</span><span className="canvas-context-shortcut">←/del</span></button>
