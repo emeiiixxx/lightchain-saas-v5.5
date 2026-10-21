@@ -11,6 +11,8 @@
 .full-image-instructions { position: absolute; top: 48px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 192px); padding: 8px 16px; border: 1px solid var(--border-weak); border-radius: 8px; background: var(--overlay-toast); backdrop-filter: blur(10px); color: var(--text-on-brand-white); font-size: 14px; line-height: 20px; font-weight: 400; text-align: center; pointer-events: none; }
 .full-image-viewer .full-image-close { position: absolute; top: 24px; right: 24px; width: 32px; min-width: 32px; height: 32px; padding: 0; color: var(--text-on-brand-white); }
 .full-image-viewer .full-image-close:hover:not(:disabled) { background: rgba(255, 255, 255, .1); color: var(--text-on-brand-white); }
+.full-video-stage { position: absolute; inset: 0; display: grid; place-items: center; }
+.full-video-stage video { display: block; object-fit: contain; background: var(--background-canvas); border-radius: var(--radius-l); }
 @media (max-width: 680px) {
   .full-image-instructions { top: 60px; max-width: calc(100% - 32px); width: max-content; font-size: 12px; line-height: 18px; padding: 8px 12px; }
 }

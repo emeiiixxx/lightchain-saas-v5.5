@@ -13,6 +13,7 @@ import { CanvasChrome } from './CanvasChrome';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { CutoutEditor } from './CutoutEditor';
 import { FullImageViewer } from './FullImageViewer';
+import { FullVideoViewer } from './FullVideoViewer';
 import { ProgressiveImage } from './ProgressiveImage';
 import { ReactFlowCanvas } from './ReactFlowCanvas';
 import { VideoTemplateDialog } from './VideoTemplateDialog';
@@ -141,7 +142,6 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const [workflowUpload, setWorkflowUpload] = useState<WorkflowUpload | null>(null);
   const [videoPreview, setVideoPreview] = useState<VideoReference | null>(null);
   const previewEpoch = useRef(0);
-  const videoPlayer = useRef<HTMLVideoElement>(null);
   const shownModal = usePresence(active ? modal : null);
   const shownPreview = usePresence(active ? preview : null);
   const shownCutout = usePresence(active ? cutout : null);
@@ -243,7 +243,6 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     uploadEpoch.current++; uploadLocked.current = false;
     pendingMediaRead.current?.abort();
     previewEpoch.current++;
-    videoPlayer.current?.pause();
     setReading(false); setModal(null); setPreview(null); setCutout(null); setWorkflowUpload(null); setVideoPreview(null); setDropActive(false);
     setSpaceDown(false); setDragging(false); setSelecting(false); setGuides(null); setCanvasMenu(null);
   }, [active, stopCamera]);
@@ -552,9 +551,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       videoUploads={uploadedVideos} onConfirmVideo={shownWorkflowUpload.value.field === 'references' ? applyWorkflowVideo : undefined} onClose={() => setWorkflowUpload(null)} />}
     {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p></Dialog>}
     {active && shownPreview.value && <FullImageViewer image={shownPreview.value} locale={locale} phase={shownPreview.phase} onClose={() => setPreview(null)} />}
-    {active && shownVideoPreview.value && <Dialog title={shownVideoPreview.value.name} closeLabel={t.close} phase={shownVideoPreview.phase} className="video-reference-preview-dialog" onClose={() => { videoPlayer.current?.pause(); setVideoPreview(null); }}>
-      <video ref={videoPlayer} src={shownVideoPreview.value.url} controls autoPlay playsInline onError={() => notify(locale === 'zh-CN' ? '此视频暂时无法播放，请重新上传。' : locale === 'ja' ? '動画を再生できません。再アップロードしてください。' : 'This video cannot be played. Please upload it again.', 'error')} />
-    </Dialog>}
+    {active && shownVideoPreview.value && <FullVideoViewer key={shownVideoPreview.value.url} video={shownVideoPreview.value} locale={locale} phase={shownVideoPreview.phase} onClose={() => setVideoPreview(null)} />}
     {active && shownCutout.value && <CutoutEditor key={shownCutout.value.id} image={shownCutout.value} phase={shownCutout.phase} onClose={() => setCutout(null)} onApply={url => {
       const source = shownCutout.value!;
       ownedUrls.current.add(url);

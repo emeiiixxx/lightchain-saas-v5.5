@@ -1,12 +1,11 @@
 import { ProgressiveImage } from './ProgressiveImage';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
-import { Button, Icon } from './ui';
+import { FullScreenViewer } from './FullScreenViewer';
 import type { CanvasImage } from '../canvas';
 import { messages, type Locale } from '../i18n';
 
 type Props = { image: CanvasImage; locale: Locale; phase: 'enter' | 'exit'; onClose: () => void };
 export function FullImageViewer({ image, locale, phase, onClose }: Props) {
-  const dialog = useRef<HTMLDialogElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const gesture = useRef<{ pointer: number; clientX: number; clientY: number; x: number; y: number } | null>(null);
   const [position, setPosition] = useState({ x: 0, y: 0, zoom: 1 });
@@ -15,12 +14,9 @@ export function FullImageViewer({ image, locale, phase, onClose }: Props) {
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const t = messages[locale];
   useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    const element = dialog.current!;
-    element.showModal();
     const resize = () => setSize({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', resize);
-    return () => { window.removeEventListener('resize', resize); element.close(); if (previous?.isConnected) previous.focus({ preventScroll: true }); };
+    return () => window.removeEventListener('resize', resize);
   }, []);
   useEffect(() => {
     const element = stage.current!;
@@ -57,14 +53,12 @@ export function FullImageViewer({ image, locale, phase, onClose }: Props) {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
   const fit = Math.min(800 / image.width, 800 / image.height, Math.max(1, size.width - (size.width <= 680 ? 32 : 80)) / image.width, Math.max(1, size.height - 160) / image.height);
-  return <dialog ref={dialog} className="full-image-viewer" data-phase={phase} data-node-id="68:27657" inert={phase === 'exit'} aria-label={`${t.viewFull} · ${image.name}`}
-    onCancel={event => { event.preventDefault(); onClose(); }}>
+  return <FullScreenViewer label={`${t.viewFull} · ${image.name}`} closeLabel={t.close} phase={phase} onClose={onClose} nodeId="68:27657" closeNodeId="68:28013">
     <div ref={stage} className={`full-image-stage${dragging ? ' is-panning' : ''}`} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}>
       <div className="full-image-center" style={{ width: image.width * fit, height: image.height * fit }}>
         <ProgressiveImage className="full-image-content" src={image.url} alt={image.name} eager fit="contain" style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${position.zoom})` }} />
       </div>
     </div>
     <div className="full-image-instructions" role="status" data-node-id="68:27757">{t.fullImageInstructions}</div>
-    <Button className="full-image-close" aria-label={t.close} onClick={onClose} data-node-id="68:28013"><Icon name="close" size={20} /></Button>
-  </dialog>;
+  </FullScreenViewer>;
 }
