@@ -736,7 +736,7 @@ export default function App() {
           <img src={assets.imgContainerLightchainLogo01} alt="" width="24" height="24" />
           <Icon name="imgContainerLightchainLogo02" size={113} className="wordmark" />
         </div>
-        {page !== 'canvas' && <a className="demo-page-link canvas-return-link" href="#/canvas" aria-label={locale === 'en' ? 'Back to canvas' : locale === 'ja' ? 'キャンバスへ' : '返回画布'}><Icon name="imgIcon1" size={16} /><span>{locale === 'en' ? 'Back to canvas' : locale === 'ja' ? 'キャンバスへ' : '返回画布'}</span></a>}
+        {page !== 'canvas' && <a className="demo-page-link canvas-return-link" href="#/canvas" aria-label={t.workspace}><Icon name="imgIcon1" size={16} /><span>{t.workspace}</span></a>}
         <a className="demo-page-link video-workspace-link" href="#/video-workspace" aria-current={page === 'video' ? 'page' : undefined}>{locale === 'en' ? 'Video workspace' : locale === 'ja' ? '動画ワークスペース' : '视频工作台'}</a>
         <div className="flex items-center gap-2">
         <div className="relative" data-menu>
