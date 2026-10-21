@@ -120,7 +120,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
           if (!event.deltaX) event.currentTarget.scrollLeft += event.deltaY;
         }}>
           {references.map((reference, index) => <div className="video-reference-tile" key={reference.id}>
-            <button type="button" className="video-reference-preview" aria-label={`${t.preview} ${reference.name}`} data-tooltip={reference.name} onClick={() => onPreview(reference)}>
+            <button type="button" className="video-reference-preview" aria-label={`${t.preview} ${reference.name}`} onClick={() => onPreview(reference)}>
               {reference.kind === 'video' ? <><video src={reference.url} muted playsInline preload="metadata" /><span className="video-reference-video-mark"><VideoIcon name="videoGeneration" size={16} /></span></> : <ProgressiveImage src={reference.url} alt={reference.name} width={64} height={64} />}
             </button>
             <Button variant="tonal" className="video-reference-remove" aria-label={`${t.remove} ${index + 1}`} onClick={() => onChange(frames ? { endFrame: undefined } : { references: node.references.filter(item => item.id !== reference.id) })}><Icon name="close" size={12} /></Button>
