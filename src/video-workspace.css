@@ -15,8 +15,16 @@
 .video-entry-tool:lang(ja) > span:not(.icon):not(.entry-tool-badge) { font-size: 12px; }
 .video-upload { width: 100%; height: 360px; flex: 0 0 auto; border-radius: var(--radius-xl); -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); }
 .video-upload .asset-upload-hint { color: var(--text-placeholder); text-wrap: balance; }
-.video-canvas-actions { position: absolute; z-index: 15; top: 16px; right: 16px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: calc(100% - 328px); }
-.video-canvas-actions .lc-button { gap: 4px; }
+/* Figma 76:5683: share the selection toolbar shell, with its inside stroke. */
+.media-toolbar--video { position: relative; height: 40px; border: 0; flex-wrap: nowrap; }
+.media-toolbar--video::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.media-toolbar--video > .lc-button { flex-shrink: 0; border: 0; }
+.media-toolbar--video:lang(zh-CN) > .video-media-generate { width: 84px; }
+.media-toolbar--video > .divider { flex-shrink: 0; }
+.video-workspace .canvas-side-toolbar { width: 56px; border: 0; }
+.video-workspace .canvas-side-toolbar::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.video-workspace .canvas-nav-toolbar { height: 48px; border: 0; }
+.video-workspace .canvas-nav-toolbar::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
 .video-canvas-help { margin: 0; font-size: 14px; line-height: 24px; }
 @media (max-width: 850px), (max-height: 760px) {
   .video-empty-scroll { align-items: safe center; padding-top: 120px; padding-bottom: 32px; }
@@ -30,5 +38,4 @@
   .video-entry-tool { width: min(144px, calc((100vw - 44px) / 2)); }
   .video-entry-tool .video-entry-badge { left: auto; right: -4px; }
   .video-upload { height: 280px; }
-  .video-canvas-actions { top: 112px; right: 12px; left: 12px; max-width: none; justify-content: flex-start; }
 }

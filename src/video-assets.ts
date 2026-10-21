@@ -7,6 +7,8 @@ export const videoAssets = {
   templates: `${videoAssetBase}templates.svg`,
   imageGeneration: `${videoAssetBase}imageGeneration.svg`,
   videoGeneration: `${videoAssetBase}videoGeneration.svg`,
+  // Icon/ImageEditingTool / upscale, master 80:77 in the single-image canvas.
+  upscale: `${videoAssetBase}upscale.svg`,
   videoExtend: `${videoAssetBase}videoExtend.svg`,
   videoEdit: `${videoAssetBase}videoEdit.svg`,
   upload: `${videoAssetBase}upload.svg`,

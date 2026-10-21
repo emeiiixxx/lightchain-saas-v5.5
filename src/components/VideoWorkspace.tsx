@@ -1,18 +1,22 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { arrangeImages, boundsOf, DEFAULT_VIEW, fitImages, readImage, zoomAt, type CanvasImage, type Viewport } from '../canvas';
 import type { LibraryImage } from '../asset-library';
 import type { SnapGuides } from '../canvas-snapping';
 import { messages, type Locale } from '../i18n';
 import { usePresence } from '../usePresence';
 import { videoAssets } from '../video-assets';
+import { downloadImages } from '../download-images';
 import { AssetPicker } from './AssetPicker';
 import { CanvasBackground } from './CanvasBackground';
 import { CanvasProjectPanel } from './CanvasProjectPanel';
 import { CanvasChrome } from './CanvasChrome';
+import { CutoutEditor } from './CutoutEditor';
 import { FullImageViewer } from './FullImageViewer';
 import { ProgressiveImage } from './ProgressiveImage';
 import { ReactFlowCanvas } from './ReactFlowCanvas';
 import { VideoTemplateDialog } from './VideoTemplateDialog';
+import { VideoIcon } from './VideoIcon';
+import { VideoSelectionToolbar } from './VideoSelectionToolbar';
 import { notify } from './Toast';
 import { Button, Dialog, Icon } from './ui';
 import '../video-workspace.css';
@@ -33,8 +37,18 @@ type Snapshot = { images: CanvasImage[]; selected: string[] };
 type Modal = 'templates' | 'assets' | 'help';
 type Props = { locale: Locale; active: boolean; onBack: () => void };
 
-export function VideoIcon({ name, size = 24 }: { name: keyof typeof videoAssets; size?: number }) {
-  return <span aria-hidden="true" className="icon video-icon" style={{ width: size, height: size, '--icon-url': `url("${videoAssets[name]}")` } as CSSProperties} />;
+function fitVideoImages(images: CanvasImage[], width: number, height: number): Viewport {
+  if (images.length !== 1) return fitImages(images, width, height);
+  const image = images[0];
+  const horizontalInset = width <= 680 ? 16 : 80;
+  const verticalInset = width <= 680 ? 132 : 80;
+  // The 40px toolbar and 16px gap are in screen space, above the image.
+  const zoom = Math.min(1, Math.max(.03, Math.min(
+    Math.max(1, width - horizontalInset * 2) / image.width,
+    Math.max(1, height - verticalInset * 2 - 56) / image.height,
+  )));
+  return { zoom, x: width / 2 - (image.x + image.width / 2) * zoom,
+    y: (height + 56) / 2 - (image.y + image.height / 2) * zoom };
 }
 
 export function VideoWorkspace({ locale, active, onBack }: Props) {
@@ -99,12 +113,16 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const [guides, setGuides] = useState<SnapGuides | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
   const [preview, setPreview] = useState<CanvasImage | null>(null);
+  const [cutout, setCutout] = useState<CanvasImage | null>(null);
   const shownModal = usePresence(active ? modal : null);
   const shownPreview = usePresence(active ? preview : null);
+  const shownCutout = usePresence(active ? cutout : null);
   const shownDrop = usePresence(dropActive && snapshot.images.length ? true : null);
   const shownGuides = usePresence(guides);
   const groupBounds = useMemo(() => snapshot.selected.length > 1 ? boundsOf(snapshot.images.filter(image => snapshot.selected.includes(image.id))) : null, [snapshot.images, snapshot.selected]);
   const shownGroup = usePresence(groupBounds);
+  const singleSelection = useMemo(() => snapshot.selected.length === 1 ? snapshot.images.find(image => image.id === snapshot.selected[0]) ?? null : null, [snapshot.images, snapshot.selected]);
+  const shownSingle = usePresence(singleSelection);
   const outsideView = snapshot.images.length > 0 && !snapshot.images.some(image => image.x * view.zoom + view.x < canvasSize.width && (image.x + image.width) * view.zoom + view.x > 0 && image.y * view.zoom + view.y < canvasSize.height && (image.y + image.height) * view.zoom + view.y > 0);
   const shownReturn = usePresence(outsideView ? true : null);
 
@@ -126,7 +144,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }, [replace]);
   const fit = useCallback(() => {
     const element = canvas.current;
-    if (element) setView(fitImages(current.current.images, element.clientWidth, element.clientHeight));
+    if (element) setView(fitVideoImages(current.current.images, element.clientWidth, element.clientHeight));
   }, [setView]);
   const removeSelected = useCallback(() => {
     if (!current.current.selected.length) return;
@@ -141,7 +159,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (active) return;
     stopCamera();
     uploadEpoch.current++; uploadLocked.current = false;
-    setReading(false); setModal(null); setPreview(null); setDropActive(false);
+    setReading(false); setModal(null); setPreview(null); setCutout(null); setDropActive(false);
     setSpaceDown(false); setDragging(false); setSelecting(false); setGuides(null);
   }, [active, stopCamera]);
   useEffect(() => {
@@ -164,7 +182,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     resize.observe(element); return () => resize.disconnect();
   }, [active, setView]);
   useEffect(() => {
-    if (!active || shownModal.value || shownPreview.value) return;
+    if (!active || shownModal.value || shownPreview.value || shownCutout.value) return;
     const keydown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.target instanceof Element && event.target.closest('input,textarea,select,button,[contenteditable="true"],dialog,[role="menu"]')) return;
       const command = event.ctrlKey || event.metaKey;
@@ -181,7 +199,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const blur = () => { setSpaceDown(false); setDragging(false); setSelecting(false); setGuides(null); };
     window.addEventListener('keydown', keydown); window.addEventListener('keyup', keyup); window.addEventListener('blur', blur);
     return () => { window.removeEventListener('keydown', keydown); window.removeEventListener('keyup', keyup); window.removeEventListener('blur', blur); };
-  }, [active, shownModal.value, shownPreview.value, undo, redo, replace, removeSelected, fit]);
+  }, [active, shownModal.value, shownPreview.value, shownCutout.value, undo, redo, replace, removeSelected, fit]);
 
   function rememberUpload(image: LibraryImage) {
     if (image.url.startsWith('blob:')) ownedUrls.current.add(image.url);
@@ -199,7 +217,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       y += Math.max(...items.map(image => image.height)) + 40;
     }
     commit({ images: [...previous, ...additions], selected: additions.map(image => image.id) });
-    if (canvas.current) setView(fitImages(additions, canvas.current.clientWidth, canvas.current.clientHeight));
+    if (canvas.current) setView(fitVideoImages(additions, canvas.current.clientWidth, canvas.current.clientHeight));
     setModal(null); canvas.current?.focus({ preventScroll: true });
   }
   async function loadFiles(files: FileList) {
@@ -215,11 +233,17 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     uploadLocked.current = false; setReading(false);
   }
   function drop(event: DragEvent) {
-    if (!active || modal || preview) return;
+    if (!active || modal || preview || cutout) return;
     event.preventDefault(); event.stopPropagation(); setDropActive(false);
     void loadFiles(event.dataTransfer.files);
   }
   function openAssets() { if (active && !reading) setModal('assets'); }
+  async function downloadSelected() {
+    const images = current.current.images.filter(image => current.current.selected.includes(image.id));
+    try {
+      await downloadImages(images.map(image => ({ url: image.url, name: /\.[a-z0-9]+$/i.test(image.name) ? image.name : `${image.name}.png` })), 'video-workspace-images.zip');
+    } catch { notify(t.downloadError, 'error'); }
+  }
   function zoom(factor: number, animated = false) {
     const element = canvas.current;
     if (!element) return;
@@ -230,8 +254,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }
 
   return <>
-    <main ref={canvas} hidden={!active} inert={!active} tabIndex={-1} lang={locale} className={`canvas video-workspace${snapshot.images.length ? '' : ' video-workspace--empty'}${spaceDown || mode === 'hand' ? ' is-panning' : ''}${dragging ? ' is-dragging' : ''}`} aria-label={v.title} data-node-id="64:2057"
-      onDragOver={event => { if (active && !modal && event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDropActive(true); } }}
+    <main ref={canvas} hidden={!active} inert={!active} tabIndex={-1} lang={locale} className={`canvas video-workspace${snapshot.images.length ? '' : ' video-workspace--empty'}${spaceDown || mode === 'hand' ? ' is-panning' : ''}${dragging ? ' is-dragging' : ''}`} aria-label={v.title} data-node-id={snapshot.images.length ? '76:5683' : '64:2057'}
+      onDragOver={event => { if (active && !modal && !preview && !cutout && event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDropActive(true); } }}
       onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropActive(false); }} onDrop={drop}>
       <CanvasBackground view={view} />
       <CanvasProjectPanel title={v.title} icon={<span className="video-workspace-mark"><img src={videoAssets.workspacePlate} alt="" width={20} height={20} /><img src={videoAssets.workspaceIcon} alt="" width={20} height={20} /></span>} projectName={projectName} onProjectNameChange={setProjectName} onBack={onBack} backLabel={v.back} renameLabel={t.rename} nameLabel={t.projectName} nodeId="64:2058" />
@@ -263,21 +287,28 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
             <ProgressiveImage src={image.url} alt={image.name} width={image.width} height={image.height} fit="contain" />
           </div>)}
         </ReactFlowCanvas>
+        {shownSingle.value && !selecting && <div className="selection-overlay" data-phase={shownSingle.phase} aria-label={t.selectionTools} style={{ left: shownSingle.value.x * view.zoom + view.x, top: shownSingle.value.y * view.zoom + view.y, width: shownSingle.value.width * view.zoom, height: shownSingle.value.height * view.zoom }}>
+          <div className="media-toolbar-anchor" data-overlay inert={shownSingle.phase === 'exit'}>
+            <VideoSelectionToolbar locale={locale} onDownload={() => void downloadSelected()} onAction={action => {
+              if (action === 'cutout') setCutout(singleSelection);
+              else notify(locale === 'zh-CN' ? '此功能暂未接入。' : locale === 'ja' ? 'この機能はまだ接続されていません。' : 'This feature is not connected yet.');
+            }} />
+          </div>
+        </div>}
         {shownGroup.value && !selecting && <div className="selection-overlay" data-phase={shownGroup.phase} aria-label={t.groupSelection} style={{ left: shownGroup.value.x * view.zoom + view.x, top: shownGroup.value.y * view.zoom + view.y, width: shownGroup.value.width * view.zoom, height: shownGroup.value.height * view.zoom }}><div className="group-selection-frame" /></div>}
         {shownGuides.value && <div className="canvas-snap-guides" aria-hidden="true" data-phase={shownGuides.phase}>
           {shownGuides.value.x !== undefined && <span className="canvas-snap-guide canvas-snap-guide--vertical" style={{ left: shownGuides.value.x * view.zoom + view.x }} />}
           {shownGuides.value.y !== undefined && <span className="canvas-snap-guide canvas-snap-guide--horizontal" style={{ top: shownGuides.value.y * view.zoom + view.y }} />}
         </div>}
-        <div className="video-canvas-actions" data-overlay>
-          <Button variant="outline" icon="canvasUpload" onClick={openAssets}>{t.upload}</Button>
-          <Button variant="outline" onClick={() => setModal('templates')}><VideoIcon name="templates" size={16} />{v.templates}</Button>
-          {snapshot.selected.length > 0 && <Button variant="outline" icon="contextTrash" onClick={removeSelected}>{t.remove}</Button>}
-        </div>
         <CanvasChrome locale={locale} mode={spaceDown ? 'hand' : mode} onMode={setMode} zoom={view.zoom} view={view} canvasSize={canvasSize} images={snapshot.images} showSmartSearch={false}
+          sideActions={<>
+            <Button className="canvas-icon-button" aria-label={t.platformAssets} onClick={openAssets}><Icon name="platformIcon" size={24} /></Button>
+            <Button className="canvas-icon-button" aria-label={v.templates} onClick={() => setModal('templates')}><VideoIcon name="templates" size={24} /></Button>
+          </>}
           snapToGrid={snapToGrid} onToggleSnap={() => { setGuides(null); setSnapToGrid(previous => { try { localStorage.setItem('lc-v55-video-grid-snap', previous ? 'off' : 'on'); } catch { /* Session state remains available. */ } return !previous; }); }}
           onNavigateMinimap={(x, y) => setView(previous => ({ ...previous, x: canvasSize.width / 2 - x * previous.zoom, y: canvasSize.height / 2 - y * previous.zoom }))} onMinimapInteraction={setDragging}
           canUndo={history.current.past.length > 0} canRedo={history.current.future.length > 0} onUndo={undo} onRedo={redo} onUpload={openAssets} onZoom={zoom} onFit={fit}
-          onArrange={() => { const images = arrangeImages(current.current.images); commit({ ...current.current, images }); if (canvas.current) setView(fitImages(images, canvas.current.clientWidth, canvas.current.clientHeight)); }}
+          onArrange={() => { const images = arrangeImages(current.current.images); commit({ ...current.current, images }); if (canvas.current) setView(fitVideoImages(images, canvas.current.clientWidth, canvas.current.clientHeight)); }}
           onHelp={() => setModal('help')} onDemo={() => notify(v.pending)} />
         {shownReturn.value && <div className="canvas-return-hint" data-overlay data-phase={shownReturn.phase} inert={shownReturn.phase === 'exit'}><p>{t.noNodesInView}</p><Button variant="primary" onClick={fit}>{t.returnToNodes}</Button></div>}
       </>}
@@ -289,5 +320,12 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={image => addImages([image])} onConfirmBatch={addImages} onClose={closeModal} />}
     {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p></Dialog>}
     {active && shownPreview.value && <FullImageViewer image={shownPreview.value} locale={locale} phase={shownPreview.phase} onClose={() => setPreview(null)} />}
+    {active && shownCutout.value && <CutoutEditor key={shownCutout.value.id} image={shownCutout.value} phase={shownCutout.phase} onClose={() => setCutout(null)} onApply={url => {
+      const source = shownCutout.value!;
+      ownedUrls.current.add(url);
+      const result: CanvasImage = { ...source, id: crypto.randomUUID(), name: `${source.name}-cutout.png`, url, x: source.x + source.width + 80 };
+      commit({ images: [...current.current.images, result], selected: [result.id] });
+      setCutout(null);
+    }} />}
   </>;
 }

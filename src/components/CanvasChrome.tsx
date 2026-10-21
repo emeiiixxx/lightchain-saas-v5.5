@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Button, Divider, Icon, type IconName } from './ui';
 import { messages, type Locale } from '../i18n';
 import { usePresence } from '../usePresence';
@@ -10,6 +10,7 @@ import { CanvasTaskList, type CanvasTask } from './CanvasTaskList';
 type Props = { locale: Locale; mode: 'select' | 'hand'; onMode: (mode: 'select' | 'hand') => void; zoom: number;
   tasks?: CanvasTask[];
   showSmartSearch?: boolean;
+  sideActions?: ReactNode;
   snapToGrid: boolean; onToggleSnap: () => void;
   view: Viewport; canvasSize: { width: number; height: number };
   onNavigateMinimap: (x: number, y: number) => void; onMinimapInteraction: (active: boolean) => void;
@@ -57,7 +58,7 @@ export function CanvasChrome(p: Props) {
       {iconButton(t.redo, 'redoIcon', p.onRedo, { disabled: !p.canRedo, title: `${t.redoHint} · ${shortcutModifier}+Shift+Z`, 'aria-keyshortcuts': `${shortcutKey}+Shift+Z` })}
     </div>
     <div className="canvas-side-toolbar" data-overlay role="toolbar" aria-label={t.assetSources}>
-      {iconButton(t.platformAssets, 'platformIcon', p.onUpload)}
+      {p.sideActions ?? iconButton(t.platformAssets, 'platformIcon', p.onUpload)}
     </div>
     <div className="canvas-bottom-left" data-overlay>
       <CanvasTaskList tasks={p.tasks} locale={p.locale} />
