@@ -19,7 +19,7 @@ export function PromptAssistButton({ value, icon, generateLabel = '提示词生�
   const action: PromptAssistAction = value.trim() ? 'expand' : 'generate';
   const label = action === 'generate' ? generateLabel : expandLabel;
   return <Button className="video-prompt-expand prompt-assist-button" onClick={() => onAction(action)}>
-    <GradientText colors={colors} animationSpeed={3} variant="flow" glow={0.4}>
+    <GradientText colors={colors} animationSpeed={3} variant="flow" yoyo={false} glow={0}>
       {icon}<span>{label}</span>
     </GradientText>
   </Button>;
