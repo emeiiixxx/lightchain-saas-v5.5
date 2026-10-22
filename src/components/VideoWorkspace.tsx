@@ -23,9 +23,8 @@ import { VideoAssetToolbar } from './VideoAssetToolbar';
 import { VideoWorkflowNode } from './VideoWorkflowNode';
 import { ImageConnection } from './ImageConnection';
 import { createVideoWorkflow, videoWorkflowBox, videoWorkflowSize, type VideoWorkflow, type VideoReference } from '../video-workflow';
-import { copyVideoCanvasSelection, pasteVideoCanvasSelection, prepareVideoCanvasMedia, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
+import { copyVideoCanvasSelection, pasteVideoCanvasSelection, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
 import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, writeCanvasClipboardEvent, writeCanvasClipboardSystem, type CanvasClipboard } from '../canvas-clipboard-session';
-import { canConnectCanvasNodes, type CanvasConnection, type CanvasConnectionInput, type CanvasConnectionNodes, type CanvasMediaKind } from '../canvas-connections';
 import { videoReferenceUploadMessages, type UploadedVideo } from '../video-reference-upload';
 import { notify } from './Toast';
 import { Button, Dialog, Icon } from './ui';
@@ -48,73 +47,18 @@ const mediaCopy = {
   en: { add: 'Click or drop images or videos here', drop: 'Drop images or videos here', upload: 'Upload assets', video: 'Video', play: 'Play', materials: 'Assets', limit: 'Add up to 20 assets at a time.' },
   ja: { add: 'クリック、または画像・動画をドロップして追加', drop: 'ここに画像・動画をドロップ', upload: '素材をアップロード', video: '動画', play: '再生', materials: '素材', limit: '一度に追加できる素材は20点までです。' },
 };
-type Snapshot = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; selected: string[]; connections: CanvasConnection[]; selectedConnections: string[] };
-type VideoClipboard = CanvasClipboard<VideoCanvasMedia> & { connections: CanvasConnection[] };
-type CopiedMedia = Pick<VideoClipboard, 'items' | 'connections'>;
-type WorkflowUpload = { id: string; field: 'main' | 'endFrame' | 'references'; mediaKind?: CanvasMediaKind; portSide?: 'left' | 'right' };
+type Snapshot = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; selected: string[] };
+type VideoClipboard = CanvasClipboard<VideoCanvasMedia>;
+type CopiedMedia = Pick<VideoClipboard, 'items'>;
+type WorkflowUpload = { id: string; field: 'main' | 'endFrame' | 'references' };
 type Modal = 'templates' | 'assets' | 'help';
 type Props = { locale: Locale; active: boolean; onBack: () => void };
 const connectionHelp = {
-  'zh-CN': '悬停图片或视频时显示右侧连接点，编辑器支持左右连接点。拖线靠近编辑器时，绿色表示可连接，红色表示不可连接。点击连线选中，按 Delete 删除，拖动端点可重新连接。Shift + 点击可多选，Ctrl / ⌘ + Z 可撤销。',
-  en: 'Hover over an image or video to reveal its right connection point. Editors have points on both sides. When dragging near an editor, green means the connection is allowed and red means it is not. Select a line and press Delete to remove it, or drag an endpoint to reconnect. Shift-click to select multiple items; Ctrl / ⌘ + Z undoes.',
-  ja: '画像・動画にマウスを重ねると右側の接続点が表示されます。エディターは左右に接続点があります。線を近づけると、接続できる場合は緑、できない場合は赤になります。線を選択してDeleteで削除、端点をドラッグして接続先を変更できます。Shift + クリックで複数選択、Ctrl / ⌘ + Zで取り消します。',
+  'zh-CN': '通过素材工具栏或节点内上传关联图片，连线随关联自动显示。选中素材或编辑器显示流动高亮，取消选择恢复灰色连线。',
+  en: 'Use the asset toolbar or upload a main image in the editor to link it automatically. Selecting the asset or editor highlights its connection; deselecting restores the grey line.',
+  ja: '素材ツールバー、またはエディター内のメイン画像追加で自動的に接続されます。素材やエディターを選択すると接続線が強調され、選択を解除すると灰色に戻ります。',
 };
 const sceneItems = (snapshot: Snapshot) => [...snapshot.images, ...snapshot.workflows.map(videoWorkflowBox)];
-function videoConnectionNodes(snapshot: Snapshot): CanvasConnectionNodes {
-  const nodes: CanvasConnectionNodes = {};
-  for (const image of snapshot.images) nodes[image.id] = { kind: image.video ? 'video' : 'image' };
-  for (const node of snapshot.workflows) nodes[node.id] = {
-    kind: 'editor', output: 'video', accepts: node.mode === 'references' ? ['image', 'video'] : ['image'],
-    addable: node.mode === 'references' ? ['image', 'video'] : node.main && node.endFrame ? [] : ['image'],
-  };
-  return nodes;
-}
-
-// Bound inputs keep their edge identity so removing or reconnecting an edge
-// updates the frame or reference in the same undoable transaction.
-function detachFrameConnections(node: VideoWorkflow, removed: Set<string>): VideoWorkflow {
-  return {
-    ...node,
-    main: node.main?.connectionId && removed.has(node.main.connectionId) ? undefined : node.main,
-    endFrame: node.endFrame?.connectionId && removed.has(node.endFrame.connectionId) ? undefined : node.endFrame,
-    references: node.references.filter(reference => !reference.connectionId || !removed.has(reference.connectionId)),
-  };
-}
-
-function planVideoConnection(snapshot: Snapshot, input: CanvasConnectionInput, replacingId?: string, newId = 'pending-video-connection', bindMedia = false): Snapshot | null {
-  if (!canConnectCanvasNodes(input, videoConnectionNodes(snapshot))) return null;
-  const old = replacingId ? snapshot.connections.find(edge => edge.id === replacingId) : undefined;
-  if (replacingId && !old) return null;
-  if (snapshot.connections.some(edge => edge.id !== replacingId && edge.source === input.source && edge.target === input.target)) return null;
-  const originalTarget = snapshot.workflows.find(node => node.id === input.target);
-  const previousSlot = replacingId && originalTarget?.main?.connectionId === replacingId ? 'main'
-    : replacingId && originalTarget?.endFrame?.connectionId === replacingId ? 'endFrame' : undefined;
-  const previousReferenceIndex = replacingId ? originalTarget?.references.findIndex(reference => reference.connectionId === replacingId) ?? -1 : -1;
-  const workflows = old ? snapshot.workflows.map(node => detachFrameConnections(node, new Set([old.id]))) : [...snapshot.workflows];
-  const target = workflows.find(node => node.id === input.target);
-  if (target?.main?.sourceImageId === input.source || target?.endFrame?.sourceImageId === input.source || target?.references.some(reference => reference.sourceImageId === input.source)) return null;
-  const edge: CanvasConnection = { ...input, id: replacingId ?? newId };
-  const source = snapshot.images.find(image => image.id === input.source);
-  if (target?.mode === 'frames' && source && !source.video) {
-    const slot = previousSlot ?? (!target.main ? 'main' : !target.endFrame ? 'endFrame' : undefined);
-    if (!slot || target[slot]) return null;
-    const reference: VideoReference = { id: source.id, sourceImageId: source.id, connectionId: edge.id, name: source.name, url: source.url, kind: 'image' };
-    workflows[workflows.indexOf(target)] = { ...target, [slot]: reference };
-  } else if (target?.mode === 'references' && source && (bindMedia || previousSlot || previousReferenceIndex >= 0)) {
-    const reference: VideoReference = { id: source.id, sourceImageId: source.id, connectionId: edge.id,
-      name: source.name, url: source.video?.url ?? source.url, kind: source.video ? 'video' : 'image' };
-    if (!source.video && (previousSlot || bindMedia && !target.main)) {
-      workflows[workflows.indexOf(target)] = { ...target, [previousSlot ?? 'main']: reference };
-    } else {
-      const references = [...target.references];
-      references.splice(previousReferenceIndex >= 0 ? previousReferenceIndex : references.length, 0, reference);
-      workflows[workflows.indexOf(target)] = { ...target, references };
-    }
-  }
-  return { ...snapshot, workflows,
-    connections: old ? snapshot.connections.map(item => item.id === old.id ? edge : item) : [...snapshot.connections, edge],
-    selected: [], selectedConnections: [edge.id] };
-}
 const isField = (target: EventTarget | null) => target instanceof HTMLElement && !!target.closest('input,textarea,select,[contenteditable="true"]');
 
 function fitVideoImages(images: CanvasImage[], width: number, height: number): Viewport {
@@ -138,7 +82,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const [projectName, setProjectName] = useState(() => {
     try { return localStorage.getItem('lc-v55-video-project-name') || 'Untitle'; } catch { return 'Untitle'; }
   });
-  const [snapshot, setSnapshot] = useState<Snapshot>({ images: [], workflows: [], selected: [], connections: [], selectedConnections: [] });
+  const [snapshot, setSnapshot] = useState<Snapshot>({ images: [], workflows: [], selected: [] });
   const current = useRef(snapshot); current.current = snapshot;
   const history = useRef<{ past: Snapshot[]; future: Snapshot[] }>({ past: [], future: [] });
   const [view, commitView] = useState<Viewport>(DEFAULT_VIEW);
@@ -211,12 +155,11 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const shownWorkflowUpload = usePresence(active ? workflowUpload : null);
   const shownVideoPreview = usePresence(active ? videoPreview : null);
   const items = useMemo(() => sceneItems(snapshot), [snapshot.images, snapshot.workflows]);
-  const connectionNodes = useMemo(() => videoConnectionNodes(snapshot), [snapshot.images, snapshot.workflows]);
   const shownDrop = usePresence(dropActive && items.length ? true : null);
   const shownGuides = usePresence(guides);
   const groupBounds = useMemo(() => snapshot.selected.length > 1 ? boundsOf(items.filter(image => snapshot.selected.includes(image.id))) : null, [items, snapshot.selected]);
   const shownGroup = usePresence(groupBounds);
-  const singleSelection = useMemo(() => snapshot.selected.length === 1 && !snapshot.selectedConnections.length ? snapshot.images.find(image => image.id === snapshot.selected[0]) ?? null : null, [snapshot.images, snapshot.selected, snapshot.selectedConnections]);
+  const singleSelection = useMemo(() => snapshot.selected.length === 1 ? snapshot.images.find(image => image.id === snapshot.selected[0]) ?? null : null, [snapshot.images, snapshot.selected]);
   const shownSingle = usePresence(singleSelection);
   const outsideView = items.length > 0 && !items.some(image => image.x * view.zoom + view.x < canvasSize.width && (image.x + image.width) * view.zoom + view.x > 0 && image.y * view.zoom + view.y < canvasSize.height && (image.y + image.height) * view.zoom + view.y > 0);
   const shownReturn = usePresence(outsideView ? true : null);
@@ -248,34 +191,20 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }, [setView]);
   const removeSelected = useCallback(() => {
     const previous = current.current;
-    if (!previous.selected.length && !previous.selectedConnections.length) return;
-    const removed = new Set(previous.selected), removedConnections = new Set(previous.selectedConnections);
+    if (!previous.selected.length) return;
+    const removed = new Set(previous.selected);
     commit({ ...previous, images: previous.images.filter(image => !removed.has(image.id)),
-      workflows: previous.workflows.filter(node => !removed.has(node.id)).map(node => {
-        const next = detachFrameConnections(node, removedConnections);
-        return { ...next,
-          main: next.main?.sourceImageId && removed.has(next.main.sourceImageId) ? undefined : next.main,
-          endFrame: next.endFrame?.sourceImageId && removed.has(next.endFrame.sourceImageId) ? undefined : next.endFrame,
-          references: next.references.filter(reference => !reference.sourceImageId || !removed.has(reference.sourceImageId)) };
-      }),
-      connections: previous.connections.filter(edge => !removedConnections.has(edge.id) && !removed.has(edge.source) && !removed.has(edge.target)),
-      selected: [], selectedConnections: [] });
+      workflows: previous.workflows.filter(node => !removed.has(node.id)).map(node => ({ ...node,
+        main: node.main?.sourceImageId && removed.has(node.main.sourceImageId) ? undefined : node.main,
+        endFrame: node.endFrame?.sourceImageId && removed.has(node.endFrame.sourceImageId) ? undefined : node.endFrame,
+        references: node.references.filter(reference => !reference.sourceImageId || !removed.has(reference.sourceImageId)) })),
+      selected: [] });
   }, [commit]);
-  const connectNodes = useCallback((input: CanvasConnectionInput, replacingId?: string) => {
-    const previous = current.current;
-    const old = previous.connections.find(edge => edge.id === replacingId);
-    if (old && old.source === input.source && old.target === input.target && old.sourceHandle === input.sourceHandle && old.targetHandle === input.targetHandle) return;
-    const next = planVideoConnection(previous, input, replacingId, `video-connection-${crypto.randomUUID()}`);
-    if (!next) return;
-    commit(next);
-    closeCanvasMenu(); canvas.current?.focus({ preventScroll: true });
-  }, [commit, closeCanvasMenu]);
   const closeModal = useCallback(() => { uploadEpoch.current++; pendingMediaRead.current?.abort(); uploadLocked.current = false; setReading(false); setModal(null); }, []);
 
   const captureSelectedMedia = useCallback((): CopiedMedia => {
     const previous = current.current, items = copyVideoCanvasSelection(previous.images, previous.selected);
-    const ids = new Set(items.map(item => item.id));
-    return { items, connections: previous.connections.filter(edge => ids.has(edge.source) && ids.has(edge.target)).map(edge => ({ ...edge })) };
+    return { items };
   }, []);
   const pasteCopiedItems = useCallback((point?: { x: number; y: number }, copied?: CopiedMedia) => {
     const clipboard = copied ? { ...copied, pastes: 0 } : canvasClipboard.current;
@@ -284,10 +213,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const bounds = boundsOf(clipboard.items)!;
     const offset = getCanvasPasteOffset(bounds, viewRef.current, { width: element.clientWidth, height: element.clientHeight }, clipboard.pastes, point);
     const created: VideoCanvasMedia[] = pasteVideoCanvasSelection(clipboard.items, offset.x, offset.y);
-    const ids = new Map(clipboard.items.map((item, index) => [item.id, created[index].id]));
-    const connections = clipboard.connections.filter(edge => ids.has(edge.source) && ids.has(edge.target)).map(edge => ({ ...edge, id: `video-connection-${crypto.randomUUID()}`, source: ids.get(edge.source)!, target: ids.get(edge.target)! }));
     clipboard.pastes++;
-    commit({ ...current.current, images: [...current.current.images, ...created], connections: [...current.current.connections, ...connections], selected: created.map(item => item.id), selectedConnections: [] });
+    commit({ ...current.current, images: [...current.current.images, ...created], selected: created.map(item => item.id) });
     element.focus({ preventScroll: true });
   }, [commit]);
   const duplicateSelected = useCallback(() => {
@@ -297,7 +224,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   async function copySelectedFromMenu() {
     const copied = captureSelectedMedia();
     if (!copied.items.length) return;
-    const clipboard: VideoClipboard = { ...createCanvasClipboard(copied.items), connections: copied.connections };
+    const clipboard = createCanvasClipboard(copied.items);
     canvasClipboard.current = clipboard; setCanPaste(true); closeCanvasMenu();
     try { await writeCanvasClipboardSystem(clipboard, copied.items.map(item => item.name).join('\n')); }
     catch { notify(locale === 'zh-CN' ? '已复制，可右键画布选择「粘贴」' : locale === 'ja' ? 'コピーしました。キャンバスを右クリックして貼り付けできます' : 'Copied. Right-click the canvas to paste.'); }
@@ -312,7 +239,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       if (canvasMenu || blocked(event) || !event.clipboardData || window.getSelection()?.toString()) return;
       const copied = captureSelectedMedia();
       if (!copied.items.length) return;
-      const clipboard: VideoClipboard = { ...createCanvasClipboard(copied.items), connections: copied.connections };
+      const clipboard = createCanvasClipboard(copied.items);
       writeCanvasClipboardEvent(event.clipboardData, clipboard, copied.items.map(item => item.name).join('\n'));
       canvasClipboard.current = clipboard; setCanPaste(true);
       event.preventDefault();
@@ -370,9 +297,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       if (event.code === 'Space') { event.preventDefault(); setSpaceDown(true); }
       else if (command && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelected(); }
       else if (command && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); }
-      else if (command && event.key.toLowerCase() === 'a') { event.preventDefault(); replace({ ...current.current, selected: sceneItems(current.current).map(image => image.id), selectedConnections: current.current.connections.map(edge => edge.id) }); }
+      else if (command && event.key.toLowerCase() === 'a') { event.preventDefault(); replace({ ...current.current, selected: sceneItems(current.current).map(image => image.id) }); }
       else if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); removeSelected(); }
-      else if (event.key === 'Escape') { replace({ ...current.current, selected: [], selectedConnections: [] }); setGuides(null); }
+      else if (event.key === 'Escape') { replace({ ...current.current, selected: [] }); setGuides(null); }
       else if (event.key === '0' && !command) { event.preventDefault(); fit(); }
       else if (!command && event.key.toLowerCase() === 'v') setMode('select');
       else if (!command && event.key.toLowerCase() === 'h') setMode('hand');
@@ -403,7 +330,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       for (const image of items) { additions.push({ ...image, role: undefined, x, y }); x += image.width + 40; }
       y += Math.max(...items.map(image => image.height)) + 40;
     }
-    commit({ ...current.current, images: [...previous, ...additions], selected: additions.map(image => image.id), selectedConnections: [] });
+    commit({ ...current.current, images: [...previous, ...additions], selected: additions.map(image => image.id) });
     if (canvas.current) setView(fitVideoImages(additions, canvas.current.clientWidth, canvas.current.clientHeight));
     setModal(null); canvas.current?.focus({ preventScroll: true });
   }
@@ -431,17 +358,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   function updateWorkflow(id: string, patch: Partial<VideoWorkflow>) {
     const previous = current.current, currentNode = previous.workflows.find(node => node.id === id);
     if (!currentNode) return;
-    const removed = new Set<string>();
-    for (const field of ['main', 'endFrame'] as const) {
-      const edgeId = currentNode[field]?.connectionId;
-      if (field in patch && edgeId && patch[field]?.connectionId !== edgeId) removed.add(edgeId);
-    }
-    if (patch.references) for (const reference of currentNode.references) {
-      if (reference.connectionId && !patch.references.some(item => item.connectionId === reference.connectionId)) removed.add(reference.connectionId);
-    }
-    commit({ ...previous, connections: previous.connections.filter(edge => !removed.has(edge.id)),
-      selectedConnections: previous.selectedConnections.filter(edgeId => !removed.has(edgeId)),
-      workflows: previous.workflows.map(node => {
+    commit({ ...previous, workflows: previous.workflows.map(node => {
       if (node.id !== id) return node;
       const next = { ...node, ...patch };
       if (next.mode !== node.mode) {
@@ -466,7 +383,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       source,
     );
     while (scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
-    commit({ ...previous, workflows: [...previous.workflows, node], selected: [node.id], selectedConnections: [] });
+    commit({ ...previous, workflows: [...previous.workflows, node], selected: [node.id] });
     if (canvas.current) animateView(fitImages([...(source ? [source] : []), videoWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });
   }
@@ -475,7 +392,6 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const target = workflowUpload;
     const node = target && current.current.workflows.find(item => item.id === target.id);
     if (!target || !node || !activeRef.current) return;
-    if (target.portSide) { applyConnectionMedia(image); return; }
     const reference: VideoReference = { id: crypto.randomUUID(), name: image.name, url: image.url, kind: 'image' };
     if (target.field === 'main') {
       let source = current.current.images.find(item => item.url === image.url);
@@ -487,9 +403,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         images.push(source);
       }
       const main = { id: source.id, sourceImageId: source.id, name: source.name, url: source.url };
-      const connections = current.current.connections.filter(edge => edge.id !== node.main?.connectionId && !(edge.source === main.sourceImageId && edge.target === node.id));
-      commit({ ...current.current, images, workflows: current.current.workflows.map(item => item.id === node.id ? { ...item, main } : item), connections,
-        selectedConnections: current.current.selectedConnections.filter(id => connections.some(edge => edge.id === id)) });
+      commit({ ...current.current, images, workflows: current.current.workflows.map(item => item.id === node.id ? { ...item, main } : item) });
     } else if (target.field === 'endFrame') updateWorkflow(node.id, { endFrame: reference });
     else updateWorkflow(node.id, { references: [...node.references, reference] });
     setWorkflowUpload(null);
@@ -498,40 +412,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const node = workflowUpload?.field === 'references' && current.current.workflows.find(item => item.id === workflowUpload.id);
     if (!node || !activeRef.current) { if (!ownedUrls.current.has(reference.url)) URL.revokeObjectURL(reference.url); return; }
     rememberVideo(reference);
-    if (workflowUpload?.portSide) { applyConnectionMedia(prepareVideoCanvasMedia(reference)); return; }
     updateWorkflow(node.id, { references: [...node.references, reference] });
     setWorkflowUpload(null);
-  }
-  function openConnectionMedia(nodeId: string, kind: CanvasMediaKind, side: 'left' | 'right') {
-    const previous = current.current, node = previous.workflows.find(item => item.id === nodeId);
-    if (!activeRef.current || !node || !videoConnectionNodes(previous)[nodeId]?.addable?.includes(kind)) return;
-    closeCanvasMenu();
-    setWorkflowUpload({ id: nodeId, mediaKind: kind, portSide: side,
-      field: kind === 'image' && !node.main ? 'main' : node.mode === 'frames' ? 'endFrame' : 'references' });
-  }
-  function applyConnectionMedia(media: Omit<VideoCanvasMedia, 'x' | 'y'>) {
-    const upload = workflowUpload, previous = current.current;
-    const node = upload && previous.workflows.find(item => item.id === upload.id);
-    const kind = media.video ? 'video' : 'image';
-    if (!activeRef.current || !upload?.portSide || !node || !videoConnectionNodes(previous)[node.id]?.addable?.includes(kind)) return;
-    const images = [...previous.images];
-    let source = images.find(item => media.video ? item.video?.url === media.video.url : !item.video && item.url === media.url);
-    if (!source) {
-      const size = videoWorkflowSize(node.mode), direction = upload.portSide === 'left' ? -1 : 1;
-      source = { ...media, id: crypto.randomUUID(), x: direction < 0 ? node.x - media.width - 80 : node.x + size.width + 80,
-        y: node.y + (size.height - media.height) / 2 };
-      const scene = sceneItems(previous);
-      while (scene.some(item => source!.x < item.x + item.width + 40 && source!.x + source!.width + 40 > item.x && source!.y < item.y + item.height + 40 && source!.y + source!.height + 40 > item.y)) source.x += direction * (source.width + 40);
-      images.push(source);
-    }
-    const sourceId = source.id;
-    const existingEdge = previous.connections.find(edge => edge.source === sourceId && edge.target === node.id);
-    const next = planVideoConnection({ ...previous, images }, { source: sourceId, target: node.id, sourceHandle: 'free-right', targetHandle: `free-${upload.portSide}` },
-      existingEdge?.id, `video-connection-${crypto.randomUUID()}`, true);
-    if (!next) return;
-    commit({ ...next, selected: [node.id], selectedConnections: [] });
-    setWorkflowUpload(null);
-    canvas.current?.focus({ preventScroll: true });
   }
   async function previewReference(reference: VideoReference) {
     const request = ++previewEpoch.current;
@@ -638,10 +520,6 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       </div>}
       {active && items.length > 0 && <>
         <ReactFlowCanvas view={view} selectedIds={snapshot.selected} hand={spaceDown || mode === 'hand'} referenceMode={false} snap={snapToGrid}
-          connections={snapshot.connections} connectionNodes={connectionNodes} selectedConnectionIds={snapshot.selectedConnections} onConnect={connectNodes} onReconnect={(id, input) => connectNodes(input, id)}
-          validateConnection={(input, replacingId) => planVideoConnection(current.current, input, replacingId) !== null}
-          locale={locale} onAddConnectionMedia={openConnectionMedia}
-          onConnectionSelection={ids => replace({ ...current.current, selectedConnections: ids })}
           onView={setView} onSelection={ids => replace({ ...current.current, selected: ids })}
           onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node) })}
           onDragStart={() => { saveUndo(); setDragging(true); }} onDragEnd={() => { setDragging(false); setGuides(null); }} onGuides={setGuides} onSelecting={setSelecting}>
@@ -650,23 +528,23 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
               event.preventDefault(); event.stopPropagation();
               if (!active || reading || !canvas.current || shownModal.value || shownPreview.value || shownCutout.value || shownWorkflowUpload.value || shownVideoPreview.value) return;
               const selected = current.current.selected.includes(image.id) ? current.current.selected.filter(id => current.current.images.some(item => item.id === id)) : [image.id];
-              replace({ ...current.current, selected, selectedConnections: [] });
+              replace({ ...current.current, selected });
               setDragging(false); setSelecting(false); setGuides(null);
               const rect = canvas.current.getBoundingClientRect(), viewport = viewRef.current;
               document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'canvas-context' }));
               setCanvasMenu({ kind: 'image', x: event.clientX, y: event.clientY, worldX: (event.clientX - rect.left - viewport.x) / viewport.zoom, worldY: (event.clientY - rect.top - viewport.y) / viewport.zoom });
             }}
-            onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: event.shiftKey ? current.current.selected.includes(image.id) ? current.current.selected.filter(id => id !== image.id) : [...current.current.selected, image.id] : [image.id], selectedConnections: event.shiftKey ? current.current.selectedConnections : [] }); } }}>
+            onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: event.shiftKey ? current.current.selected.includes(image.id) ? current.current.selected.filter(id => id !== image.id) : [...current.current.selected, image.id] : [image.id] }); } }}>
             {image.video ? <Button variant="tonal" className="image-preview-button video-canvas-play nodrag nopan" title={m.play} aria-label={`${m.play} · ${image.name}`} data-node-id="97:6653" onClick={event => { event.stopPropagation(); setVideoPreview(image.video!); }}><VideoIcon name="playVideo" size={20} /></Button>
               : <Button variant="tonal" className="image-preview-button nodrag nopan" title={t.viewFull} aria-label={`${t.viewFull} · ${image.name}`} onClick={event => { event.stopPropagation(); setPreview(image); }}><Icon name="viewFull" size={20} /></Button>}
             <ProgressiveImage src={image.url} alt={image.name} width={image.width} height={image.height} fit="contain" />
           </div>)}
           {snapshot.workflows.map(node => {
             const source = snapshot.images.find(image => image.id === node.main?.sourceImageId);
-            return source && !node.main?.connectionId ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
+            return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
           })}
           {snapshot.workflows.map(node => <div key={node.id} data-canvas-id={node.id} className="fusion-position video-workflow-position" data-selected={snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoWorkflowSize(node.mode) }} role="group" tabIndex={0} aria-label={locale === 'zh-CN' ? '服装短视频' : locale === 'ja' ? 'ファッション動画' : 'Fashion video'}
-            onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id], selectedConnections: [] }); } }}>
+            onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id] }); } }}>
             <VideoWorkflowNode node={node} locale={locale} onChange={patch => updateWorkflow(node.id, patch)} onMain={() => setWorkflowUpload({ id: node.id, field: 'main' })}
               onReference={() => setWorkflowUpload({ id: node.id, field: node.mode === 'frames' ? 'endFrame' : 'references' })} onPreview={reference => void previewReference(reference)}
               onGenerate={() => notify(locale === 'zh-CN' ? '视频生成服务暂未接入，当前配置已保留。' : locale === 'ja' ? '動画生成は未接続です。現在の設定は保持されます。' : 'Video generation is not connected yet. Your settings are retained.')} />
@@ -714,10 +592,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       onPaste={() => { if (canvasMenu) pasteCopiedItems({ x: canvasMenu.worldX, y: canvasMenu.worldY }); closeCanvasMenu(); }} />
     {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} />}
     {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} videoUploads={uploadedVideos} onUpload={rememberUpload} onVideoUpload={rememberVideo} onConfirm={image => addMedia([image])} onConfirmMediaBatch={addMedia} limitMessage={m.limit} onClose={closeModal} />}
-    {active && shownWorkflowUpload.value && <AssetPicker key={`${shownWorkflowUpload.value.id}-${shownWorkflowUpload.value.field}-${shownWorkflowUpload.value.mediaKind ?? 'mixed'}`} locale={locale} phase={shownWorkflowUpload.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={applyWorkflowImage}
-      mediaKind={shownWorkflowUpload.value.mediaKind}
-      excludedUrls={shownWorkflowUpload.value.portSide ? snapshot.workflows.filter(node => node.id === shownWorkflowUpload.value!.id).flatMap(node => [node.main?.url, node.endFrame?.url, ...node.references.map(reference => reference.url)].filter((url): url is string => !!url))
-        : shownWorkflowUpload.value.field === 'references' ? snapshot.workflows.find(node => node.id === shownWorkflowUpload.value!.id)?.references.map(reference => reference.url) : undefined}
+    {active && shownWorkflowUpload.value && <AssetPicker key={`${shownWorkflowUpload.value.id}-${shownWorkflowUpload.value.field}`} locale={locale} phase={shownWorkflowUpload.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={applyWorkflowImage}
+      excludedUrls={shownWorkflowUpload.value.field === 'references' ? snapshot.workflows.find(node => node.id === shownWorkflowUpload.value!.id)?.references.map(reference => reference.url) : undefined}
       videoUploads={uploadedVideos} onConfirmVideo={shownWorkflowUpload.value.field === 'references' ? applyWorkflowVideo : undefined} onClose={() => setWorkflowUpload(null)} />}
     {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p><p className="video-canvas-help">{connectionHelp[locale]}</p></Dialog>}
     {active && shownPreview.value && <FullImageViewer image={shownPreview.value} locale={locale} phase={shownPreview.phase} onClose={() => setPreview(null)} />}
@@ -726,7 +602,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       const source = shownCutout.value!;
       ownedUrls.current.add(url);
       const result: CanvasImage = { ...source, id: crypto.randomUUID(), name: `${source.name}-cutout.png`, url, x: source.x + source.width + 80 };
-      commit({ ...current.current, images: [...current.current.images, result], selected: [result.id], selectedConnections: [] });
+      commit({ ...current.current, images: [...current.current.images, result], selected: [result.id] });
       setCutout(null);
     }} />}
   </>;

@@ -1,6 +1,6 @@
 import type { CanvasImage, FusionReference } from './canvas';
 
-export type VideoFrameReference = FusionReference & { connectionId?: string };
+export type VideoFrameReference = FusionReference;
 export type VideoReference = VideoFrameReference & { kind: 'image' | 'video' };
 export type VideoWorkflow = {
   id: string;
