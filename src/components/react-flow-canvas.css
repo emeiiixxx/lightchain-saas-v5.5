@@ -20,19 +20,19 @@
 }
 .lc-react-flow .lc-flow-free-handle::before {
   content: ''; position: absolute; left: 50%; top: 50%;
-  width: calc(24px * var(--canvas-inverse-scale)); height: calc(24px * var(--canvas-inverse-scale));
+  width: calc(32px * var(--canvas-inverse-scale)); height: calc(32px * var(--canvas-inverse-scale));
   transform: translate(-50%, -50%); transition: none;
 }
 .lc-react-flow .lc-flow-free-handle::after {
   content: ''; position: absolute; left: 50%; top: 50%;
-  width: calc(10px * var(--canvas-inverse-scale)); height: calc(10px * var(--canvas-inverse-scale)); box-sizing: border-box;
+  width: calc(16px * var(--canvas-inverse-scale)); height: calc(16px * var(--canvas-inverse-scale)); box-sizing: border-box;
   border: calc(2px * var(--canvas-inverse-scale)) solid var(--border-medium);
   border-radius: 50%; background: var(--control-fill-default); pointer-events: none;
   transform: translate(-50%, -50%);
   transition: transform var(--motion-duration) var(--motion-easing), background-color var(--motion-duration) var(--motion-easing), border-color var(--motion-duration) var(--motion-easing);
 }
-.lc-react-flow .lc-flow-free-handle.react-flow__handle-left { left: calc(-8px * var(--canvas-inverse-scale)); }
-.lc-react-flow .lc-flow-free-handle.react-flow__handle-right { right: calc(-8px * var(--canvas-inverse-scale)); }
+.lc-react-flow .lc-flow-free-handle.react-flow__handle-left { left: calc(-12px * var(--canvas-inverse-scale)); }
+.lc-react-flow .lc-flow-free-handle.react-flow__handle-right { right: calc(-12px * var(--canvas-inverse-scale)); }
 .lc-react-flow[data-connectable='true'] .react-flow__node:hover .lc-flow-free-handle,
 .lc-react-flow[data-connectable='true'] .react-flow__node.selected .lc-flow-free-handle[data-node-kind='editor'],
 .lc-react-flow[data-connectable='true'][data-connecting='true'] .lc-flow-free-handle[data-node-kind='editor'],
@@ -40,7 +40,7 @@
   opacity: 1; pointer-events: all; cursor: crosshair;
 }
 .lc-react-flow .lc-flow-free-handle:is(:hover, [data-feedback='source'], [data-feedback='valid'], [data-feedback='invalid'])::after {
-  transform: translate(-50%, -50%) scale(1.4);
+  transform: translate(-50%, -50%) scale(1.25);
   border-color: var(--border-brand); background: var(--brand-primary);
 }
 .lc-react-flow .lc-flow-free-handle[data-feedback='valid']::after { border-color: var(--status-success); background: var(--status-success); }
