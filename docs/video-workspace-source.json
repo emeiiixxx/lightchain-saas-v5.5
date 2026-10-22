@@ -324,9 +324,9 @@
         "professional"
       ],
       "defaultGenerationMode": "fast",
-      "modeControlWidth": 92,
-      "generationButtonWidth": 196,
-      "actionGap": 8,
+      "modeControlWidth": 104,
+      "generationButtonWidth": 296,
+      "actionGap": 0,
       "history": "Generation mode retained per node with undo/redo; switching frame/reference modes preserves all media and settings.",
       "connections": {
         "maximumImages": 2,
@@ -338,7 +338,11 @@
         "whenFull": "Reject additional input with invalid red port feedback; preserve existing images.",
         "binding": "Manual edge ID and source image ID are retained on the frame. Delete/reconnect/remove/replace updates both frame and line in the same undo transaction. Reconnecting within the same editor preserves its frame slot.",
         "automaticEdges": "Keep toolbar-created main binding; do not duplicate a manual main edge."
-      }
+      },
+      "modeControl": "SettingSelect in generation settings row; fast/professional, default fast",
+      "parameterControlWidth": 184,
+      "settingsGap": 8,
+      "entry": "Initial videoGeneration directly creates the shared 84:6110 frames node."
     }
   },
   "scope": [

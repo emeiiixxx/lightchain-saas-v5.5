@@ -43,8 +43,5 @@
 .video-workflow-settings { height: 60px; }
 .video-workflow-settings .lc-setting-select-value { font-size: 12px; line-height: 16px; }
 .fusion-node-action.video-workflow-action { height: 57px; flex: 0 0 57px; margin: 0; padding: 12px; }
-.video-workflow-node[data-mode='frames'] .video-workflow-action { gap: 8px; }
-.video-generation-mode { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; height: 32px; padding: 4px; border-radius: var(--radius-base); background: var(--surface-secondary); }
-.video-generation-mode .lc-button { min-width: 40px; height: 24px; min-height: 24px; padding: 4px 8px; border: 0; border-radius: 6px; color: var(--text-tertiary); font-size: 12px; line-height: 16px; font-weight: 500; white-space: nowrap; }
-.video-generation-mode .lc-button[aria-checked='true'] { background: var(--state-selected); color: var(--text-brand); }
-.video-workflow-node[data-mode='frames'] .fusion-generate { flex: 1; min-width: 0; width: auto; padding: 0 12px; font-size: 14px; line-height: 20px; white-space: nowrap; }
+.video-generation-mode { display: flex; flex: 0 0 104px; width: 104px; min-width: 0; }
+.video-workflow-node[data-mode='frames'] .fusion-generate { flex: 1; min-width: 0; width: 100%; padding: 0 20px; font-size: 14px; line-height: 20px; white-space: nowrap; }

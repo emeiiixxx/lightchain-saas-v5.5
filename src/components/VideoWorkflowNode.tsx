@@ -7,6 +7,7 @@ import { GenerateTaskButton } from './GenerateTaskButton';
 import { ProgressiveImage } from './ProgressiveImage';
 import { PromptTools } from './PromptTools';
 import { VideoGenerationSettings } from './VideoGenerationSettings';
+import { SettingSelect } from './SettingSelect';
 import { VideoIcon } from './VideoIcon';
 import { notify } from './Toast';
 import '../video-workflow-node.css';
@@ -23,7 +24,7 @@ const copy = {
     expandText: '一键扩写', imageToPrompt: '参考图反推', unavailable: '功能暂未接入',
     settings: '生成设置', generate: '开始 AI 生成', required: '请输入视频描述',
     frameImages: '首尾帧图', framesTip: '按顺序添加首帧和尾帧图片，尾帧可选', addImage: '添加图片',
-    generationMode: '生成模式', fast: '快速', professional: '专业', generateCompact: '开始 AI 生成',
+    generationMode: '生成模式', fast: '快速', professional: '专业',
   },
   en: {
     title: 'Fashion video', mode: 'Video mode', frames: 'First & last frame', references: 'Multi-reference',
@@ -36,7 +37,7 @@ const copy = {
     expandText: 'Expand prompt', imageToPrompt: 'Image to prompt', unavailable: 'is not connected yet',
     settings: 'Generation settings', generate: 'Start AI generation', required: 'Enter a video description',
     frameImages: 'First & last frame', framesTip: 'Add the first frame, then an optional last frame', addImage: 'Add image',
-    generationMode: 'Generation mode', fast: 'Fast', professional: 'Pro', generateCompact: 'Generate',
+    generationMode: 'Generation mode', fast: 'Fast', professional: 'Pro',
   },
   ja: {
     title: 'ファッション動画', mode: '動画モード', frames: '開始・終了フレーム', references: '複数参考モード',
@@ -49,7 +50,7 @@ const copy = {
     expandText: 'プロンプトを拡張', imageToPrompt: '参考画像から指示を作成', unavailable: 'は未接続です',
     settings: '生成設定', generate: 'AI 生成を開始', required: '動画の説明を入力してください',
     frameImages: '開始・終了フレーム', framesTip: '開始画像、任意の終了画像の順に追加します', addImage: '画像を追加',
-    generationMode: '生成モード', fast: '高速', professional: '高品質', generateCompact: 'AI 生成',
+    generationMode: '生成モード', fast: '高速', professional: '高品質',
   },
 };
 
@@ -157,21 +158,17 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
       </div>
       <div className="fusion-field video-workflow-settings"><span className="fusion-label">{t.settings}</span>
         <div className="fusion-settings">
+          {frames && <div className="video-generation-mode">
+            <SettingSelect label={t.generationMode} value={generationMode}
+              options={(['fast', 'professional'] as const).map(value => ({ value, label: t[value] }))}
+              onChange={value => onChange({ generationMode: value === 'professional' ? 'professional' : 'fast' })} />
+          </div>}
           <VideoGenerationSettings locale={locale} value={node} onChange={onChange} />
         </div>
       </div>
     </div>
     <footer className="fusion-node-action video-workflow-action">
-      {frames && <div className="video-generation-mode" role="radiogroup" aria-label={t.generationMode} onKeyDown={event => {
-        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
-        event.preventDefault(); event.stopPropagation();
-        const next = event.key === 'Home' ? 'fast' : event.key === 'End' ? 'professional' : generationMode === 'fast' ? 'professional' : 'fast';
-        onChange({ generationMode: next });
-        event.currentTarget.querySelector<HTMLButtonElement>(`[data-generation-mode="${next}"]`)?.focus();
-      }}>
-        {(['fast', 'professional'] as const).map(mode => <Button key={mode} role="radio" data-generation-mode={mode} aria-checked={generationMode === mode} tabIndex={generationMode === mode ? 0 : -1} onClick={() => onChange({ generationMode: mode })}>{t[mode]}</Button>)}
-      </div>}
-      <GenerateTaskButton label={frames ? t.generateCompact : t.generate} cost="999" className="fusion-generate" onClick={generate} />
+      <GenerateTaskButton label={t.generate} cost="999" className="fusion-generate" onClick={generate} />
     </footer>
   </section>;
 }
