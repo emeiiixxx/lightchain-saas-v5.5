@@ -2,7 +2,7 @@
 
 // React Bits GradientText, adapted from the component source supplied by the
 // user. React-only: preserve its variants and add typed props/lifecycle guards.
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import './GradientText.css';
 
 type Variant = 'linear' | 'flow' | 'conic';
@@ -33,12 +33,33 @@ export default function GradientText({ children, colors = ['#5227FF', '#FF9FFC',
   yoyo = true, glow = 0, showBorder = false, borderWidth = 1.5,
   pauseOnHover = false, followPointer = false, className = '', style }: Props) {
   const rootRef = useRef<HTMLSpanElement>(null);
+  const contentRef = useRef<HTMLSpanElement>(null);
   const wakeRef = useRef<(() => void) | null>(null);
   const palette = colors.length > 1 ? colors : [colors[0] ?? '#ffffff', colors[0] ?? '#ffffff'];
   const settings = { colors: palette, speed: Math.max(0.2, animationSpeed), variant,
     angle: direction ? ANGLES[direction] : angle, scale: clamp(scale, 1, 6), yoyo, pauseOnHover, followPointer };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+
+  // Masked icons sample the same full-row gradient as the text, rather than
+  // restarting the palette inside their smaller box. Measure layout size so
+  // canvas zoom does not change the shared gradient coordinate system.
+  useLayoutEffect(() => {
+    const root = rootRef.current, content = contentRef.current;
+    if (!root || !content) return;
+    const resize = (width: number, height: number) => {
+      root.style.setProperty('--gt-content-width', `${width}px`);
+      root.style.setProperty('--gt-content-height', `${height}px`);
+    };
+    const computed = getComputedStyle(content);
+    resize(parseFloat(computed.width) || content.offsetWidth, parseFloat(computed.height) || content.offsetHeight);
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      if (entry) resize(entry.contentRect.width, entry.contentRect.height);
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => { wakeRef.current?.(); });
   useEffect(() => {
@@ -70,7 +91,9 @@ export default function GradientText({ children, colors = ['#5227FF', '#FF9FFC',
         const swing = cycle % 2, t = swing < 1 ? swing : 2 - swing;
         let offset = s.yoyo ? (.5 - Math.cos(Math.PI * t) / 2) * (period - 100) : (cycle % 1) * period;
         offset += (state.px - .5) * period * .5 * state.pull;
-        image = `repeating-linear-gradient(${s.angle}deg, ${loop.map((color, i) => `${color} ${((i / (loop.length - 1)) * period - offset).toFixed(2)}%`).join(', ')})`;
+        // Positive stop travel follows the gradient direction: 90deg moves
+        // left to right. Shifting one complete period gives a seamless loop.
+        image = `repeating-linear-gradient(${s.angle}deg, ${loop.map((color, i) => `${color} ${((i / (loop.length - 1)) * period + offset).toFixed(2)}%`).join(', ')})`;
       }
       root.style.setProperty('--gt-gradient', image);
     };
@@ -135,11 +158,15 @@ export default function GradientText({ children, colors = ['#5227FF', '#FF9FFC',
     };
   }, []);
 
+  const loop = [...palette, palette[0]];
+  const initialGradient = variant === 'linear'
+    ? `repeating-linear-gradient(${settings.angle}deg, ${loop.map((color, i) => `${color} ${(i / (loop.length - 1)) * 100 * settings.scale}%`).join(', ')})`
+    : `linear-gradient(${settings.angle}deg, ${loop.join(', ')})`;
   return <span ref={rootRef} className={`gradient-text${showBorder ? ' gradient-text--border' : ''}${className ? ` ${className}` : ''}`}
-    style={{ '--gt-gradient': `linear-gradient(${settings.angle}deg, ${[...palette, palette[0]].join(', ')})`,
+    style={{ '--gt-gradient': initialGradient,
       '--gt-border': `${borderWidth}px`, '--gt-glow': clamp(glow, 0, 1), ...style } as CSSProperties}>
     <span className="gradient-text__inner">
-      <span className="gradient-text__content">{children}</span>
+      <span ref={contentRef} className="gradient-text__content">{children}</span>
       {glow > 0 && <span className="gradient-text__glow" aria-hidden="true">{children}</span>}
     </span>
   </span>;
