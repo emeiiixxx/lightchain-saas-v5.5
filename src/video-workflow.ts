@@ -69,6 +69,26 @@ export function videoWorkflowReferences(node: VideoWorkflow): VideoReference[] {
   return [...ordered, ...byId.values()];
 }
 
+// sourceImageId is the shared reference field; in this workspace it identifies
+// either an image or a video on the canvas. Multiple slots can share one source.
+export function videoWorkflowSourceIds(node: VideoWorkflow): string[] {
+  const references = node.mode === 'frames' ? [node.main, node.endFrame] : videoWorkflowReferences(node);
+  return [...new Set(references.flatMap(reference => reference?.sourceImageId ? [reference.sourceImageId] : []))];
+}
+
+// Canvas deletion clears every bound slot, including values in an inactive mode.
+// Removing an editor slot itself does not remove the reusable canvas material.
+export function removeVideoWorkflowSources(node: VideoWorkflow, removed: ReadonlySet<string>): VideoWorkflow {
+  const isRemoved = (reference?: VideoFrameReference) => Boolean(reference?.sourceImageId && removed.has(reference.sourceImageId));
+  const main = isRemoved(node.main) ? undefined : node.main;
+  const endFrame = isRemoved(node.endFrame) ? undefined : node.endFrame;
+  const references = node.references.filter(reference => !isRemoved(reference));
+  if (main === node.main && endFrame === node.endFrame && references.length === node.references.length) return node;
+  const next = { ...node, main, endFrame, references };
+  const remainingIds = new Set(videoWorkflowReferences(next).map(reference => reference.id));
+  return { ...next, referenceOrder: node.referenceOrder?.filter(id => remainingIds.has(id)) };
+}
+
 // Move within one media section; other kinds retain their positions. The caller
 // commits this array as referenceOrder in one undoable node update.
 export function reorderVideoReferences(node: VideoWorkflow, kind: VideoReference['kind'], sourceId: string, targetId: string): string[] {

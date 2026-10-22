@@ -549,7 +549,7 @@
       "finalDesignValues": "Static fast / 1080p / Auto values in the final node screenshots do not override the existing fast/professional menus, legal parameters or BetaSlider behavior. New short editors use fast/2K/5s; new long editors use professional/1080p/30s. Preserve existing values."
     },
     "costLabel": "999",
-    "interaction": "Short-video editors retain separate main and optional endFrame fields. Long-video editors show separate image and video reference rows, with independent upload actions and counts. Images allow up to 9 including inherited main; videos allow up to 3. Reorder and renumber within the same media type only. Keep main identity and its sourceImageId association regardless of its position. Deduplicate by URL across main and references. Retain fixed main-image business associations only, and support dragging non-interactive editor space.",
+    "interaction": "Short-video editors retain separate main and optional endFrame fields. Long-video editors show separate image and video reference rows, with independent uploads and counts: up to 9 images including inherited main, and 3 videos. Reorder and renumber within the same media type only; preserve each source binding and inherited main identity. Deduplicate references by URL. Every editor input has a canvas media source and a fixed automatic business association. Non-interactive editor space remains draggable.",
     "generation": "Short video keeps click validation: missing main opens its image picker and missing prompt focuses the input. Long video requires at least one image or video and a non-empty prompt; video-only references are valid. Video generation and prompt generation services are not connected; report this honestly without tasks, charges or fabricated prompt content.",
     "geometryByMode": {
       "frames": {
@@ -594,11 +594,11 @@
         "endFrame"
       ],
       "emptyEntry": "Keep independent main-image and optional end-frame upload cards, using the existing single-image AssetPicker.",
-      "removal": "Delete clears only that frame. Removing main also clears its automatic business line, while preserving the canvas source, editor, prompt, settings and end frame. End frame is never promoted to main. Support undo.",
+      "removal": "Hover delete is at the thumbnail top right. Delete clears only that frame and retains the canvas source, editor, prompt, settings and other frame. Remove the source/editor line only when no remaining slot uses it. End frame is never promoted to main. Support undo.",
       "entry": "Initial videoGeneration creates the empty short-video editor. The image toolbar short-video action inherits the actual selected image.",
       "connections": {
         "maximumImages": 2,
-        "binding": "Only the main image retains its canvas source association. Editor upload and image-toolbar creation establish the automatic business line. No ports, free edges or manual reconnect interactions."
+        "binding": "Both main and endFrame retain their canvas source association. Editor uploads create or reuse canvas media and establish the automatic business line in one undo transaction. Repeated use of the same canvas source draws only one line to the editor. No ports, free edges or manual reconnect interactions."
       }
     },
     "multipleReferenceLayout": {
@@ -614,9 +614,9 @@
       "imageLimit": 9,
       "videoLimit": 3,
       "mainCountsTowardImageLimit": true,
-      "upload": "Separate image and video upload actions with separate current/maximum counts. Decode local videos before applying; errors preserve existing content.",
-      "ordering": "Drag to reorder within the same media type and number each row by its current order. Keep inherited main identity and its sourceImageId association when reordered; do not reassign the main binding based on position.",
-      "media": "Preview and hover delete for every thumbnail. Delete main clears its binding and automatic line while preserving the canvas source and editor. Ordinary reference deletion removes only that entry.",
+      "upload": "Separate image and video upload actions with separate current/maximum counts. Decode local videos before applying; errors preserve existing content. Every accepted image or video also creates or reuses a canvas media source and binds to this editor atomically.",
+      "ordering": "Drag to reorder within the same media type and number each row by its current order. Preserve every source binding and inherited main identity; do not reassign bindings based on position.",
+      "media": "Preview and top-right hover delete for every thumbnail. Delete clears only that reference, retaining the canvas source and editor configuration; remove its automatic line only when no other input uses that source. Canvas videos retain the original video and poster for playback and download.",
       "deduplication": "Use URL across inherited main and references; enforce in picker exclusions and local image/video confirmation.",
       "generationRequirement": "At least one image or video plus a non-empty prompt; video-only references are valid."
     },
@@ -686,14 +686,18 @@
   "userOverrides": {
     "fixedBusinessAssociations": {
       "mode": "Use the same fixed business association model as the fusion canvas. Retain normal video editors, editor uploads, reference videos and canvas media interactions.",
-      "creation": "Image toolbar video-generation actions create separate short-video or long-video editors, inheriting the selected image and establishing its main-image association in one undo transaction. Main uploads inside a short editor also establish the association. The initial entry creates an empty short editor. Long editors accept image or video references without a hidden main-image requirement.",
+      "creation": "Image toolbar video-generation actions create a short-video or long-video editor and bind the selected image in one undo transaction. Every main, end-frame, image-reference or video-reference upload inside an editor also creates or reuses its canvas media and automatic association in one transaction. The initial entry creates an empty short editor; long editors have no hidden main-image requirement.",
       "interaction": "Do not show connection ports or provide free dragging, reconnection, selectable-edge deletion or port plus menus. Automatic lines do not intercept pointer input.",
       "geometry": "Automatic business lines use the fusion canvas geometry and follow the actual relative left/right positions of media and editor.",
       "selection": "Selecting either endpoint shows a brand-color marching line over a dark underlay at layer 4. Otherwise show a gray solid line at layer -1. Do not highlight unrelated branches through group association.",
       "motion": "Marching line uses an 800ms linear loop; color transitions retain 200ms ease-out. Reduced motion disables marching.",
-      "clipboard": "Copy selected image and video media only. Do not copy editors, free relationships or connections back to original nodes."
+      "clipboard": "Copy selected image and video media only. Do not copy editors, free relationships or connections back to original nodes.",
+      "canvasMedia": "Reuse an existing canvas source with the same media kind and URL without moving it or creating a duplicate. New media uses the shared landscape-height/portrait-width limit of 360px and 360px square rule, is placed left of the editor and avoids existing content. Videos retain their original file and poster.",
+      "edgeIdentity": "Draw one automatic business line per distinct source/editor pair, including every main, end frame and image/video reference. Keep the line while any input in that editor still uses its source.",
+      "removal": "Removing an editor slot/reference detaches only that input and retains canvas media. Deleting canvas media clears all bound slots/references across editors while retaining editors, prompts, settings and unrelated inputs. Deleting an editor retains canvas media. Undo restores media, inputs and derived lines together.",
+      "arrangement": "Group all connected input media and editors for video-canvas arrangement. Position each shared media source and editor only once, retain reference order and business associations, then fit all content."
     },
-    "workflowMainImageRemoval": "Every frame and reference thumbnail supports preview and hover delete. Deletion clears only that slot or item. Deleting main clears its automatic association while preserving the canvas source, editor, prompt, settings and other references, with undo. End frame remains independent and is not promoted. Deleting the canvas source clears its main binding.",
+    "workflowMainImageRemoval": "Every frame and reference thumbnail supports preview and top-right hover delete. Removing a slot clears only that input, retains canvas media and editor configuration, and removes the line only if no other input uses that source. End frame stays independent and is not promoted. Deleting canvas media clears all of its bindings across editors. All changes support coherent undo.",
     "desktopDialogHeight": 720,
     "templateSidebar": "Use the same sidebar in content and empty states: 256px desktop width, shared spacing and selection styles, no horizontal divider below the title.",
     "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",
