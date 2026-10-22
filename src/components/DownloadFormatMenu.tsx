@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { messages, type Locale } from '../i18n';
 import { downloadFormats, type DownloadFormat } from '../download-image';
 import { usePresence } from '../usePresence';
@@ -7,10 +7,12 @@ import '../download-format-menu.css';
 
 // Adapted from the v5.4 DownloadFormatMenu: keep the popup in the top layer
 // so canvas transforms and the toolbar's overflow cannot clip it.
-export function DownloadFormatMenu({ locale, disabled, onSelect }: {
+export function DownloadFormatMenu({ locale, disabled, onSelect, icon, menuGroup }: {
   locale: Locale;
   disabled?: boolean;
   onSelect: (format: DownloadFormat) => void;
+  icon?: ReactNode;
+  menuGroup?: string;
 }) {
   const t = messages[locale];
   const [open, setOpen] = useState(false);
@@ -23,6 +25,15 @@ export function DownloadFormatMenu({ locale, disabled, onSelect }: {
   }, []);
 
   useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
+  useEffect(() => {
+    if (!menuGroup) return;
+    const otherMenu = (event: Event) => {
+      const detail = (event as CustomEvent<{ group: string; id: string }>).detail;
+      if (detail.group === menuGroup && detail.id !== id) close();
+    };
+    document.addEventListener('lc-toolbar-menu-open', otherMenu);
+    return () => document.removeEventListener('lc-toolbar-menu-open', otherMenu);
+  }, [menuGroup, id, close]);
   useEffect(() => {
     if (!open) return;
     const outside = (event: PointerEvent | FocusEvent) => {
@@ -68,14 +79,18 @@ export function DownloadFormatMenu({ locale, disabled, onSelect }: {
       items?.[last ? items.length - 1 : 0]?.focus();
     });
   }
+  function expand() {
+    if (menuGroup) document.dispatchEvent(new CustomEvent('lc-toolbar-menu-open', { detail: { group: menuGroup, id } }));
+    setOpen(true);
+  }
 
   return <div ref={anchor} className="download-format-control" data-overlay>
     <Button className="canvas-icon-button" aria-label={t.download} title={t.download} disabled={disabled} aria-haspopup="menu" aria-expanded={open} aria-controls={id}
-      onClick={event => { setOpen(!open); if (!open && event.detail === 0) focusOption(); }}
+      onClick={event => { if (open) close(); else { expand(); if (event.detail === 0) focusOption(); } }}
       onKeyDown={event => {
         if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
-        event.preventDefault(); event.stopPropagation(); setOpen(true); focusOption(event.key === 'ArrowUp');
-      }}><Icon name="downloadIcon" size={20} /></Button>
+        event.preventDefault(); event.stopPropagation(); expand(); focusOption(event.key === 'ArrowUp');
+      }}>{icon ?? <Icon name="downloadIcon" size={20} />}</Button>
     {shown.value && <div ref={panel} id={id} popover="manual" role="menu" aria-label={t.download} className="download-format-menu" data-overlay data-phase={shown.phase} inert={shown.phase === 'exit'}
       onKeyDown={event => {
         if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;

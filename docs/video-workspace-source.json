@@ -6,7 +6,10 @@
     "initialEntries": "64:2061",
     "singleImageCanvas": "76:5683",
     "uploadedVideoCanvas": "97:6649",
-    "singleImageToolbar": "76:5775",
+    "singleImageToolbar": "113:8878",
+    "singleImageToolbarInstance": "113:8879",
+    "imageMaterialGenerationMenu": "113:9464",
+    "imageVideoGenerationMenu": "113:9502",
     "singleImage": "76:5776",
     "fashionVideoFirstLastFrame": "84:6110",
     "fashionVideoMultipleReferences": "112:7764",
@@ -23,6 +26,15 @@
   },
   "assets": {
     "directory": "public/assets/video-workspace",
+    "imageToolbar": {
+      "updated": "2026-10-22",
+      "directory": "public/assets/video-image-toolbar",
+      "fileCount": 15,
+      "sourceNodes": ["113:8878", "113:9464", "113:9502"],
+      "source": "Original SVGs exported from the toolbar and its material/video generation menu slots.",
+      "displaySize": 20,
+      "upscaleDisplaySize": 16
+    },
     "initialIcons": "64:2057",
     "initialEntryIcons": {
       "updated": "2026-10-22",
@@ -175,14 +187,65 @@
       "height": 560,
       "radius": 16
     },
-    "imageContent": "Dynamic uploaded image, preserving its original aspect ratio.",
+    "imageContent": "Dynamic uploaded image, preserving its original aspect ratio. The 360 x 560 design example is not a fixed canvas material size.",
     "toolbar": {
+      "nodeId": "113:8878",
+      "instanceId": "113:8879",
+      "updated": "2026-10-22",
       "width": "max-content",
+      "chineseDesignWidth": 607,
       "textButtonWidth": "auto",
       "textButtonPaddingInline": 8,
       "height": 40,
       "gapToImage": 16,
-      "radius": 12
+      "radius": 12,
+      "groupGap": 4,
+      "groups": [
+        ["materialGeneration", "videoGeneration", "separator"],
+        ["videoRemake", "separator", "cutout", "upscale", "separator"],
+        ["saveAsset", "download", "sendImage"]
+      ],
+      "buttonHeight": 32,
+      "chineseButtonWidths": {
+        "materialGeneration": 112,
+        "videoGeneration": 112,
+        "videoRemake": 88,
+        "cutout": 64,
+        "upscale": 84,
+        "iconOnly": 32
+      },
+      "localization": "Chinese, English and Japanese; text controls and toolbar size to their contents.",
+      "scope": "Video-workspace image selection only. Preserve fusion-canvas and uploaded-video toolbars."
+    },
+    "hoverMenus": {
+      "materialGeneration": {
+        "nodeId": "113:9464",
+        "labelsZh": ["快捷编辑", "多视角", "分镜图"],
+        "actions": ["quickEdit", "multiView", "storyboardImage"],
+        "behavior": "Each action gives the existing not-connected notice; do not create output, tasks or charges."
+      },
+      "videoGeneration": {
+        "nodeId": "113:9502",
+        "labelsZh": ["服装短视频", "多参考模式", "分镜成片"],
+        "actions": ["fashionVideo", "multiReference", "storyboard"],
+        "behavior": "Fashion video creates a frames editor; multiple references creates a references editor. Both carry the actual selected image as the inherited main image and add an automatic business line. Editor creation, mode and association are one undo transaction. Storyboard video remains not connected."
+      },
+      "panel": {
+        "width": 160,
+        "height": 120,
+        "padding": 4,
+        "gap": 8,
+        "rowHeight": 32,
+        "radius": 12,
+        "itemRadius": 8,
+        "iconSize": 20,
+        "fontSize": 14,
+        "lineHeight": 20,
+        "tokens": "Use semantic floating surface, border and shadow tokens; active trigger uses Text/brand and State/hover."
+      },
+      "reuse": "Reuse v5.4 useHoverDismiss and ElementSendMenu's combined hover area, adapting the current DownloadFormatMenu top-layer positioning and keyboard behavior with usePresence.",
+      "interaction": "Open on trigger hover; keep open across the combined trigger/menu hit area with a 120ms pointer-intent dismissal delay and 200ms ease-out visual motion. Also support click and keyboard. Menus are mutually exclusive; Escape, outside interaction or changing the selected image closes them. Follow the toolbar as the canvas moves and avoid viewport edges. Support dark/light themes and Chinese/English/Japanese.",
+      "otherActions": "Reuse real cutout editing and the click-open PNG/JPG/AVIF download menu. Video remake, upscale, save to assets and send remain not connected."
     },
     "initialAlignment": "Center image and toolbar together inside the canvas below the 48px topbar; keep toolbar at UI scale.",
     "sideToolbar": {
@@ -208,9 +271,9 @@
       "export": "Original pixel dimensions; white background for JPG; validate actual encoded MIME and report unsupported formats."
     },
     "assetAction": {
-      "instance": "I76:5775;1675:2985;76:5762",
-      "iconMaster": "64:2261",
-      "meaning": "Save to assets, based on the asset-center icon master."
+      "toolbarInstance": "113:8879",
+      "assetDirectory": "public/assets/video-image-toolbar",
+      "meaning": "Save to assets; retain the original asset-center artwork and the not-connected action feedback."
     }
   },
   "uploadedVideoCanvas": {
@@ -506,6 +569,7 @@
     "canvas initialization",
     "image and video uploads",
     "single image canvas and toolbar",
+    "image toolbar material and video generation hover menus",
     "uploaded video canvas and toolbar",
     "fashion video workflow modes",
     "reference image and video uploads",
@@ -514,7 +578,7 @@
   "userOverrides": {
     "fixedBusinessAssociations": {
       "mode": "Use the same fixed business association model as the fusion canvas. Retain normal video editors, editor uploads, reference videos and canvas media interactions.",
-      "creation": "Toolbar actions or main-image uploads inside the editor establish the main-image association automatically. Empty video-generation entry creates a frames editor; switching to multi-reference allows ordinary image/video reference uploads without requiring a hidden main image.",
+      "creation": "Image toolbar video-generation menu actions create a frames editor for fashion video or a references editor for multiple-reference mode, carrying the actual selected image and establishing its main-image association automatically in one undo transaction. Main-image uploads inside the editor also establish the association. Empty video-generation entry creates a frames editor; multi-reference mode allows ordinary image/video reference uploads without requiring a hidden main image.",
       "interaction": "Do not show connection ports or provide free dragging, reconnection, selectable-edge deletion or port plus menus. Automatic lines do not intercept pointer input.",
       "geometry": "Automatic business lines use the fusion canvas geometry and follow the actual relative left/right positions of media and editor.",
       "selection": "Selecting either endpoint shows a brand-color marching line over a dark underlay at layer 4. Otherwise show a gray solid line at layer -1. Do not highlight unrelated branches through group association.",
@@ -530,6 +594,10 @@
   },
   "deferred": [
     "multiple image visual design",
+    "quick image editing",
+    "multiple image views",
+    "storyboard image generation",
+    "video remake",
     "storyboard workflow",
     "template editing workflow",
     "video generation service",

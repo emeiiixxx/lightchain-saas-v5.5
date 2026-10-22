@@ -21,6 +21,11 @@
 .media-toolbar--video > .lc-button { flex-shrink: 0; border: 0; }
 .media-toolbar--video > .divider { flex-shrink: 0; }
 .media-toolbar--video-asset { background: var(--surface-floating); }
+.media-toolbar--video-image { background: var(--surface-floating); }
+.video-image-toolbar-group { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; }
+.video-image-toolbar-group > .lc-button { padding: 0 8px; border: 0; }
+.video-image-toolbar-group > .canvas-icon-button { padding: 0; }
+.video-image-toolbar-group > .divider { flex: 0 0 1px; height: 32px; }
 .canvas-image .video-canvas-play { border-radius: var(--radius-max); }
 .asset-video-marker { position: absolute; left: 8px; bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px; border-radius: 6px; background: var(--surface-media-overlay); color: #fff; pointer-events: none; font-size: 12px; line-height: 16px; }
 .video-workspace .canvas-side-toolbar { width: 56px; border: 0; }

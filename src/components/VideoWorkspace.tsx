@@ -368,19 +368,20 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       return next;
     }) });
   }
-  function addWorkflow(sourceId?: string) {
+  function addWorkflow(sourceId?: string, mode: VideoWorkflow['mode'] = 'frames') {
     const previous = current.current;
     // Toolbar entries bind the actual canvas asset, including its current
     // geometry, rather than a fading selection overlay's snapshot.
     const source = sourceId ? previous.images.find(image => image.id === sourceId) : undefined;
     if (sourceId && (!source || source.video)) return;
     const scene = sceneItems(previous), viewport = viewRef.current;
-    const size = videoWorkflowSize('frames');
+    const size = videoWorkflowSize(mode);
     const node = createVideoWorkflow(
       source ? source.x + source.width + 80 : (canvasSize.width / 2 - viewport.x) / viewport.zoom - size.width / 2,
       source ? source.y + (source.height - size.height) / 2 : (canvasSize.height / 2 - viewport.y) / viewport.zoom - size.height / 2,
       source,
     );
+    node.mode = mode;
     while (scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
     commit({ ...previous, workflows: [...previous.workflows, node], selected: [node.id] });
     if (canvas.current) animateView(fitImages([...(source ? [source] : []), videoWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
@@ -561,6 +562,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
               if (!source) return;
               if (action === 'cutout') setCutout(source);
               else if (action === 'fashionVideo') addWorkflow(source.id);
+              else if (action === 'multiReference') addWorkflow(source.id, 'references');
               else notify(locale === 'zh-CN' ? '此功能暂未接入。' : locale === 'ja' ? 'この機能はまだ接続されていません。' : 'This feature is not connected yet.');
             }} />}
           </div>
