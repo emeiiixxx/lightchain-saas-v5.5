@@ -55,9 +55,9 @@ type WorkflowUpload = { id: string; field: 'main' | 'endFrame' | 'references' };
 type Modal = 'templates' | 'assets' | 'help';
 type Props = { locale: Locale; active: boolean; onBack: () => void };
 const connectionHelp = {
-  'zh-CN': '拖动节点四边的连接点可自由连线。点击连线选中，按 Delete 删除，拖动选中连线的端点可重新连接。Shift + 点击可多选，Ctrl / ⌘ + Z 可撤销。',
-  en: 'Drag between connection points on any side of a node to connect. Select a line and press Delete to remove it, or drag its endpoint to reconnect. Shift-click to select multiple items; Ctrl / ⌘ + Z undoes.',
-  ja: 'ノードの各辺にある接続点をドラッグして自由に接続できます。線を選択してDeleteで削除、端点をドラッグして接続先を変更します。Shift + クリックで複数選択、Ctrl / ⌘ + Zで取り消します。',
+  'zh-CN': '拖动节点左右两边的连接点可自由连线。点击连线选中，按 Delete 删除，拖动选中连线的端点可重新连接。Shift + 点击可多选，Ctrl / ⌘ + Z 可撤销。',
+  en: 'Drag between connection points on the left or right side of a node to connect. Select a line and press Delete to remove it, or drag its endpoint to reconnect. Shift-click to select multiple items; Ctrl / ⌘ + Z undoes.',
+  ja: 'ノードの左右にある接続点をドラッグして自由に接続できます。線を選択してDeleteで削除、端点をドラッグして接続先を変更します。Shift + クリックで複数選択、Ctrl / ⌘ + Zで取り消します。',
 };
 const sceneItems = (snapshot: Snapshot) => [...snapshot.images, ...snapshot.workflows.map(videoWorkflowBox)];
 const isField = (target: EventTarget | null) => target instanceof HTMLElement && !!target.closest('input,textarea,select,[contenteditable="true"]');

@@ -13,7 +13,7 @@ type ConnectionEdge = Edge<{ image: CanvasImage; target: CanvasImage; active: bo
 type FreeConnectionEdge = Edge<{ zoom: number }, 'lightchain-free'>;
 type CanvasEdge = ConnectionEdge | FreeConnectionEdge;
 const handles = [Position.Left, Position.Right];
-const freeHandles = [Position.Left, Position.Right, Position.Top, Position.Bottom];
+const freeHandles = [Position.Left, Position.Right];
 const LightchainNode = memo(({ id, data }: NodeProps<ContentNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
   useLayoutEffect(() => {

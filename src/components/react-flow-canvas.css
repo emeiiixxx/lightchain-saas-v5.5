@@ -23,8 +23,6 @@
 }
 .lc-react-flow .lc-flow-free-handle.react-flow__handle-left { left: calc(-8px * var(--canvas-inverse-scale)); }
 .lc-react-flow .lc-flow-free-handle.react-flow__handle-right { right: calc(-8px * var(--canvas-inverse-scale)); }
-.lc-react-flow .lc-flow-free-handle.react-flow__handle-top { top: calc(-8px * var(--canvas-inverse-scale)); }
-.lc-react-flow .lc-flow-free-handle.react-flow__handle-bottom { bottom: calc(-8px * var(--canvas-inverse-scale)); }
 .lc-react-flow[data-connectable='true'] .react-flow__node:is(:hover, .selected) .lc-flow-free-handle,
 .lc-react-flow[data-connectable='true'][data-connecting='true'] .lc-flow-free-handle {
   opacity: 1; pointer-events: all; cursor: crosshair;
