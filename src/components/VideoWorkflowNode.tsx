@@ -148,7 +148,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
           <div className="fusion-textarea-footer">
             <div className="fusion-prompt-actions"><PromptTools value={node.prompt} onChange={updatePrompt} labels={t} /></div>
             <div className="video-prompt-assist">
-              <Button className={frames ? 'video-prompt-expand' : 'video-prompt-icon'} aria-label={t.expandText} title={t.expandText} onClick={() => notConnected(t.expandText)}><NodeIcon name="expandText" />{frames && <span>{t.expandText}</span>}</Button>
+              <Button className={frames ? 'video-prompt-expand' : 'video-prompt-icon'} aria-label={t.expandText} title={frames ? undefined : t.expandText} onClick={() => notConnected(t.expandText)}><NodeIcon name="expandText" />{frames && <span>{t.expandText}</span>}</Button>
               {!frames && <Button className="video-prompt-icon" aria-label={t.imageToPrompt} title={t.imageToPrompt} onClick={() => notConnected(t.imageToPrompt)}><NodeIcon name="imageToPrompt" /></Button>}
               <span className="fusion-counter" aria-label={t.count}>{node.prompt.length}/2000</span>
             </div>

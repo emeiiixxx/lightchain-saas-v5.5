@@ -36,7 +36,7 @@
 .video-workflow-prompt .fusion-textarea { flex-shrink: 0; }
 .video-prompt-assist { display: flex; flex: 1; min-width: 0; justify-content: flex-end; align-items: center; gap: 4px; }
 .video-workflow-node .video-prompt-icon { flex: 0 0 24px; width: 24px; min-width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; }
-.video-workflow-node .video-prompt-expand { min-width: 24px; height: 24px; min-height: 24px; padding: 0 8px; gap: 4px; border: 0; border-radius: 4px; color: var(--text-secondary); font-size: 12px; line-height: 20px; }
+.video-workflow-node .video-prompt-expand { min-width: 24px; height: 24px; min-height: 24px; padding: 0 8px; gap: 4px; border: 0; border-radius: 6px; color: var(--text-secondary); font-size: 12px; line-height: 20px; }
 .video-prompt-expand > .video-node-icon { flex-shrink: 0; }
 .video-prompt-expand > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .video-prompt-assist .fusion-counter { flex: 0 0 auto; }
