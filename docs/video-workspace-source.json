@@ -317,7 +317,7 @@
         "endFrame"
       ],
       "emptyEntry": "One original plus icon tile opens the existing main-image picker. Once main exists, allow one optional end frame.",
-      "main": "Preview and replace only; deleting its canvas source clears the main binding.",
+      "main": "Preview and show a delete button on hover, matching the last frame. Delete clears only this frame and its connection; preserve the canvas source, editor, other frame and settings. The last frame retains its slot and does not become the first frame. Support a single undo transaction.",
       "promptAssist": "Labelled expand-text button and character counter with 4px gap.",
       "generationModes": [
         "fast",
@@ -336,7 +336,7 @@
         ],
         "existingUploadsCount": true,
         "whenFull": "Reject additional input with invalid red port feedback; preserve existing images.",
-        "binding": "Manual edge ID and source image ID are retained on the frame. Delete/reconnect/remove/replace updates both frame and line in the same undo transaction. Reconnecting within the same editor preserves its frame slot.",
+        "binding": "Manual edge ID and source image ID are retained on the frame. Deleting either frame removes its corresponding line while preserving the canvas source and other frame, in one undo transaction. Deleting or reconnecting a bound edge updates its frame; reconnecting within the same editor preserves its frame slot.",
         "automaticEdges": "Keep toolbar-created main binding; do not duplicate a manual main edge."
       },
       "modeControl": "SettingSelect in generation settings row; fast/professional, default fast",
@@ -364,7 +364,7 @@
       "binding": "Create media on the clicked side or reuse existing canvas media; connect and fill the frame/main/reference in one undo transaction. Reuse an existing graph edge when present. Removing or reconnecting a bound edge or deleting its media updates the input.",
       "gestures": "Click opens menu; native drag-to-connect, compatibility feedback, keyboard access and 200ms transitions remain available."
     },
-    "workflowMainImageRemoval": "No main-image delete button inside either editor. Deleting its canvas source or manually created binding edge clears the corresponding slot; retain node/prompt/other references and allow undo. Automatic toolbar bindings retain their existing source-removal rule.",
+    "workflowMainImageRemoval": "Frames mode shows delete on hover for both first and last frame thumbnails. Deleting a frame clears only its slot and corresponding connection; preserve the canvas source, editor, prompt, settings and other references, with undo. References mode retains main-image replacement and no main-image delete button; deleting its canvas source or manual binding edge clears the main slot.",
     "desktopDialogHeight": 720,
     "templateSidebar": "Use the same sidebar in content and empty states: 256px desktop width, shared spacing and selection styles, no horizontal divider below the title.",
     "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",

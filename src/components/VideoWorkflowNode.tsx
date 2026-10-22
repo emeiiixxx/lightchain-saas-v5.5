@@ -18,7 +18,7 @@ const copy = {
     addMainFrame: '添加主图（首帧）', addMain: '添加主图', mainFrame: '主图（首帧）', main: '主图',
     replaceMain: '替换主图', endFrame: '尾帧参考图', media: '参考图 / 视频',
     endTip: '尾帧参考图用于视频结束画面', mediaTip: '支持添加参考图片或视频',
-    addEnd: '添加尾帧参考图', addReference: '添加参考图或视频', remove: '移除参考素材', preview: '预览',
+    addEnd: '添加尾帧参考图', addReference: '添加参考图或视频', remove: '删除', preview: '预览',
     prompt: '视频描述', placeholder: '举例:持久定格模特正面,女模特表情自信冷静,发丝与裙摆同步飘动,同时背景中的直升机起飞,随后模特转身,动作丝滑,画面流畅切换到模特上半身特写',
     expand: '展开编辑', save: '保存指令', library: '提示词库', clear: '清空', close: '关闭', count: '字数',
     expandText: '一键扩写', imageToPrompt: '参考图反推', unavailable: '功能暂未接入',
@@ -31,7 +31,7 @@ const copy = {
     addMainFrame: 'Add main image (first frame)', addMain: 'Add main image', mainFrame: 'Main image (first frame)', main: 'Main image',
     replaceMain: 'Replace main image', endFrame: 'Last frame reference', media: 'Reference images / videos',
     endTip: 'Use a reference image for the last video frame', mediaTip: 'Add reference images or videos',
-    addEnd: 'Add last frame reference', addReference: 'Add reference image or video', remove: 'Remove reference', preview: 'Preview',
+    addEnd: 'Add last frame reference', addReference: 'Add reference image or video', remove: 'Delete', preview: 'Preview',
     prompt: 'Video description', placeholder: 'Example: Hold a front view of the model with a confident, calm expression. Her hair and skirt move in the breeze as a helicopter takes off behind her. She turns smoothly, then the shot transitions to a close-up of her upper body.',
     expand: 'Expand editor', save: 'Save prompt', library: 'Prompt library', clear: 'Clear', close: 'Close', count: 'Characters',
     expandText: 'Expand prompt', imageToPrompt: 'Image to prompt', unavailable: 'is not connected yet',
@@ -44,7 +44,7 @@ const copy = {
     addMainFrame: 'メイン画像（開始）を追加', addMain: 'メイン画像を追加', mainFrame: 'メイン画像（開始）', main: 'メイン画像',
     replaceMain: 'メイン画像を変更', endFrame: '終了フレームの参考画像', media: '参考画像 / 動画',
     endTip: '参考画像を動画の終了フレームに使用', mediaTip: '参考画像や動画を追加できます',
-    addEnd: '終了フレームの参考画像を追加', addReference: '参考画像や動画を追加', remove: '参考素材を削除', preview: 'プレビュー',
+    addEnd: '終了フレームの参考画像を追加', addReference: '参考画像や動画を追加', remove: '削除', preview: 'プレビュー',
     prompt: '動画の説明', placeholder: '例：自信に満ちた落ち着いた表情のモデルを正面から捉えます。髪とスカートが風になびき、背景のヘリコプターが離陸します。モデルが滑らかに振り返り、上半身のクローズアップに切り替わります。',
     expand: '拡大編集', save: '指示を保存', library: 'プロンプト集', clear: 'クリア', close: '閉じる', count: '文字数',
     expandText: 'プロンプトを拡張', imageToPrompt: '参考画像から指示を作成', unavailable: 'は未接続です',
@@ -130,7 +130,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
             <button type="button" className="video-reference-preview" aria-label={`${t.preview} ${node.main.name}`} onClick={() => onPreview({ ...node.main!, kind: 'image' })}>
               <ProgressiveImage src={node.main.url} alt={node.main.name} width={64} height={64} />
             </button>
-            <Button variant="tonal" className="video-reference-replace" title={t.replaceMain} aria-label={t.replaceMain} onClick={onMain}><Icon name="promptCoverReplace" size={12} /></Button>
+            <Button variant="tonal" className="video-reference-remove" title={t.remove} aria-label={`${t.remove} ${t.mainFrame}`} onClick={() => onChange({ main: undefined })}><Icon name="close" size={12} /></Button>
           </div> : <button type="button" className="fusion-reference video-workflow-reference-add" aria-label={t.addMainFrame} data-tooltip={t.addImage} onClick={onMain}><NodeIcon name="add" size={20} /></button>)}
           {references.map((reference, index) => <div className="video-reference-tile" key={reference.id}>
             <button type="button" className="video-reference-preview" aria-label={`${t.preview} ${reference.name}`} onClick={() => onPreview(reference)}>
