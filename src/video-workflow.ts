@@ -15,8 +15,14 @@ export type VideoWorkflow = {
   resolution: string;
   duration: string;
   ratio: string;
-  audio: 'auto';
+  audio: 'auto' | 'mute';
 };
+
+// Figma configuration menus: fast 113:8633, professional 113:8634.
+export const videoGenerationConfig = {
+  fast: { nodeId: '113:8633', resolutions: ['768p', '2K'], defaultResolution: '2K', audioOptions: ['auto'], maxDuration: 15 },
+  professional: { nodeId: '113:8634', resolutions: ['480p', '720p', '1080p'], defaultResolution: '1080p', audioOptions: ['auto', 'mute'], maxDuration: 30 },
+} as const;
 
 export function videoWorkflowSize(mode: VideoWorkflow['mode']) {
   const sizes = { frames: { width: 320, height: 523 }, references: { width: 320, height: 523 } };
@@ -24,12 +30,24 @@ export function videoWorkflowSize(mode: VideoWorkflow['mode']) {
 }
 
 export function videoDurationLimit(mode: VideoWorkflow['generationMode']) {
-  return mode === 'professional' ? 30 : 15;
+  return videoGenerationConfig[mode].maxDuration;
 }
 
 export function clampVideoDuration(duration: string, mode: VideoWorkflow['generationMode']) {
   const seconds = Number.parseInt(duration, 10);
   return `${Math.max(5, Math.min(videoDurationLimit(mode), Number.isFinite(seconds) ? seconds : 5))}s`;
+}
+
+// Apply mode changes atomically so undo restores the complete configuration.
+export function normalizeVideoWorkflowSettings(node: VideoWorkflow): VideoWorkflow {
+  const generationMode = node.generationMode === 'professional' ? 'professional' : 'fast';
+  const config = videoGenerationConfig[generationMode];
+  const resolutions: readonly string[] = config.resolutions;
+  const resolution = resolutions.includes(node.resolution) ? node.resolution : config.defaultResolution;
+  const audio = generationMode === 'professional' && node.audio === 'mute' ? 'mute' : 'auto';
+  const duration = clampVideoDuration(node.duration, generationMode);
+  if (generationMode === node.generationMode && resolution === node.resolution && audio === node.audio && duration === node.duration) return node;
+  return { ...node, generationMode, resolution, audio, duration };
 }
 
 // The bound canvas source stays in one slot when switching modes.

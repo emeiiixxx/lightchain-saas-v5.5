@@ -1,21 +1,20 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { Locale } from '../i18n';
-import { clampVideoDuration, videoDurationLimit, type VideoWorkflow } from '../video-workflow';
+import { clampVideoDuration, videoDurationLimit, videoGenerationConfig, type VideoWorkflow } from '../video-workflow';
 import { usePresence } from '../usePresence';
 import { Icon } from './ui';
 import { Slider } from './Slider';
 import '../video-generation-settings.css';
 
-// Figma 113:8302: keep the original ratio artwork and shared selection behavior.
+// Figma 113:8633 / 113:8634 share the original Beta controls and ratio artwork.
 const ratios = ['auto', '21:9', '9:16', '16:9', '1:1', '3:4', '4:3'];
-const resolutions = ['768p', '2K'];
 const assetBase = `${import.meta.env.BASE_URL}assets/video-settings/`;
 const ratioIcon = (ratio: string) => `${assetBase}parameter-${ratio.replace(':', '-')}.svg`;
 const copy = {
-  'zh-CN': { settings: '生成设置', ratio: '比例', resolution: '选择清晰度', duration: '视频时长', auto: 'Auto', audio: '音频', smart: '智能', seconds: '秒' },
-  en: { settings: 'Generation settings', ratio: 'Aspect ratio', resolution: 'Resolution', duration: 'Duration', auto: 'Auto', audio: 'Audio', smart: 'Smart', seconds: 's' },
-  ja: { settings: '生成設定', ratio: '比率', resolution: '解像度', duration: '動画の長さ', auto: 'Auto', audio: '音声', smart: '自動', seconds: '秒' },
+  'zh-CN': { settings: '生成设置', ratio: '比例', resolution: '选择清晰度', duration: '视频时长', auto: 'Auto', audio: '音频', smart: '智能', mute: '静音', seconds: '秒' },
+  en: { settings: 'Generation settings', ratio: 'Aspect ratio', resolution: 'Resolution', duration: 'Duration', auto: 'Auto', audio: 'Audio', smart: 'Smart', mute: 'Mute', seconds: 's' },
+  ja: { settings: '生成設定', ratio: '比率', resolution: '解像度', duration: '動画の長さ', auto: 'Auto', audio: '音声', smart: '自動', mute: 'ミュート', seconds: '秒' },
 };
 type Settings = Pick<VideoWorkflow, 'ratio' | 'resolution' | 'duration'> & Partial<Pick<VideoWorkflow, 'generationMode' | 'audio'>>;
 type Option = { value: string; label: string; icon?: string };
@@ -50,6 +49,7 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
   const id = useId();
   const sliderId = useId();
   const generationMode = value.generationMode ?? 'fast';
+  const config = videoGenerationConfig[generationMode];
   const durationLimit = videoDurationLimit(generationMode);
   const [durationDraft, setDurationDraft] = useState(() => clampVideoDuration(value.duration, generationMode));
   const [durationInput, setDurationInput] = useState(() => String(Number.parseInt(durationDraft, 10)));
@@ -174,7 +174,7 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
       <span className="lc-setting-select-value">{summary}</span><Icon name="imgChevron" size={16} className="lc-setting-select-chevron" />
     </button>
     {shown.value && createPortal(<div ref={panel} id={id} className="video-generation-settings nodrag nopan nowheel" popover="manual" role="dialog" aria-label={t.settings}
-      data-node-id="113:8302" data-select-popup data-overlay data-phase={shown.phase} inert={shown.phase === 'exit'} onPointerDown={event => event.stopPropagation()} onWheel={event => event.stopPropagation()}
+      data-node-id={config.nodeId} data-select-popup data-overlay data-phase={shown.phase} inert={shown.phase === 'exit'} onPointerDown={event => event.stopPropagation()} onWheel={event => event.stopPropagation()}
       onKeyDown={event => {
         if (event.key !== 'Tab') return;
         const stops = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"][tabindex="0"], input'));
@@ -184,10 +184,11 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
       <section><h3>{t.ratio}</h3><ParameterSegments label={t.ratio} vertical value={value.ratio} onChange={ratio => onChange({ ratio })}
         options={ratios.map(ratio => ({ value: ratio, label: ratio === 'auto' ? t.auto : ratio, icon: ratioIcon(ratio) }))} /></section>
       <section><h3>{t.resolution}</h3><ParameterSegments label={t.resolution} value={value.resolution} onChange={resolution => onChange({ resolution })}
-        options={resolutions.map(resolution => ({ value: resolution, label: resolution }))} /></section>
+        options={config.resolutions.map(resolution => ({ value: resolution, label: resolution }))} /></section>
       <section className="video-duration-setting">
         <h3><label htmlFor={sliderId}>{t.duration}</label></h3>
         <div className="video-duration-control">
+          <span className="video-duration-min" aria-hidden="true">5</span>
           <Slider id={sliderId} className="video-duration-range nodrag nopan" trackTone="strong" active={durationDragging}
               min={5} max={durationLimit} step={1} value={Number.parseInt(durationDraft, 10)} aria-valuetext={durationDraft}
               onChange={event => {
@@ -240,8 +241,8 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
           </label>
         </div>
       </section>
-      <section><h3>{t.audio}</h3><ParameterSegments label={t.audio} value={value.audio ?? 'auto'} onChange={() => onChange({ audio: 'auto' })}
-        options={[{ value: 'auto', label: t.smart }]} /></section>
+      <section><h3>{t.audio}</h3><ParameterSegments label={t.audio} value={value.audio ?? 'auto'} onChange={audio => onChange({ audio: audio === 'mute' ? 'mute' : 'auto' })}
+        options={config.audioOptions.map(audio => ({ value: audio, label: audio === 'mute' ? t.mute : t.smart }))} /></section>
     </div>, document.body)}
   </div>;
 }

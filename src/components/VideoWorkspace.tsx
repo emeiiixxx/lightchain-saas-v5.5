@@ -22,7 +22,7 @@ import { VideoSelectionToolbar } from './VideoSelectionToolbar';
 import { VideoAssetToolbar } from './VideoAssetToolbar';
 import { VideoWorkflowNode } from './VideoWorkflowNode';
 import { ImageConnection } from './ImageConnection';
-import { clampVideoDuration, createVideoWorkflow, videoWorkflowBox, videoWorkflowReferences, videoWorkflowSize, type VideoWorkflow, type VideoReference } from '../video-workflow';
+import { normalizeVideoWorkflowSettings, createVideoWorkflow, videoWorkflowBox, videoWorkflowReferences, videoWorkflowSize, type VideoWorkflow, type VideoReference } from '../video-workflow';
 import { copyVideoCanvasSelection, pasteVideoCanvasSelection, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
 import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, writeCanvasClipboardEvent, writeCanvasClipboardSystem, type CanvasClipboard } from '../canvas-clipboard-session';
 import { videoReferenceUploadMessages, type UploadedVideo } from '../video-reference-upload';
@@ -165,9 +165,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const shownReturn = usePresence(outsideView ? true : null);
 
   const replace = useCallback((next: Snapshot) => {
-    const normalized = next.workflows.some(node => node.generationMode !== 'fast' && node.generationMode !== 'professional')
-      ? { ...next, workflows: next.workflows.map(node => node.generationMode === 'fast' || node.generationMode === 'professional' ? node : { ...node, generationMode: 'fast' as const }) }
-      : next;
+    const workflows = next.workflows.map(normalizeVideoWorkflowSettings);
+    const normalized = workflows.some((node, index) => node !== next.workflows[index]) ? { ...next, workflows } : next;
     current.current = normalized; setSnapshot(normalized);
   }, []);
   const saveUndo = useCallback(() => {
@@ -360,8 +359,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (!currentNode) return;
     commit({ ...previous, workflows: previous.workflows.map(node => {
       if (node.id !== id) return node;
-      const next = { ...node, ...patch };
-      next.duration = clampVideoDuration(next.duration, next.generationMode ?? 'fast');
+      const next = normalizeVideoWorkflowSettings({ ...node, ...patch });
       if (next.mode !== node.mode) {
         const previousSize = videoWorkflowSize(node.mode), nextSize = videoWorkflowSize(next.mode);
         next.x += (previousSize.width - nextSize.width) / 2;

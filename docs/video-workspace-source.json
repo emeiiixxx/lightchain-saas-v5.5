@@ -17,7 +17,9 @@
     "emptyTemplate": "64:4644",
     "uploadStates": "76:5455",
     "fashionVideoMultipleReferencesInstance": "112:7765",
-    "videoGenerationSettings": "113:8302"
+    "videoGenerationSettings": "113:8302",
+    "videoGenerationFastSettings": "113:8633",
+    "videoGenerationProfessionalSettings": "113:8634"
   },
   "assets": {
     "directory": "public/assets/video-workspace",
@@ -261,7 +263,7 @@
         "duration"
       ],
       "summaryIcon": "Uses the same original SVG as the selected ratio option; auto icon only for auto.",
-      "source": "Figma 113:8302 for current menu geometry and options; reuse existing GenerationSettings controls and original parameter SVGs.",
+      "source": "Figma 113:8633 (inner node 113:8302) for fast mode and 113:8634 for professional mode. Both share geometry, control components and original ratio SVGs; ratio icon component keys match in both designs.",
       "component": "src/components/VideoGenerationSettings.tsx",
       "assetDirectory": "public/assets/video-settings",
       "wideRatioIcon": {
@@ -280,15 +282,22 @@
         "3:4",
         "4:3"
       ],
-      "resolutions": [
-        "768p",
-        "2K"
-      ],
-      "interaction": "Ratio and resolution apply immediately without closing; duration uses the mode-dependent slider and numeric input. Keep the complete ratio | resolution | duration summary and selected-ratio icon; audio stays out of the summary. Retain per-node settings across frame/reference modes with canvas undo/redo. Outside click or Escape closes; preserve keyboard operation, dark/light themes and shared 200ms exit motion.",
+      "resolutionsByMode": {
+        "fast": ["768p", "2K"],
+        "professional": ["480p", "720p", "1080p"]
+      },
+      "defaultResolutionByMode": {
+        "fast": "2K",
+        "professional": "1080p"
+      },
+      "modeChange": "Normalize against the target mode. An unsupported resolution falls back to that mode's default: 1080p for professional, 2K for fast. Fast mode forces audio to auto and clamps durations above 15 seconds to 15. Commit mode and all normalized settings as one undo transaction; undo restores the complete previous configuration. Keep valid settings within the same mode, ratio, prompt and media. Do not add hidden per-mode configuration memory.",
+      "interaction": "Ratio, resolution and audio apply immediately without closing; duration uses the mode-dependent slider and numeric input. Keep the complete ratio | resolution | duration summary and selected-ratio icon; audio stays out of the summary. Retain per-node settings across frame/reference modes with canvas undo/redo. Outside click or Escape closes; preserve keyboard operation, dark/light themes and shared 200ms exit motion.",
       "durationSlider": {
         "library": "Lightchain SaaS v5.1 libraries Beta",
         "source": {
           "sliderControlInstance": "I113:8302;891:4593;113:8485",
+          "professionalSliderControlInstance": "I113:8635;891:4593;113:8658",
+          "sharedAcrossGenerationModes": "Both SliderControl instances and nested Slider components use the same keys, geometry, states and tokens.",
           "sliderControlMode": "Input",
           "sliderControlComponentKey": "18344c81fe5ef50e786c256f7da43e56151c3f0f",
           "sliderComponentSetKey": "190e412c7435d6e268fa198927c59b00ff18279d",
@@ -300,8 +309,10 @@
           "src/components/slider.css"
         ],
         "geometry": {
-          "control": { "width": 300, "height": 24 },
-          "slider": { "width": 228, "height": 18, "verticalAlign": "center" },
+          "rowPaddingHorizontal": 4,
+          "control": { "width": 292, "height": 24 },
+          "minimumLabel": { "text": "5", "width": 7, "height": 16, "gapAfter": 8 },
+          "slider": { "width": 205, "height": 18, "verticalAlign": "center" },
           "trackHeight": 6,
           "thumbSize": 18,
           "thumbStroke": { "width": 2, "align": "inside" },
@@ -331,7 +342,7 @@
           }
         },
         "rowHeight": 24,
-        "sliderWidth": "flexible",
+        "sliderWidth": 205,
         "gap": 8,
         "input": {
           "width": 64,
@@ -339,15 +350,19 @@
           "editable": true,
           "commit": "On Enter, blur or panel close, clamp to the current mode range and commit one history record."
         },
-        "modeChange": "Switching to fast clamps durations above 15 seconds to 15; commit mode and duration together as one undo transaction.",
+        "modeChange": "Switching to fast clamps durations above 15 seconds to 15; commit mode, duration and any resolution/audio normalization together as one undo transaction.",
         "interaction": "Display the current duration immediately while dragging; commit one history record when the gesture finishes.",
-        "labels": "No below-slider range labels or upper-right value; show seconds in the numeric input.",
-        "userOverride": "Ignore the hidden zero label in Figma; minimum remains 5 seconds in both modes."
+        "labels": "Show the leading minimum label 5 in both modes. No below-slider range labels or upper-right value; show seconds in the numeric input.",
+        "userOverride": "Minimum remains 5 seconds in both modes and is visible as the leading label. The professional design's 15-second value is an example and does not overwrite an existing duration."
       },
       "nodeId": "113:8302",
+      "nodeIdByGenerationMode": {
+        "fast": "113:8633",
+        "professional": "113:8634"
+      },
       "panelHeight": 306,
       "panel": {
-        "geometrySource": "Figma 113:8302 metadata, 324 x 306px.",
+        "geometrySource": "Figma 113:8633 (inner node 113:8302) and 113:8634 metadata; both are 324 x 306px and share appearance and geometry.",
         "background": "Surface/default",
         "padding": 12,
         "radius": 16,
@@ -373,13 +388,17 @@
       },
       "resolutionControlHeight": 32,
       "audio": {
-        "options": [
-          "auto"
-        ],
+        "optionsByMode": {
+          "fast": ["auto"],
+          "professional": ["auto", "mute"]
+        },
         "default": "auto",
-        "labelZh": "智能",
+        "labelsZh": {
+          "auto": "智能",
+          "mute": "静音"
+        },
         "controlHeight": 32,
-        "behavior": "Fixed single option; audio generation service is not connected."
+        "behavior": "Fast mode has the fixed auto option; professional mode can select auto or mute, defaulting to auto. Switching back to fast resets audio to auto. Audio generation service is not connected."
       }
     },
     "costLabel": "999",
@@ -478,7 +497,7 @@
       "modeControlWidth": 104,
       "parameterControlWidth": 184,
       "gap": 8,
-      "defaults": "Preserve fast, 9:16 and 5s initial values; resolution defaults to 2K and audio to auto. Do not replace fast/5s with the professional/30s design example.",
+      "defaults": "New nodes start fast, 9:16, 5s, 2K and audio auto. Professional mode uses 1080p when its resolution needs a default; audio defaults to auto. Design example durations of 15s or 30s do not overwrite existing values or the 5s initial duration.",
       "footer": "One full-width generation button with unchanged cost 999."
     }
   },
