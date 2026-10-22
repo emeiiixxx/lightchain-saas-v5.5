@@ -7,9 +7,9 @@ import { ToolbarHoverMenu } from './ToolbarHoverMenu';
 import { Button, Divider } from './ui';
 
 const copy = {
-  'zh-CN': { material: '素材生成', video: '视频生成', quickEdit: '快捷编辑', multiView: '多视角', storyboardImage: '分镜图', fashionVideo: '服装短视频', multiReference: '多参考模式', storyboard: '分镜成片', videoRemake: '视频复刻', upscale: '高清放大' },
-  en: { material: 'Generate assets', video: 'Generate video', quickEdit: 'Quick edit', multiView: 'Multiple views', storyboardImage: 'Storyboard image', fashionVideo: 'Fashion video', multiReference: 'Multi-reference', storyboard: 'Storyboard video', videoRemake: 'Video remake', upscale: 'Upscale' },
-  ja: { material: '素材生成', video: '動画生成', quickEdit: 'クイック編集', multiView: 'マルチビュー', storyboardImage: '絵コンテ', fashionVideo: 'ファッション動画', multiReference: '複数参照モード', storyboard: '絵コンテから動画', videoRemake: '動画再現', upscale: '高解像度化' },
+  'zh-CN': { material: '素材生成', video: '视频生成', quickEdit: '快捷编辑', multiView: '多视角', storyboardImage: '分镜图', fashionVideo: '服装短视频', multiReference: '服装长视频', storyboard: '分镜成片', videoRemake: '视频复刻', upscale: '高清放大' },
+  en: { material: 'Generate assets', video: 'Generate video', quickEdit: 'Quick edit', multiView: 'Multiple views', storyboardImage: 'Storyboard image', fashionVideo: 'Fashion video', multiReference: 'Fashion long video', storyboard: 'Storyboard video', videoRemake: 'Video remake', upscale: 'Upscale' },
+  ja: { material: '素材生成', video: '動画生成', quickEdit: 'クイック編集', multiView: 'マルチビュー', storyboardImage: '絵コンテ', fashionVideo: 'ファッション動画', multiReference: 'ファッション長尺動画', storyboard: '絵コンテから動画', videoRemake: '動画再現', upscale: '高解像度化' },
 };
 
 type ToolbarIconName = 'material' | 'video' | 'chevron' | 'remake' | 'cutout' | 'upscale' | 'save-asset' | 'download' | 'send' | 'quick-edit' | 'multi-view' | 'storyboard-image' | 'fashion-video' | 'multi-reference' | 'storyboard-video';

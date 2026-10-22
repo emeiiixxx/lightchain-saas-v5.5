@@ -226,9 +226,9 @@
       },
       "videoGeneration": {
         "nodeId": "113:9502",
-        "labelsZh": ["服装短视频", "多参考模式", "分镜成片"],
+        "labelsZh": ["服装短视频", "服装长视频", "分镜成片"],
         "actions": ["fashionVideo", "multiReference", "storyboard"],
-        "behavior": "Fashion video creates a frames editor; multiple references creates a references editor. Both carry the actual selected image as the inherited main image and add an automatic business line. Editor creation, mode and association are one undo transaction. Storyboard video remains not connected."
+        "behavior": "Fashion short video creates a frames editor; fashion long video creates a references editor. Both carry the actual selected image as the inherited main image and add an automatic business line. Editor creation, mode and association are one undo transaction. Storyboard video remains not connected."
       },
       "panel": {
         "width": 160,
@@ -578,7 +578,7 @@
   "userOverrides": {
     "fixedBusinessAssociations": {
       "mode": "Use the same fixed business association model as the fusion canvas. Retain normal video editors, editor uploads, reference videos and canvas media interactions.",
-      "creation": "Image toolbar video-generation menu actions create a frames editor for fashion video or a references editor for multiple-reference mode, carrying the actual selected image and establishing its main-image association automatically in one undo transaction. Main-image uploads inside the editor also establish the association. Empty video-generation entry creates a frames editor; multi-reference mode allows ordinary image/video reference uploads without requiring a hidden main image.",
+      "creation": "Image toolbar video-generation menu actions create a frames editor for fashion video or a references editor for fashion long video, carrying the actual selected image and establishing its main-image association automatically in one undo transaction. Main-image uploads inside the editor also establish the association. Empty video-generation entry creates a frames editor; multi-reference mode allows ordinary image/video reference uploads without requiring a hidden main image.",
       "interaction": "Do not show connection ports or provide free dragging, reconnection, selectable-edge deletion or port plus menus. Automatic lines do not intercept pointer input.",
       "geometry": "Automatic business lines use the fusion canvas geometry and follow the actual relative left/right positions of media and editor.",
       "selection": "Selecting either endpoint shows a brand-color marching line over a dark underlay at layer 4. Otherwise show a gray solid line at layer -1. Do not highlight unrelated branches through group association.",
