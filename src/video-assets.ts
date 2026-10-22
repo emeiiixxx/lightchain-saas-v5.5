@@ -1,5 +1,6 @@
 const videoAssetBase = `${import.meta.env.BASE_URL}assets/video-workspace/`;
 const entryAssetBase = `${import.meta.env.BASE_URL}assets/video-entry-20261022/`;
+const materialAssetBase = `${import.meta.env.BASE_URL}assets/video-material-20261022/`;
 
 // Original artwork from Figma file 1dBgOC793NRsKgbNIaLZMK, node 64:2057.
 export const videoAssets = {
@@ -21,11 +22,13 @@ export const videoAssets = {
   upscale: `${videoAssetBase}upscale.svg`,
   videoExtend: `${videoAssetBase}videoExtend.svg`,
   videoEdit: `${videoAssetBase}videoEdit.svg`,
-  // Original 97:6649 uploaded-video controls, each exported at 20×20.
-  modifyVideo: `${import.meta.env.BASE_URL}assets/video-canvas/modify.svg`,
-  saveVideoAsset: `${import.meta.env.BASE_URL}assets/video-canvas/save-asset.svg`,
-  downloadVideo: `${import.meta.env.BASE_URL}assets/video-canvas/download.svg`,
-  playVideo: `${import.meta.env.BASE_URL}assets/video-canvas/play.svg`,
+  // Latest 97:6649 material controls, original 20×20 SVGs (2026-10-22).
+  remakeVideo: `${materialAssetBase}remake.svg`,
+  modifyVideo: `${materialAssetBase}modify.svg`,
+  hdVideo: `${materialAssetBase}hd.svg`,
+  saveVideoAsset: `${materialAssetBase}save.svg`,
+  downloadVideo: `${materialAssetBase}download.svg`,
+  playVideo: `${materialAssetBase}play.svg`,
   upload: `${videoAssetBase}upload.svg`,
   // Pure VIDEO-fill layers 76:5023 / 76:5591, exported without player controls.
   portraitPoster: `${videoAssetBase}portraitPoster.png`,

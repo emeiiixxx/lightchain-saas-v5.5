@@ -68,22 +68,17 @@
       }
     },
     "uploadedVideoIcons": {
-      "directory": "public/assets/video-canvas",
-      "modify": {
-        "nodeId": "103:6927",
-        "file": "modify.svg"
-      },
-      "saveAsset": {
-        "nodeId": "64:2261",
-        "file": "save-asset.svg"
-      },
-      "download": {
-        "nodeId": "64:2227",
-        "file": "download.svg"
-      },
-      "play": {
-        "nodeId": "103:6933",
-        "file": "play.svg"
+      "nodeId": "97:6649",
+      "updated": "2026-10-22",
+      "directory": "public/assets/video-material-20261022",
+      "sourceManifest": "docs/video-material-assets.json",
+      "files": {
+        "remake": "remake.svg",
+        "modify": "modify.svg",
+        "hd": "hd.svg",
+        "saveAsset": "save.svg",
+        "download": "download.svg",
+        "play": "play.svg"
       },
       "size": 20
     },
@@ -328,10 +323,30 @@
       "width": "max-content",
       "gapToVideo": 16,
       "actions": [
+        "remakeVideo",
         "modifyVideo",
+        "hdVideo",
+        "divider",
         "saveAsset",
         "download"
-      ]
+      ],
+      "designWidthZh": 329,
+      "padding": 4,
+      "groupGap": 4,
+      "itemGap": 4,
+      "radius": 12,
+      "actionWidthsZh": [
+        88,
+        88,
+        60,
+        1,
+        32,
+        32
+      ],
+      "iconSize": 20,
+      "fontSize": 12,
+      "lineHeight": 20,
+      "hdGeometry": "Figma fixed 60px action centers 20px icon + 4px gap + 24px label at x=6; other languages hug their content."
     },
     "playButton": {
       "size": 32,
@@ -342,7 +357,15 @@
     "upload": "Opt-in mixed image/video AssetPicker batch up to 20 files; direct canvas drop also supported. Videos stay out of image-only pickers.",
     "download": "Original local video URL, filename and format; no image conversion or format menu.",
     "canvas": "Shared Flow selection, movement, zoom, delete, arrange, fit and undo/redo. Retain video URLs across history and release on workspace unmount.",
-    "preview": "Reuse video preview Dialog and native playback controls; pause on close or workspace switch."
+    "preview": "Reuse FullVideoViewer / FullScreenViewer with native controls, full-viewport overlay, Escape and close button; pause on close or workspace switch.",
+    "updated": "2026-10-22",
+    "unconnectedActions": [
+      "remakeVideo",
+      "modifyVideo",
+      "hdVideo",
+      "saveAsset"
+    ],
+    "sourceManifest": "docs/video-material-assets.json"
   },
   "fashionVideoWorkflow": {
     "modes": [
