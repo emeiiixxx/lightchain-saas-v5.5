@@ -1,8 +1,30 @@
 import { Position, type Node } from '@xyflow/react';
 
+type FreeConnectionGeometry = {
+  sides: readonly ('left' | 'right')[];
+  zoom: number;
+};
+
 // Canvas nodes have explicit dimensions. Supply handles from the same geometry
 // so controlled updates never wait for a ResizeObserver to reconnect edges.
-export function flowNodeGeometry(width: number, height: number): Pick<Node, 'width' | 'height' | 'handles'> {
+export function flowNodeGeometry(width: number, height: number, freeConnections?: FreeConnectionGeometry): Pick<Node, 'width' | 'height' | 'handles'> {
+  if (freeConnections) {
+    // React Flow adopts this list on every controlled node update. These IDs,
+    // types and anchor centres must match the rendered zero-size free handles;
+    // their CSS pseudo-elements provide the visible dot and larger hit area.
+    const offset = 12 / freeConnections.zoom;
+    return {
+      width,
+      height,
+      // Loose mode resolves both ends from source handles, just like the DOM.
+      handles: freeConnections.sides.map(side => ({
+        id: `free-${side}`, type: 'source' as const, position: side === 'left' ? Position.Left : Position.Right,
+        x: side === 'left' ? -offset : width + offset,
+        y: height / 2,
+        width: 0, height: 0,
+      })),
+    };
+  }
   return {
     width,
     height,

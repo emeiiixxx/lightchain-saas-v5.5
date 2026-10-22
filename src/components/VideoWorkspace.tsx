@@ -377,15 +377,20 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (!current.current.workflows.some(node => node.id === id)) return;
     commit({ ...current.current, workflows: current.current.workflows.map(node => node.id === id ? { ...node, ...patch } : node) });
   }
-  function addWorkflow(source?: CanvasImage) {
-    const scene = sceneItems(current.current), viewport = viewRef.current;
+  function addWorkflow(sourceId?: string) {
+    const previous = current.current;
+    // Toolbar entries bind the actual canvas asset, including its current
+    // geometry, rather than a fading selection overlay's snapshot.
+    const source = sourceId ? previous.images.find(image => image.id === sourceId) : undefined;
+    if (sourceId && (!source || source.video)) return;
+    const scene = sceneItems(previous), viewport = viewRef.current;
     const node = createVideoWorkflow(
       source ? source.x + source.width + 80 : (canvasSize.width / 2 - viewport.x) / viewport.zoom - VIDEO_NODE_WIDTH / 2,
       source ? source.y + (source.height - VIDEO_NODE_HEIGHT) / 2 : (canvasSize.height / 2 - viewport.y) / viewport.zoom - VIDEO_NODE_HEIGHT / 2,
       source,
     );
     while (scene.some(item => node.x < item.x + item.width + 40 && node.x + VIDEO_NODE_WIDTH + 40 > item.x && node.y < item.y + item.height + 40 && node.y + VIDEO_NODE_HEIGHT + 40 > item.y)) node.y += VIDEO_NODE_HEIGHT + 40;
-    commit({ ...current.current, workflows: [...current.current.workflows, node], selected: [node.id], selectedConnections: [] });
+    commit({ ...previous, workflows: [...previous.workflows, node], selected: [node.id], selectedConnections: [] });
     if (canvas.current) animateView(fitImages([...(source ? [source] : []), videoWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });
   }
@@ -557,8 +562,10 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
               onModify={() => notify(locale === 'zh-CN' ? '视频修改功能暂未接入。' : locale === 'ja' ? '動画編集はまだ接続されていません。' : 'Video editing is not connected yet.')}
               onSave={() => notify(locale === 'zh-CN' ? '保存到资产功能暂未接入。' : locale === 'ja' ? '素材への保存はまだ接続されていません。' : 'Saving to assets is not connected yet.')} />
               : <VideoSelectionToolbar key={shownSingle.value.id} locale={locale} downloading={downloading} onDownload={format => void downloadSelected(format)} onAction={action => {
-              if (action === 'cutout') setCutout(singleSelection);
-              else if (action === 'fashionVideo' && singleSelection) addWorkflow(singleSelection);
+              const source = current.current.images.find(image => image.id === shownSingle.value?.id && !image.video);
+              if (!source) return;
+              if (action === 'cutout') setCutout(source);
+              else if (action === 'fashionVideo') addWorkflow(source.id);
               else notify(locale === 'zh-CN' ? '此功能暂未接入。' : locale === 'ja' ? 'この機能はまだ接続されていません。' : 'This feature is not connected yet.');
             }} />}
           </div>

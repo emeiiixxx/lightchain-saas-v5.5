@@ -32,8 +32,8 @@ const FreeConnectionHandle = memo(({ nodeId, side, kind, connectable }: { nodeId
 const LightchainNode = memo(({ id, data }: NodeProps<ContentNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
   useLayoutEffect(() => {
-    // Ports retain their screen size and outside offset while zooming. Refresh
-    // React Flow's handle geometry so drawn edges follow that same position.
+    // Keep DOM measurements in sync with the same declared handle geometry.
+    // Controlled updates can render edges immediately, before this refresh.
     if (data.freeConnections) updateNodeInternals(id);
   }, [id, data.freeConnections, data.connectionNode?.kind, data.zoom, updateNodeInternals]);
   return <>
@@ -131,11 +131,13 @@ export function ReactFlowCanvas(props: Props) {
       } else if (p['data-canvas-id'] || p['data-fusion-id']) {
         const id = p['data-canvas-id'] ?? `${p['data-fusion-id']}:fusion`;
         const style = p.style ?? {};
+        const connectionNode = props.connectionNodes?.[id];
         nodes.push({ id, type: 'lightchain', position: { x: Number(style.left), y: Number(style.top) },
-          ...flowNodeGeometry(Number(style.width) || 280, Number(style.height) || 400),
+          ...flowNodeGeometry(Number(style.width) || 280, Number(style.height) || 400,
+            freeConnections ? { sides: canvasConnectionSides(connectionNode), zoom: props.view.zoom } : undefined),
           selected: props.selectedIds.includes(id), zIndex: Number(style.zIndex) || 1,
           data: { content: cloneElement(child, { style: { ...style, left: 0, top: 0, position: 'relative', zIndex: undefined } }),
-            connectionNode: props.connectionNodes?.[id], freeConnections, connectable, zoom: props.view.zoom } });
+            connectionNode, freeConnections, connectable, zoom: props.view.zoom } });
       } else visit(p.children);
     });
     visit(props.children);
