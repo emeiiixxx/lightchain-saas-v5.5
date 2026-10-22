@@ -6,17 +6,17 @@ import { usePresence } from '../usePresence';
 import { Icon } from './ui';
 import '../video-generation-settings.css';
 
-// Reuse v5.4 GenerationSettings ratio order, original SVGs and segmented controls.
-const ratios = ['auto', '3:4', '9:16', '1:1', '4:3', '16:9'];
-const resolutions = ['480p', '720p', '1080p'];
+// Figma 113:8302: keep the original ratio artwork and shared selection behavior.
+const ratios = ['auto', '21:9', '9:16', '16:9', '1:1', '3:4', '4:3'];
+const resolutions = ['768p', '2K'];
 const assetBase = `${import.meta.env.BASE_URL}assets/video-settings/`;
 const ratioIcon = (ratio: string) => `${assetBase}parameter-${ratio.replace(':', '-')}.svg`;
 const copy = {
-  'zh-CN': { settings: '生成设置', ratio: '视频比例', resolution: '选择清晰度', duration: '视频时长', auto: '智能' },
-  en: { settings: 'Generation settings', ratio: 'Aspect ratio', resolution: 'Resolution', duration: 'Duration', auto: 'Auto' },
-  ja: { settings: '生成設定', ratio: '動画の比率', resolution: '解像度', duration: '動画の長さ', auto: '自動' },
+  'zh-CN': { settings: '生成设置', ratio: '比例', resolution: '选择清晰度', duration: '视频时长', auto: 'Auto', audio: '音频', smart: '智能', seconds: '秒' },
+  en: { settings: 'Generation settings', ratio: 'Aspect ratio', resolution: 'Resolution', duration: 'Duration', auto: 'Auto', audio: 'Audio', smart: 'Smart', seconds: 's' },
+  ja: { settings: '生成設定', ratio: '比率', resolution: '解像度', duration: '動画の長さ', auto: 'Auto', audio: '音声', smart: '自動', seconds: '秒' },
 };
-type Settings = Pick<VideoWorkflow, 'ratio' | 'resolution' | 'duration'> & Partial<Pick<VideoWorkflow, 'generationMode'>>;
+type Settings = Pick<VideoWorkflow, 'ratio' | 'resolution' | 'duration'> & Partial<Pick<VideoWorkflow, 'generationMode' | 'audio'>>;
 type Option = { value: string; label: string; icon?: string };
 
 function ParameterSegments({ label, options, value, onChange, vertical = false }: {
@@ -51,9 +51,13 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
   const generationMode = value.generationMode ?? 'fast';
   const durationLimit = videoDurationLimit(generationMode);
   const [durationDraft, setDurationDraft] = useState(() => clampVideoDuration(value.duration, generationMode));
+  const [durationInput, setDurationInput] = useState(() => String(Number.parseInt(durationDraft, 10)));
   const [durationDragging, setDurationDragging] = useState(false);
   const durationRef = useRef(durationDraft);
   const durationDirty = useRef(false);
+  const durationInputRef = useRef(durationInput);
+  const durationInputDirty = useRef(false);
+  const rangeActive = useRef(false);
   const latest = useRef({ value, onChange });
   latest.current = { value, onChange };
   const durationProgress = (Number.parseInt(durationDraft, 10) - 5) / (durationLimit - 5) * 100;
@@ -63,15 +67,27 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
     const duration = clampVideoDuration(value.duration, generationMode);
     durationRef.current = duration;
     durationDirty.current = false;
+    durationInputRef.current = String(Number.parseInt(duration, 10));
+    durationInputDirty.current = false;
+    rangeActive.current = false;
     setDurationDraft(duration);
+    setDurationInput(durationInputRef.current);
     setDurationDragging(false);
   }, [value.duration, generationMode]);
 
   function commitDuration() {
+    rangeActive.current = false;
     setDurationDragging(false);
+    const current = latest.current;
+    if (durationInputDirty.current) {
+      durationInputDirty.current = false;
+      durationRef.current = clampVideoDuration(durationInputRef.current || durationRef.current, current.value.generationMode ?? 'fast');
+      durationDirty.current = true;
+    }
+    durationInputRef.current = String(Number.parseInt(durationRef.current, 10));
+    setDurationInput(durationInputRef.current);
     if (!durationDirty.current) return;
     durationDirty.current = false;
-    const current = latest.current;
     const duration = clampVideoDuration(durationRef.current, current.value.generationMode ?? 'fast');
     durationRef.current = duration;
     setDurationDraft(duration);
@@ -99,14 +115,15 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
       close(); trigger.current?.focus();
     };
     const otherSelect = (event: Event) => { if ((event as CustomEvent<string>).detail !== id) close(); };
-    const finishDuration = () => commitDuration();
+    const finishDuration = () => { if (rangeActive.current) commitDuration(); };
+    const blurWindow = () => commitDuration();
     document.addEventListener('pointerdown', dismiss, true);
     document.addEventListener('focusin', focus, true);
     document.addEventListener('keydown', escape);
     document.addEventListener('lc-select-open', otherSelect);
     window.addEventListener('pointerup', finishDuration);
     window.addEventListener('pointercancel', finishDuration);
-    window.addEventListener('blur', finishDuration);
+    window.addEventListener('blur', blurWindow);
     return () => {
       document.removeEventListener('pointerdown', dismiss, true);
       document.removeEventListener('focusin', focus, true);
@@ -114,7 +131,7 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
       document.removeEventListener('lc-select-open', otherSelect);
       window.removeEventListener('pointerup', finishDuration);
       window.removeEventListener('pointercancel', finishDuration);
-      window.removeEventListener('blur', finishDuration);
+      window.removeEventListener('blur', blurWindow);
     };
   }, [open, id]);
 
@@ -157,10 +174,10 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
       <span className="lc-setting-select-value">{summary}</span><Icon name="imgChevron" size={16} className="lc-setting-select-chevron" />
     </button>
     {shown.value && createPortal(<div ref={panel} id={id} className="video-generation-settings nodrag nopan nowheel" popover="manual" role="dialog" aria-label={t.settings}
-      data-select-popup data-overlay data-phase={shown.phase} inert={shown.phase === 'exit'} onPointerDown={event => event.stopPropagation()} onWheel={event => event.stopPropagation()}
+      data-node-id="113:8302" data-select-popup data-overlay data-phase={shown.phase} inert={shown.phase === 'exit'} onPointerDown={event => event.stopPropagation()} onWheel={event => event.stopPropagation()}
       onKeyDown={event => {
         if (event.key !== 'Tab') return;
-        const stops = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"][tabindex="0"], input[type="range"]'));
+        const stops = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"][tabindex="0"], input'));
         const edge = event.shiftKey ? stops[0] : stops[stops.length - 1];
         if (document.activeElement === edge) { event.preventDefault(); close(); trigger.current?.focus(); }
       }}>
@@ -169,7 +186,7 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
       <section><h3>{t.resolution}</h3><ParameterSegments label={t.resolution} value={value.resolution} onChange={resolution => onChange({ resolution })}
         options={resolutions.map(resolution => ({ value: resolution, label: resolution }))} /></section>
       <section className="video-duration-setting">
-        <div className="video-duration-heading"><h3><label htmlFor={sliderId}>{t.duration}</label></h3><output htmlFor={sliderId} aria-hidden="true">{durationDraft}</output></div>
+        <h3><label htmlFor={sliderId}>{t.duration}</label></h3>
         <div className="video-duration-control">
           <div className="video-duration-range" data-active={durationDragging} style={{ '--slider-progress': `${durationProgress}%` } as CSSProperties}>
             <input id={sliderId} type="range" className="nodrag nopan" min={5} max={durationLimit} step={1} value={Number.parseInt(durationDraft, 10)} aria-valuetext={durationDraft}
@@ -177,9 +194,12 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
                 const duration = clampVideoDuration(`${event.currentTarget.value}s`, generationMode);
                 durationRef.current = duration;
                 durationDirty.current = true;
+                durationInputRef.current = String(Number.parseInt(duration, 10));
+                durationInputDirty.current = false;
                 setDurationDraft(duration);
+                setDurationInput(durationInputRef.current);
               }}
-              onPointerDown={() => setDurationDragging(true)} onPointerUp={commitDuration} onPointerCancel={commitDuration} onLostPointerCapture={commitDuration} onBlur={commitDuration}
+              onPointerDown={() => { rangeActive.current = true; setDurationDragging(true); }} onPointerUp={commitDuration} onPointerCancel={commitDuration} onLostPointerCapture={commitDuration} onBlur={commitDuration}
               onKeyDown={event => {
                 if (event.key === 'Tab') return;
                 event.stopPropagation();
@@ -187,9 +207,42 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
               }}
               onKeyUp={event => { event.stopPropagation(); commitDuration(); }} />
           </div>
-          <div className="video-duration-bounds" aria-hidden="true"><span>5s</span><span>{durationLimit}s</span></div>
+          <label className="video-duration-value">
+            <input type="text" inputMode="numeric" className="nodrag nopan" value={durationInput} aria-label={`${t.duration} (${t.seconds})`}
+              onChange={event => {
+                const raw = event.currentTarget.value;
+                if (!/^\d{0,3}$/.test(raw)) return;
+                durationInputRef.current = raw;
+                durationInputDirty.current = true;
+                setDurationInput(raw);
+                const seconds = Number(raw);
+                if (raw && seconds >= 5 && seconds <= durationLimit) {
+                  durationRef.current = `${seconds}s`;
+                  durationDirty.current = true;
+                  setDurationDraft(`${seconds}s`);
+                }
+              }} onBlur={commitDuration}
+              onKeyDown={event => {
+                if (event.key === 'Tab') return;
+                event.stopPropagation();
+                if (event.key === 'Escape') { event.preventDefault(); close(); trigger.current?.focus(); }
+                if (event.key === 'Enter') { event.preventDefault(); commitDuration(); }
+                if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  const seconds = Number.parseInt(durationInputRef.current || durationRef.current, 10) + (event.key === 'ArrowUp' ? 1 : -1);
+                  durationInputRef.current = String(Number.parseInt(clampVideoDuration(`${seconds}s`, generationMode), 10));
+                  durationInputDirty.current = true;
+                  setDurationInput(durationInputRef.current);
+                  durationRef.current = `${durationInputRef.current}s`;
+                  setDurationDraft(durationRef.current);
+                }
+              }} onKeyUp={event => event.stopPropagation()} />
+            <span aria-hidden="true">{t.seconds}</span>
+          </label>
         </div>
       </section>
+      <section><h3>{t.audio}</h3><ParameterSegments label={t.audio} value={value.audio ?? 'auto'} onChange={() => onChange({ audio: 'auto' })}
+        options={[{ value: 'auto', label: t.smart }]} /></section>
     </div>, document.body)}
   </div>;
 }

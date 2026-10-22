@@ -1,4 +1,4 @@
-/* Reuses v5.4 GenerationSettings and the original Beta ratio artwork. */
+/* Figma 113:8302: 324×306 menu, original Beta artwork and semantic tokens. */
 .video-generation-settings-ratio-icon {
   flex: 0 0 16px;
   width: 16px;
@@ -8,7 +8,7 @@
   position: fixed;
   inset: auto;
   margin: 0;
-  width: 320px;
+  width: 324px;
   max-width: calc(100vw - 32px);
   max-height: calc(100dvh - 96px);
   overflow-y: auto;
@@ -16,31 +16,33 @@
   padding: var(--spacing-xl);
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  background: var(--surface-floating);
+  gap: 16px;
+  background: var(--surface-default);
   color: var(--text-secondary);
-  border: 1px solid var(--border-weak);
+  border: 0;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-l);
+  box-shadow: inset 0 0 0 1px var(--border-weak), var(--shadow-l);
 }
 .video-generation-settings::backdrop { pointer-events: none; }
 .video-generation-settings section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  flex: 0 0 auto;
+  gap: 8px;
   min-width: 0;
 }
 .video-generation-settings h3 {
   margin: 0;
-  font-size: 14px;
+  color: var(--text-tertiary);
+  font-size: 12px;
   font-weight: 400;
-  line-height: 20px;
+  line-height: 16px;
 }
 .video-parameter-segments-scroll {
   overflow-x: auto;
   overscroll-behavior: contain;
   padding: 0;
-  border-radius: var(--radius-l);
+  border-radius: var(--radius-base);
 }
 .video-parameter-segments {
   position: relative;
@@ -49,25 +51,25 @@
   grid-template-columns: repeat(var(--segments), minmax(0, 1fr));
   gap: var(--spacing-xs);
   padding: var(--spacing-xs);
-  background: var(--state-default);
-  border-radius: var(--radius-l);
+  background: var(--surface-secondary);
+  border-radius: var(--radius-base);
 }
-/* Beta Tabs/Item S: 24px; ratio items: 48px with the icon above the label. */
+/* 24px text segments; ratio items use a 16px icon, 2px gap and 16px label. */
 .video-parameter-segments button {
   min-width: 0;
-  height: var(--height-xl);
-  min-height: var(--height-xl);
+  height: 24px;
+  min-height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs);
   padding: var(--spacing-xs);
   border: 0;
-  border-radius: var(--radius-base);
+  border-radius: 6px;
   font-size: 12px;
   line-height: 16px;
-  font-weight: 400;
-  color: var(--text-secondary);
+  font-weight: 500;
+  color: var(--text-tertiary);
 }
 .video-parameter-segments button:hover {
   color: var(--text-primary);
@@ -78,40 +80,33 @@
   background: var(--state-selected-tab-sliding);
 }
 .video-parameter-segments button:focus-visible { outline-offset: -2px; }
-.video-parameter-segments--ratios { min-width: 288px; }
+.video-parameter-segments-scroll:has(.video-parameter-segments--ratios) { border-radius: var(--radius-l); }
+.video-parameter-segments--ratios { display: flex; min-width: 300px; border-radius: var(--radius-l); }
 .video-parameter-segments--ratios button {
+  flex: 1 0 auto;
   flex-direction: column;
-  height: var(--height-4xl);
-  min-height: var(--height-4xl);
-  padding: var(--spacing-xs);
-  gap: var(--spacing-xs);
-  font-size: 14px;
-  line-height: 20px;
+  height: 42px;
+  min-height: 42px;
+  padding: 4px 8px;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 16px;
   white-space: nowrap;
 }
+.video-parameter-segments--ratios button[aria-checked='true'] { border-radius: var(--radius-base); }
 .video-parameter-segments--ratios .icon { flex-shrink: 0; }
 
-.video-duration-heading,
-.video-duration-bounds {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.video-duration-heading output {
-  color: var(--text-primary);
-  font-size: 14px;
-  line-height: 20px;
-  font-variant-numeric: tabular-nums;
-}
 .video-duration-control {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
 }
 .video-duration-range {
   display: flex;
   align-items: center;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   height: 24px;
 }
 .video-duration-range input[type='range'] {
@@ -181,12 +176,34 @@
   outline-offset: 4px;
   border-radius: var(--radius-max);
 }
-.video-duration-bounds {
-  color: var(--text-tertiary);
+.video-duration-value {
+  display: flex;
+  align-items: center;
+  flex: 0 0 64px;
+  gap: 4px;
+  width: 64px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: var(--state-default);
+  color: var(--text-secondary);
   font-size: 12px;
   line-height: 16px;
   font-variant-numeric: tabular-nums;
 }
+.video-duration-value:focus-within { outline: 1px solid var(--border-brand); }
+.video-duration-value input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.video-duration-value > span { flex: none; color: var(--text-placeholder); }
 @media (prefers-reduced-motion: reduce) {
   .video-duration-range input[type='range']::-webkit-slider-thumb { transition: none; }
   .video-duration-range input[type='range']::-moz-range-thumb { transition: none; }

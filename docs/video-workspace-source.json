@@ -16,7 +16,8 @@
     "landscapeTemplate": "76:5477",
     "emptyTemplate": "64:4644",
     "uploadStates": "76:5455",
-    "fashionVideoMultipleReferencesInstance": "112:7765"
+    "fashionVideoMultipleReferencesInstance": "112:7765",
+    "videoGenerationSettings": "113:8302"
   },
   "assets": {
     "directory": "public/assets/video-workspace",
@@ -247,10 +248,11 @@
     "referenceTileSize": 64,
     "promptLimit": 2000,
     "defaultSettings": {
-      "resolution": "1080p",
+      "resolution": "2K",
       "duration": "5s",
       "ratio": "9:16",
-      "generationMode": "fast"
+      "generationMode": "fast",
+      "audio": "auto"
     },
     "generationSettings": {
       "summaryOrder": [
@@ -259,24 +261,30 @@
         "duration"
       ],
       "summaryIcon": "Uses the same original SVG as the selected ratio option; auto icon only for auto.",
-      "source": "v5.4 src/components/GenerationSettings.tsx, src/workbench.css, public/assets/parameter-*.svg",
+      "source": "Figma 113:8302 for current menu geometry and options; reuse existing GenerationSettings controls and original parameter SVGs.",
       "component": "src/components/VideoGenerationSettings.tsx",
       "assetDirectory": "public/assets/video-settings",
-      "panelWidth": 320,
+      "wideRatioIcon": {
+        "ratio": "21:9",
+        "slot": "I113:8302;891:4593;113:8552;2879:9636;113:8549",
+        "file": "parameter-21-9.svg",
+        "source": "Original SVG exported from the visible 21:9 option in Figma 113:8302."
+      },
+      "panelWidth": 324,
       "ratios": [
         "auto",
-        "3:4",
+        "21:9",
         "9:16",
+        "16:9",
         "1:1",
-        "4:3",
-        "16:9"
+        "3:4",
+        "4:3"
       ],
       "resolutions": [
-        "480p",
-        "720p",
-        "1080p"
+        "768p",
+        "2K"
       ],
-      "interaction": "Ratio and resolution apply immediately without closing; duration uses the mode-dependent slider. Retain settings per node across frame/reference modes with canvas undo/redo. Outside click or Escape closes; preserve keyboard operation and shared 200ms motion.",
+      "interaction": "Ratio and resolution apply immediately without closing; duration uses the mode-dependent slider and numeric input. Keep the complete ratio | resolution | duration summary and selected-ratio icon; audio stays out of the summary. Retain per-node settings across frame/reference modes with canvas undo/redo. Outside click or Escape closes; preserve keyboard operation, dark/light themes and shared 200ms exit motion.",
       "durationSlider": {
         "unit": "seconds",
         "step": 1,
@@ -290,8 +298,56 @@
             "max": 30
           }
         },
+        "rowHeight": 24,
+        "sliderWidth": "flexible",
+        "gap": 8,
+        "input": {
+          "width": 64,
+          "height": 24,
+          "editable": true,
+          "commit": "On Enter, blur or panel close, clamp to the current mode range and commit one history record."
+        },
         "modeChange": "Switching to fast clamps durations above 15 seconds to 15; commit mode and duration together as one undo transaction.",
-        "interaction": "Display the current duration immediately while dragging; commit one history record when the gesture finishes."
+        "interaction": "Display the current duration immediately while dragging; commit one history record when the gesture finishes.",
+        "labels": "No below-slider range labels or upper-right value; show seconds in the numeric input.",
+        "userOverride": "Ignore the hidden zero label in Figma; minimum remains 5 seconds in both modes."
+      },
+      "nodeId": "113:8302",
+      "panelHeight": 306,
+      "panel": {
+        "geometrySource": "Figma 113:8302 metadata, 324 x 306px.",
+        "background": "Surface/default",
+        "padding": 12,
+        "radius": 16,
+        "border": "1px Border/weak overlay; does not consume layout space.",
+        "groups": [
+          "ratio",
+          "resolution",
+          "duration",
+          "audio"
+        ],
+        "groupGap": 16,
+        "labelFontSize": 12,
+        "labelLineHeight": 16,
+        "labelColor": "Text/tertiary",
+        "labelToControlGap": 8,
+        "overflow": "Scroll inside the panel when available viewport space is insufficient."
+      },
+      "ratioAutoLabel": "Auto, including Chinese locale.",
+      "ratioControl": {
+        "itemHeight": 42,
+        "wrapperPadding": 4,
+        "height": 50
+      },
+      "resolutionControlHeight": 32,
+      "audio": {
+        "options": [
+          "auto"
+        ],
+        "default": "auto",
+        "labelZh": "智能",
+        "controlHeight": 32,
+        "behavior": "Fixed single option; audio generation service is not connected."
       }
     },
     "costLabel": "999",
@@ -390,7 +446,7 @@
       "modeControlWidth": 104,
       "parameterControlWidth": 184,
       "gap": 8,
-      "defaults": "Preserve existing node selections. Do not replace fast/5s defaults with the professional/30s design example.",
+      "defaults": "Preserve fast, 9:16 and 5s initial values; resolution defaults to 2K and audio to auto. Do not replace fast/5s with the professional/30s design example.",
       "footer": "One full-width generation button with unchanged cost 999."
     }
   },

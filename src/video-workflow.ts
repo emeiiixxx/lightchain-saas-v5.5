@@ -15,6 +15,7 @@ export type VideoWorkflow = {
   resolution: string;
   duration: string;
   ratio: string;
+  audio: 'auto';
 };
 
 export function videoWorkflowSize(mode: VideoWorkflow['mode']) {
@@ -38,7 +39,7 @@ export function videoWorkflowReferences(node: VideoWorkflow): VideoReference[] {
 export function createVideoWorkflow(x: number, y: number, source?: CanvasImage): VideoWorkflow {
   return { id: crypto.randomUUID(), x, y, mode: 'frames', generationMode: 'fast',
     main: source ? { id: source.id, sourceImageId: source.id, name: source.name, url: source.url } : undefined,
-    references: [], prompt: '', resolution: '1080p', duration: '5s', ratio: '9:16' };
+    references: [], prompt: '', resolution: '2K', duration: '5s', ratio: '9:16', audio: 'auto' };
 }
 
 // Canvas navigation and React Flow share the same geometry for images and nodes.
