@@ -22,7 +22,7 @@ import { VideoSelectionToolbar } from './VideoSelectionToolbar';
 import { VideoAssetToolbar } from './VideoAssetToolbar';
 import { VideoWorkflowNode } from './VideoWorkflowNode';
 import { ImageConnection } from './ImageConnection';
-import { createVideoWorkflow, videoWorkflowBox, VIDEO_NODE_WIDTH, VIDEO_NODE_HEIGHT, type VideoWorkflow, type VideoReference } from '../video-workflow';
+import { createVideoWorkflow, videoWorkflowBox, videoWorkflowSize, type VideoWorkflow, type VideoReference } from '../video-workflow';
 import { copyVideoCanvasSelection, pasteVideoCanvasSelection, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
 import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, writeCanvasClipboardEvent, writeCanvasClipboardSystem, type CanvasClipboard } from '../canvas-clipboard-session';
 import { canConnectCanvasNodes, type CanvasConnection, type CanvasConnectionInput, type CanvasConnectionNodes } from '../canvas-connections';
@@ -174,7 +174,12 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const outsideView = items.length > 0 && !items.some(image => image.x * view.zoom + view.x < canvasSize.width && (image.x + image.width) * view.zoom + view.x > 0 && image.y * view.zoom + view.y < canvasSize.height && (image.y + image.height) * view.zoom + view.y > 0);
   const shownReturn = usePresence(outsideView ? true : null);
 
-  const replace = useCallback((next: Snapshot) => { current.current = next; setSnapshot(next); }, []);
+  const replace = useCallback((next: Snapshot) => {
+    const normalized = next.workflows.some(node => node.generationMode !== 'fast' && node.generationMode !== 'professional')
+      ? { ...next, workflows: next.workflows.map(node => node.generationMode === 'fast' || node.generationMode === 'professional' ? node : { ...node, generationMode: 'fast' as const }) }
+      : next;
+    current.current = normalized; setSnapshot(normalized);
+  }, []);
   const saveUndo = useCallback(() => {
     history.current.past = [...history.current.past.slice(-99), current.current];
     history.current.future = [];
@@ -375,7 +380,16 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   function openAssets() { closeCanvasMenu(); if (active && !reading) setModal('assets'); }
   function updateWorkflow(id: string, patch: Partial<VideoWorkflow>) {
     if (!current.current.workflows.some(node => node.id === id)) return;
-    commit({ ...current.current, workflows: current.current.workflows.map(node => node.id === id ? { ...node, ...patch } : node) });
+    commit({ ...current.current, workflows: current.current.workflows.map(node => {
+      if (node.id !== id) return node;
+      const next = { ...node, ...patch };
+      if (next.mode !== node.mode) {
+        const previousSize = videoWorkflowSize(node.mode), nextSize = videoWorkflowSize(next.mode);
+        next.x += (previousSize.width - nextSize.width) / 2;
+        next.y += (previousSize.height - nextSize.height) / 2;
+      }
+      return next;
+    }) });
   }
   function addWorkflow(sourceId?: string) {
     const previous = current.current;
@@ -384,12 +398,13 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const source = sourceId ? previous.images.find(image => image.id === sourceId) : undefined;
     if (sourceId && (!source || source.video)) return;
     const scene = sceneItems(previous), viewport = viewRef.current;
+    const size = videoWorkflowSize('frames');
     const node = createVideoWorkflow(
-      source ? source.x + source.width + 80 : (canvasSize.width / 2 - viewport.x) / viewport.zoom - VIDEO_NODE_WIDTH / 2,
-      source ? source.y + (source.height - VIDEO_NODE_HEIGHT) / 2 : (canvasSize.height / 2 - viewport.y) / viewport.zoom - VIDEO_NODE_HEIGHT / 2,
+      source ? source.x + source.width + 80 : (canvasSize.width / 2 - viewport.x) / viewport.zoom - size.width / 2,
+      source ? source.y + (source.height - size.height) / 2 : (canvasSize.height / 2 - viewport.y) / viewport.zoom - size.height / 2,
       source,
     );
-    while (scene.some(item => node.x < item.x + item.width + 40 && node.x + VIDEO_NODE_WIDTH + 40 > item.x && node.y < item.y + item.height + 40 && node.y + VIDEO_NODE_HEIGHT + 40 > item.y)) node.y += VIDEO_NODE_HEIGHT + 40;
+    while (scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
     commit({ ...previous, workflows: [...previous.workflows, node], selected: [node.id], selectedConnections: [] });
     if (canvas.current) animateView(fitImages([...(source ? [source] : []), videoWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });
@@ -404,7 +419,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       let source = current.current.images.find(item => item.url === image.url);
       const images = [...current.current.images];
       if (!source) {
-        source = { ...image, x: node.x - 80 - image.width, y: node.y + (VIDEO_NODE_HEIGHT - image.height) / 2 };
+        source = { ...image, x: node.x - 80 - image.width, y: node.y + (videoWorkflowSize(node.mode).height - image.height) / 2 };
         const scene = sceneItems(current.current);
         while (scene.some(item => source!.x < item.x + item.width + 40 && source!.x + source!.width + 40 > item.x && source!.y < item.y + item.height + 40 && source!.y + source!.height + 40 > item.y)) source.x -= source.width + 40;
         images.push(source);
@@ -443,16 +458,21 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const groups = previous.images.map(image => {
       const nodes = previous.workflows.filter(node => node.main?.sourceImageId === image.id);
       nodes.forEach(node => linked.add(node.id));
-      return { image, nodes, width: image.width + (nodes.length ? 80 + VIDEO_NODE_WIDTH : 0), height: Math.max(image.height, nodes.length * VIDEO_NODE_HEIGHT + Math.max(0, nodes.length - 1) * 40) };
+      const sizes = nodes.map(node => videoWorkflowSize(node.mode));
+      return { image, nodes, width: image.width + (nodes.length ? 80 + Math.max(...sizes.map(size => size.width)) : 0), height: Math.max(image.height, sizes.reduce((height, size) => height + size.height, 0) + Math.max(0, nodes.length - 1) * 40) };
     });
-    const blocks = [...groups, ...previous.workflows.filter(node => !linked.has(node.id)).map(node => ({ image: undefined, nodes: [node], width: VIDEO_NODE_WIDTH, height: VIDEO_NODE_HEIGHT }))];
+    const blocks = [...groups, ...previous.workflows.filter(node => !linked.has(node.id)).map(node => ({ image: undefined, nodes: [node], ...videoWorkflowSize(node.mode) }))];
     let y = 0;
     for (let offset = 0; offset < blocks.length; offset += 5) {
       const row = blocks.slice(offset, offset + 5); let x = 0;
       for (const group of row) {
         if (group.image) positions.set(group.image.id, { x, y: y + (group.height - group.image.height) / 2 });
-        const nodeHeight = group.nodes.length * VIDEO_NODE_HEIGHT + Math.max(0, group.nodes.length - 1) * 40;
-        group.nodes.forEach((node, index) => positions.set(node.id, { x: x + (group.image ? group.image.width + 80 : 0), y: y + (group.height - nodeHeight) / 2 + index * (VIDEO_NODE_HEIGHT + 40) }));
+        const nodeHeight = group.nodes.reduce((height, node) => height + videoWorkflowSize(node.mode).height, 0) + Math.max(0, group.nodes.length - 1) * 40;
+        let nodeY = y + (group.height - nodeHeight) / 2;
+        group.nodes.forEach(node => {
+          positions.set(node.id, { x: x + (group.image ? group.image.width + 80 : 0), y: nodeY });
+          nodeY += videoWorkflowSize(node.mode).height + 40;
+        });
         x += group.width + 240;
       }
       y += Math.max(...row.map(group => group.height)) + 240;
@@ -549,7 +569,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
             const source = snapshot.images.find(image => image.id === node.main?.sourceImageId);
             return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
           })}
-          {snapshot.workflows.map(node => <div key={node.id} data-canvas-id={node.id} className="fusion-position video-workflow-position" data-selected={snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, width: VIDEO_NODE_WIDTH, height: VIDEO_NODE_HEIGHT }} role="group" tabIndex={0} aria-label={locale === 'zh-CN' ? '服装短视频' : locale === 'ja' ? 'ファッション動画' : 'Fashion video'}
+          {snapshot.workflows.map(node => <div key={node.id} data-canvas-id={node.id} className="fusion-position video-workflow-position" data-selected={snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoWorkflowSize(node.mode) }} role="group" tabIndex={0} aria-label={locale === 'zh-CN' ? '服装短视频' : locale === 'ja' ? 'ファッション動画' : 'Fashion video'}
             onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id], selectedConnections: [] }); } }}>
             <VideoWorkflowNode node={node} locale={locale} onChange={patch => updateWorkflow(node.id, patch)} onMain={() => setWorkflowUpload({ id: node.id, field: 'main' })}
               onReference={() => setWorkflowUpload({ id: node.id, field: node.mode === 'frames' ? 'endFrame' : 'references' })} onPreview={reference => void previewReference(reference)}

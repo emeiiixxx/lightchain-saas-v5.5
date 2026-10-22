@@ -25,27 +25,92 @@
       "directory": "public/assets/video-entry-20261022",
       "slotSize": 24,
       "rootSize": 24,
-      "templates": { "slot": "I64:2062;1782:24376", "file": "templates.svg" },
-      "materialGeneration": { "slot": "I64:2063;1782:24376", "file": "material-generation.svg" },
-      "videoGeneration": { "slot": "I64:2064;1782:24376", "file": "video-generation.svg" },
-      "videoRemake": { "slot": "I64:2065;1782:24376", "file": "video-remake.svg" },
-      "videoEdit": { "slot": "I64:2204;1782:24376", "file": "video-edit.svg" }
+      "templates": {
+        "slot": "I64:2062;1782:24376",
+        "file": "templates.svg"
+      },
+      "materialGeneration": {
+        "slot": "I64:2063;1782:24376",
+        "file": "material-generation.svg"
+      },
+      "videoGeneration": {
+        "slot": "I64:2064;1782:24376",
+        "file": "video-generation.svg"
+      },
+      "videoRemake": {
+        "slot": "I64:2065;1782:24376",
+        "file": "video-remake.svg"
+      },
+      "videoEdit": {
+        "slot": "I64:2204;1782:24376",
+        "file": "video-edit.svg"
+      }
     },
     "uploadedVideoIcons": {
       "directory": "public/assets/video-canvas",
-      "modify": { "nodeId": "103:6927", "file": "modify.svg" },
-      "saveAsset": { "nodeId": "64:2261", "file": "save-asset.svg" },
-      "download": { "nodeId": "64:2227", "file": "download.svg" },
-      "play": { "nodeId": "103:6933", "file": "play.svg" },
+      "modify": {
+        "nodeId": "103:6927",
+        "file": "modify.svg"
+      },
+      "saveAsset": {
+        "nodeId": "64:2261",
+        "file": "save-asset.svg"
+      },
+      "download": {
+        "nodeId": "64:2227",
+        "file": "download.svg"
+      },
+      "play": {
+        "nodeId": "103:6933",
+        "file": "play.svg"
+      },
       "size": 20
     },
-    "upscaleIcon": { "nodeId": "80:77", "path": "public/assets/video-workspace/upscale.svg", "displaySize": 16 },
-    "fashionVideoIcon": { "nodeId": "64:4169", "path": "public/assets/video-workspace/fashion-short-video.svg", "displaySize": 20 },
-    "storyboardIcon": { "nodeId": "64:4168", "path": "public/assets/video-workspace/storyboard-to-video.svg", "displaySize": 20 },
-    "workflowIcons": { "directory": "public/assets/video-workflow", "info": "64:2228", "expandText": "3:868", "imageToPrompt": "3:876", "auto": "84:6078", "displaySize": 16 },
-    "portraitPoster": { "nodeId": "76:5023", "width": 386, "height": 686 },
-    "landscapePoster": { "nodeId": "76:5591", "width": 645, "height": 359 },
-    "emptyIllustration": { "nodeId": "6:317", "width": 384, "height": 384, "displaySize": 128 }
+    "upscaleIcon": {
+      "nodeId": "80:77",
+      "path": "public/assets/video-workspace/upscale.svg",
+      "displaySize": 16
+    },
+    "fashionVideoIcon": {
+      "nodeId": "64:4169",
+      "path": "public/assets/video-workspace/fashion-short-video.svg",
+      "displaySize": 20
+    },
+    "storyboardIcon": {
+      "nodeId": "64:4168",
+      "path": "public/assets/video-workspace/storyboard-to-video.svg",
+      "displaySize": 20
+    },
+    "workflowIcons": {
+      "directory": "public/assets/video-workflow",
+      "info": "64:2228",
+      "expandText": "3:868",
+      "imageToPrompt": "3:876",
+      "auto": "84:6078",
+      "displaySize": 16,
+      "add": {
+        "nodeId": "64:2241",
+        "slot": "I84:6150;2575:3889;84:6126;1579:4104",
+        "file": "add.svg",
+        "displaySize": 20
+      }
+    },
+    "portraitPoster": {
+      "nodeId": "76:5023",
+      "width": 386,
+      "height": 686
+    },
+    "landscapePoster": {
+      "nodeId": "76:5591",
+      "width": 645,
+      "height": 359
+    },
+    "emptyIllustration": {
+      "nodeId": "6:317",
+      "width": 384,
+      "height": 384,
+      "displaySize": 128
+    }
   },
   "media": {
     "player": "native HTML video controls with contain sizing",
@@ -70,22 +135,67 @@
   },
   "initialEntries": {
     "nodeId": "64:2061",
-    "labels": ["视频模版", "素材生成", "视频生成", "视频复刻", "视频编辑"],
-    "button": { "variant": "Outline L", "width": 144, "height": 48, "radius": 12, "iconSize": 24, "contentGap": 8 },
+    "labels": [
+      "视频模版",
+      "素材生成",
+      "视频生成",
+      "视频复刻",
+      "视频编辑"
+    ],
+    "button": {
+      "variant": "Outline L",
+      "width": 144,
+      "height": 48,
+      "radius": 12,
+      "iconSize": 24,
+      "contentGap": 8
+    },
     "gap": 16,
-    "badge": { "label": "NEW", "nodeId": "64:2066", "left": 109, "top": -8, "height": 20 },
+    "badge": {
+      "label": "NEW",
+      "nodeId": "64:2066",
+      "left": 109,
+      "top": -8,
+      "height": 20
+    },
     "interaction": "Templates opens the existing modal; video generation creates an empty fashion-video node; the other entries show the existing service-not-connected feedback."
   },
   "singleImageCanvas": {
-    "designSize": { "width": 1920, "height": 1080 },
-    "imageExample": { "x": 780, "y": 312, "width": 360, "height": 560, "radius": 16 },
+    "designSize": {
+      "width": 1920,
+      "height": 1080
+    },
+    "imageExample": {
+      "x": 780,
+      "y": 312,
+      "width": 360,
+      "height": 560,
+      "radius": 16
+    },
     "imageContent": "Dynamic uploaded image, preserving its original aspect ratio.",
-    "toolbar": { "width": "max-content", "textButtonWidth": "auto", "textButtonPaddingInline": 8, "height": 40, "gapToImage": 16, "radius": 12 },
+    "toolbar": {
+      "width": "max-content",
+      "textButtonWidth": "auto",
+      "textButtonPaddingInline": 8,
+      "height": 40,
+      "gapToImage": 16,
+      "radius": 12
+    },
     "initialAlignment": "Center image and toolbar together inside the canvas below the 48px topbar; keep toolbar at UI scale.",
-    "sideToolbar": { "width": 56, "height": 104, "padding": 8, "gap": 8, "buttonSize": 40 },
+    "sideToolbar": {
+      "width": 56,
+      "height": 104,
+      "padding": 8,
+      "gap": 8,
+      "buttonSize": 40
+    },
     "downloadMenu": {
       "source": "v5.4 src/components/DownloadFormatMenu.tsx, src/workbench.css, src/full-image-viewer.css, src/download-image.ts",
-      "formats": ["PNG", "JPG", "AVIF"],
+      "formats": [
+        "PNG",
+        "JPG",
+        "AVIF"
+      ],
       "labels": "Format names only, without a Download prefix.",
       "width": 144,
       "padding": 4,
@@ -94,50 +204,142 @@
       "radius": 12,
       "export": "Original pixel dimensions; white background for JPG; validate actual encoded MIME and report unsupported formats."
     },
-    "assetAction": { "instance": "I76:5775;1675:2985;76:5762", "iconMaster": "64:2261", "meaning": "Save to assets, based on the asset-center icon master." }
+    "assetAction": {
+      "instance": "I76:5775;1675:2985;76:5762",
+      "iconMaster": "64:2261",
+      "meaning": "Save to assets, based on the asset-center icon master."
+    }
   },
   "uploadedVideoCanvas": {
     "nodeId": "97:6649",
-    "exampleSize": { "width": 360, "height": 560 },
+    "exampleSize": {
+      "width": 360,
+      "height": 560
+    },
     "content": "Uploaded video's actual first frame, retaining natural aspect ratio; decoded locally, never auto-playing on the canvas.",
-    "toolbar": { "height": 40, "width": "max-content", "gapToVideo": 16, "actions": ["modifyVideo", "saveAsset", "download"] },
-    "playButton": { "size": 32, "inset": 8, "radius": 999, "iconSize": 20 },
+    "toolbar": {
+      "height": 40,
+      "width": "max-content",
+      "gapToVideo": 16,
+      "actions": [
+        "modifyVideo",
+        "saveAsset",
+        "download"
+      ]
+    },
+    "playButton": {
+      "size": 32,
+      "inset": 8,
+      "radius": 999,
+      "iconSize": 20
+    },
     "upload": "Opt-in mixed image/video AssetPicker batch up to 20 files; direct canvas drop also supported. Videos stay out of image-only pickers.",
     "download": "Original local video URL, filename and format; no image conversion or format menu.",
     "canvas": "Shared Flow selection, movement, zoom, delete, arrange, fit and undo/redo. Retain video URLs across history and release on workspace unmount.",
     "preview": "Reuse video preview Dialog and native playback controls; pause on close or workspace switch."
   },
   "fashionVideoWorkflow": {
-    "width": 280,
-    "height": 608,
-    "resolvedHeaderHeight": 44,
-    "tabsHeight": 34,
-    "contentTopGap": 4,
-    "contentHeight": 469,
-    "footerHeight": 57,
-    "geometrySource": "Resolved Plugin API instance geometry; generated code header 64 and parent frame height 602 do not match the actual node.",
-    "modes": ["frames", "references"],
+    "modes": [
+      "frames",
+      "references"
+    ],
     "sourceGap": 80,
     "referenceTileSize": 64,
     "promptLimit": 2000,
-    "defaultSettings": { "resolution": "1080p", "duration": "5s", "ratio": "9:16" },
+    "defaultSettings": {
+      "resolution": "1080p",
+      "duration": "5s",
+      "ratio": "9:16"
+    },
     "generationSettings": {
-      "summaryOrder": ["ratio", "resolution", "duration"],
+      "summaryOrder": [
+        "ratio",
+        "resolution",
+        "duration"
+      ],
       "summaryIcon": "Uses the same original SVG as the selected ratio option; auto icon only for auto.",
       "source": "v5.4 src/components/GenerationSettings.tsx, src/workbench.css, public/assets/parameter-*.svg",
       "component": "src/components/VideoGenerationSettings.tsx",
       "assetDirectory": "public/assets/video-settings",
       "panelWidth": 320,
-      "ratios": ["auto", "3:4", "9:16", "1:1", "4:3", "16:9"],
-      "resolutions": ["480p", "720p", "1080p"],
-      "durations": ["5s", "10s", "15s"],
+      "ratios": [
+        "auto",
+        "3:4",
+        "9:16",
+        "1:1",
+        "4:3",
+        "16:9"
+      ],
+      "resolutions": [
+        "480p",
+        "720p",
+        "1080p"
+      ],
+      "durations": [
+        "5s",
+        "10s",
+        "15s"
+      ],
       "interaction": "Apply each selection immediately without closing; retain per node across modes with canvas undo/redo. Outside click or Escape closes; use original segmented controls, keyboard selection and shared 200ms motion."
     },
     "costLabel": "999",
     "interaction": "Source image and prompt shared across modes; last-frame and multiple-reference assets retained separately. Shared single-image picker optionally accepts one local video. Nodes participate in Flow navigation, selection, connections and undo.",
-    "generation": "Configuration UI only; generation and AI prompt services are not connected."
+    "generation": "Configuration UI only; generation and AI prompt services are not connected.",
+    "geometryByMode": {
+      "frames": {
+        "nodeId": "84:6110",
+        "updated": "2026-10-22",
+        "width": 320,
+        "height": 523,
+        "headerHeight": 44,
+        "tabsHeight": 34,
+        "contentTopGap": 0,
+        "contentHeight": 388,
+        "footerHeight": 57,
+        "geometrySource": "Resolved instance 84:6150 metadata; generated 64px header differs from actual 44px."
+      },
+      "references": {
+        "nodeId": "91:6434",
+        "width": 280,
+        "height": 608,
+        "headerHeight": 44,
+        "tabsHeight": 34,
+        "contentTopGap": 4,
+        "contentHeight": 469,
+        "footerHeight": 57
+      }
+    },
+    "firstLastFrameLayout": {
+      "label": "首尾帧图",
+      "tileSize": 64,
+      "order": [
+        "main",
+        "endFrame"
+      ],
+      "emptyEntry": "One original plus icon tile opens the existing main-image picker. Once main exists, allow one optional end frame.",
+      "main": "Preview and replace only; deleting its canvas source clears the main binding.",
+      "promptAssist": "Labelled expand-text button and character counter with 4px gap.",
+      "generationModes": [
+        "fast",
+        "professional"
+      ],
+      "defaultGenerationMode": "fast",
+      "modeControlWidth": 92,
+      "generationButtonWidth": 196,
+      "actionGap": 8,
+      "history": "Generation mode retained per node with undo/redo; switching frame/reference modes preserves all media and settings."
+    }
   },
-  "scope": ["topbar entry", "canvas initialization", "image and video uploads", "single image canvas and toolbar", "uploaded video canvas and toolbar", "fashion video workflow modes", "reference image and video uploads", "template dialog and reference image states"],
+  "scope": [
+    "topbar entry",
+    "canvas initialization",
+    "image and video uploads",
+    "single image canvas and toolbar",
+    "uploaded video canvas and toolbar",
+    "fashion video workflow modes",
+    "reference image and video uploads",
+    "template dialog and reference image states"
+  ],
   "userOverrides": {
     "workflowMainImageRemoval": "Neither fashion-video mode offers main-image deletion inside the node. Delete the source image on the canvas to clear the main slot and connection; keep the node, description and references, with undo restoring the source and link.",
     "desktopDialogHeight": 720,
@@ -145,7 +347,18 @@
     "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",
     "referenceImageHover": "Clip the image and hover overlay inside rounded containers."
   },
-  "deferred": ["multiple image visual design", "storyboard workflow", "template editing workflow", "video generation service", "image generation", "upscale", "save to assets", "send image", "AI prompt expansion", "image to prompt"],
+  "deferred": [
+    "multiple image visual design",
+    "storyboard workflow",
+    "template editing workflow",
+    "video generation service",
+    "image generation",
+    "upscale",
+    "save to assets",
+    "send image",
+    "AI prompt expansion",
+    "image to prompt"
+  ],
   "verification": {
     "browser": "not run, per user instruction",
     "localBuildAndTests": "not run, per project instruction",

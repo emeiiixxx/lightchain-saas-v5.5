@@ -1,5 +1,6 @@
-/* Figma 84:6110 / 91:6434. Actual Header instance is 44px; shell is 280×608. */
+/* Figma 84:6110 (2026-10-22): 320×523. References mode retains 91:6434. */
 .fusion-node.video-workflow-node { position: relative; width: 280px; height: 608px; padding: 0; gap: 0; border: 0; }
+.fusion-node.video-workflow-node[data-mode='frames'] { width: 320px; height: 523px; }
 .video-workflow-node::before { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
 .fusion-position[data-selected='true'] .video-workflow-node::before { opacity: 0; }
 .video-workflow-header { height: 44px; flex: 0 0 44px; padding: 12px; }
@@ -8,6 +9,7 @@
 .video-workflow-tabs .lc-button { flex: 1; min-width: 0; height: 24px; min-height: 24px; padding: 4px 8px; border: 0; border-radius: 6px; color: var(--text-tertiary); font-size: 12px; line-height: 16px; font-weight: 500; white-space: nowrap; }
 .video-workflow-tabs .lc-button[aria-selected='true'] { background: var(--state-selected); color: var(--text-brand); }
 .video-workflow-content { flex: 0 0 469px; height: 469px; margin-top: 4px; padding: 12px; gap: 12px; }
+.video-workflow-node[data-mode='frames'] .video-workflow-content { flex-basis: 388px; height: 388px; margin-top: 0; }
 .video-workflow-content > * { flex-shrink: 0; }
 .video-workflow-add-main { color: var(--text-secondary); line-height: 16px; }
 .video-workflow-main { gap: 8px; }
@@ -26,15 +28,23 @@
 .video-reference-preview > :is(.progressive-image, video) { display: block; width: 100%; height: 100%; object-fit: cover; }
 .video-reference-preview::after { content: ''; position: absolute; inset: 0; background: var(--overlay-weak); opacity: 0; pointer-events: none; }
 .video-reference-tile:is(:hover, :focus-within) .video-reference-preview::after { opacity: 1; }
-.video-reference-tile .video-reference-remove { position: absolute; top: 4px; right: 4px; width: 20px; min-width: 20px; height: 20px; padding: 0; border: 0; border-radius: 999px; opacity: 0; }
-.video-reference-tile:is(:hover, :focus-within) .video-reference-remove { opacity: 1; }
+.video-reference-tile :is(.video-reference-remove, .video-reference-replace) { position: absolute; top: 4px; right: 4px; width: 20px; min-width: 20px; height: 20px; padding: 0; border: 0; border-radius: 999px; opacity: 0; }
+.video-reference-tile:is(:hover, :focus-within) :is(.video-reference-remove, .video-reference-replace) { opacity: 1; }
 .video-reference-video-mark { position: absolute; left: 4px; bottom: 4px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; background: var(--surface-media-overlay); color: #fff; pointer-events: none; }
 .video-workflow-reference-add { padding: 0; }
 .video-workflow-prompt { height: 188px; }
 .video-workflow-prompt .fusion-textarea { flex-shrink: 0; }
 .video-prompt-assist { display: flex; flex: 1; min-width: 0; justify-content: flex-end; align-items: center; gap: 4px; }
 .video-workflow-node .video-prompt-icon { flex: 0 0 24px; width: 24px; min-width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; }
+.video-workflow-node .video-prompt-expand { min-width: 24px; height: 24px; min-height: 24px; padding: 0 8px; gap: 4px; border: 0; border-radius: 4px; color: var(--text-secondary); font-size: 12px; line-height: 20px; }
+.video-prompt-expand > .video-node-icon { flex-shrink: 0; }
+.video-prompt-expand > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .video-prompt-assist .fusion-counter { flex: 0 0 auto; }
 .video-workflow-settings { height: 60px; }
 .video-workflow-settings .lc-setting-select-value { font-size: 12px; line-height: 16px; }
 .fusion-node-action.video-workflow-action { height: 57px; flex: 0 0 57px; margin: 0; padding: 12px; }
+.video-workflow-node[data-mode='frames'] .video-workflow-action { gap: 8px; }
+.video-generation-mode { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; height: 32px; padding: 4px; border-radius: var(--radius-base); background: var(--surface-secondary); }
+.video-generation-mode .lc-button { min-width: 40px; height: 24px; min-height: 24px; padding: 4px 8px; border: 0; border-radius: 6px; color: var(--text-tertiary); font-size: 12px; line-height: 16px; font-weight: 500; white-space: nowrap; }
+.video-generation-mode .lc-button[aria-checked='true'] { background: var(--state-selected); color: var(--text-brand); }
+.video-workflow-node[data-mode='frames'] .fusion-generate { flex: 1; min-width: 0; width: auto; padding: 0 12px; font-size: 14px; line-height: 20px; white-space: nowrap; }
