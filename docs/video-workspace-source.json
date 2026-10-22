@@ -615,7 +615,7 @@
       "videoLimit": 3,
       "mainCountsTowardImageLimit": true,
       "upload": "Separate image and video upload actions with separate current/maximum counts. Decode local videos before applying; errors preserve existing content. Every accepted image or video also creates or reuses a canvas media source and binds to this editor atomically.",
-      "ordering": "Drag to reorder within the same media type and number each row by its current order. Preserve every source binding and inherited main identity; do not reassign bindings based on position.",
+      "ordering": "Reorder only within the same media type. The dragged tile follows the pointer directly; adjacent tiles shift to make room with 200ms ease-out motion, and release settles the tile into its new position and updates numbering. Alt+Left/Right reorder uses the same position animation; reduced motion switches immediately. Dragging previews order only; drop commits once as one undo action, while cancellation restores the original order without adding history. Preserve canvas media IDs, every source binding, inherited main identity and automatic links; never rebind by position.",
       "media": "Preview and top-right hover delete for every thumbnail. Delete clears only that reference, retaining the canvas source and editor configuration; remove its automatic line only when no other input uses that source. Canvas videos retain the original video and poster for playback and download.",
       "deduplication": "Use URL across inherited main and references; enforce in picker exclusions and local image/video confirmation.",
       "generationRequirement": "At least one image or video plus a non-empty prompt; video-only references are valid."
@@ -672,7 +672,17 @@
       "generationService": "Generation and expansion are not connected; show an explicit notice without changing existing content.",
       "assistCounterGap": 4,
       "generationButtonRadius": 6,
-      "generationButtonTooltip": false
+      "generationButtonTooltip": false,
+      "effect": {
+        "component": "PromptAssistButton wrapping user-supplied React Bits GradientText",
+        "variant": "flow",
+        "animationSpeed": 3,
+        "glow": 0.4,
+        "dark": ["Gradient/Aquamarine-300 #71F4D3", "Gradient/Perfume-300 #CCB2FF"],
+        "light": ["--primitive-brand-500 #0BC1B8", "--primitive-purple-400 #A78BFA"],
+        "lifecycle": "Pause offscreen and in background; use a static gradient with reduced motion; clean up on unmount.",
+        "handoff": "docs/video-prompt-assist-handoff.md"
+      }
     }
   },
   "scope": [

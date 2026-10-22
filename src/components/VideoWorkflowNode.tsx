@@ -1,6 +1,6 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type DragEvent } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import type { Locale } from '../i18n';
-import { reorderVideoReferences, videoReferenceLimits, videoWorkflowReferences, type VideoReference, type VideoWorkflow } from '../video-workflow';
+import { videoReferenceLimits, videoWorkflowReferences, type VideoReference, type VideoWorkflow } from '../video-workflow';
 import { videoNodeAssetSets } from '../video-node-assets';
 import { Button, Icon } from './ui';
 import { GenerateTaskButton } from './GenerateTaskButton';
@@ -9,6 +9,8 @@ import { PromptTools } from './PromptTools';
 import { VideoGenerationSettings } from './VideoGenerationSettings';
 import { SettingSelect } from './SettingSelect';
 import { VideoIcon } from './VideoIcon';
+import { useVideoReferenceSort } from './useVideoReferenceSort';
+import { PromptAssistButton } from './PromptAssistButton';
 import { notify } from './Toast';
 import '../video-workflow-node.css';
 
@@ -79,14 +81,12 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
   const referenceAssets = references.length ? videoNodeAssetSets.referencesFilled : videoNodeAssetSets.referencesEmpty;
   const assets = frames ? frameAssets : referenceAssets;
   const promptActionLabel = node.prompt.trim() ? t.promptExpand : t.promptGenerate;
-  const promptAction = <Button className="video-prompt-expand" onClick={() => notify(locale === 'zh-CN' ? promptActionLabel + t.unavailable : promptActionLabel + ' ' + t.unavailable)}><NodeIcon src={assets.promptGenerate} /><span>{promptActionLabel}</span></Button>;
+  const promptAction = <PromptAssistButton value={node.prompt} icon={<NodeIcon src={assets.promptGenerate} />} generateLabel={t.promptGenerate} expandLabel={t.promptExpand} onAction={() => notify(locale === 'zh-CN' ? promptActionLabel + t.unavailable : promptActionLabel + ' ' + t.unavailable)} />;
   const designId = frames ? (node.main ? '119:11242' : '84:6110') : (references.length ? '121:18150' : '121:17924');
   const root = useRef<HTMLElement>(null);
   const prompt = useRef<HTMLTextAreaElement>(null);
-  const dragging = useRef<VideoReference | null>(null);
   const suppressPreviewUntil = useRef(0);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [dropId, setDropId] = useState<string | null>(null);
+  const sorting = useVideoReferenceSort(node, onChange);
   const [error, setError] = useState(false);
   const id = useId();
   const promptId = id + '-prompt';
@@ -111,32 +111,17 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
     onChange({ ...(reference.id === node.main?.id ? { main: undefined } : { references: node.references.filter(item => item.id !== reference.id) }),
       referenceOrder: references.filter(item => item.id !== reference.id).map(item => item.id) });
   }
-  function finishDrag() { dragging.current = null; setDragId(null); setDropId(null); suppressPreviewUntil.current = Date.now() + 200; }
-  function moveReference(kind: VideoReference['kind'], sourceId: string, targetId: string) {
-    if (sourceId !== targetId) onChange({ referenceOrder: reorderVideoReferences(node, kind, sourceId, targetId) });
-  }
-  function acceptDrag(event: DragEvent<HTMLElement>, kind: VideoReference['kind'], targetId?: string) {
-    if (!dragging.current) return false;
-    event.stopPropagation();
-    if (dragging.current.kind !== kind) { event.dataTransfer.dropEffect = 'none'; return false; }
-    event.preventDefault(); event.dataTransfer.dropEffect = 'move'; setDropId(targetId ?? null); return true;
-  }
-  function dropReference(event: DragEvent<HTMLElement>, kind: VideoReference['kind'], targetId?: string) {
-    if (!acceptDrag(event, kind, targetId)) return;
-    if (dragging.current && targetId) moveReference(kind, dragging.current.id, targetId);
-    finishDrag();
-  }
+  function finishDrag() { sorting.end(); suppressPreviewUntil.current = Date.now() + 200; }
   function thumbnail(reference: VideoReference, onRemove: () => void, index?: number) {
     const reorder = index !== undefined;
     return <div className="video-reference-tile nodrag nopan" key={reference.id} draggable={reorder}
-      data-dragging={dragId === reference.id} data-drop-target={dropId === reference.id && dragId !== reference.id}
+      ref={reorder ? element => sorting.tile(reference.id, element) : undefined}
+      style={reorder ? { order: index } : undefined}
+      data-dragging={sorting.dragId === reference.id}
       onDragStart={event => {
         if (!reorder) { event.preventDefault(); return; }
-        event.stopPropagation(); dragging.current = reference; setDragId(reference.id);
-        event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('application/x-lightchain-video-reference', JSON.stringify({ nodeId: node.id, id: reference.id }));
+        sorting.begin(event, reference);
       }}
-      onDragOver={event => { if (reorder) acceptDrag(event, reference.kind, reference.id); }}
-      onDrop={event => { if (reorder) dropReference(event, reference.kind, reference.id); }}
       onDragEnd={finishDrag}>
       <button type="button" className="video-reference-preview" aria-label={t.preview + ' ' + reference.name} aria-describedby={reorder ? id + '-reorder' : undefined}
         onClick={() => { if (Date.now() >= suppressPreviewUntil.current) onPreview(reference); }}
@@ -145,7 +130,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
           event.preventDefault(); event.stopPropagation();
           const items = references.filter(item => item.kind === reference.kind);
           const target = items[items.findIndex(item => item.id === reference.id) + (event.key === 'ArrowLeft' ? -1 : 1)];
-          if (target) moveReference(reference.kind, reference.id, target.id);
+          if (target) sorting.move(reference.kind, reference.id, target.id);
         }}>
         {reference.kind === 'video' ? <><video src={reference.url} muted playsInline preload="metadata" draggable={false} /><span className="video-reference-video-mark"><VideoIcon name="videoGeneration" size={16} /></span></> : <ProgressiveImage src={reference.url} alt={reference.name} width={reorder ? 64 : 48} height={reorder ? 64 : 48} />}
       </button>
@@ -155,22 +140,19 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
   }
   function referenceSection(kind: VideoReference['kind']) {
     const items = references.filter(reference => reference.kind === kind);
+    const visualOrder = sorting.order.filter(referenceId => items.some(reference => reference.id === referenceId));
     const addLabel = kind === 'image' ? t.addImage : t.addVideo;
     return <div className="video-reference-section" key={kind}>
       <div className="video-reference-section-label" id={id + '-' + kind}><span>{t[kind]}</span><span className="video-reference-label-divider" aria-hidden="true" /><span>{kind === 'image' ? t.imageCount : t.videoCount}<span className="video-reference-count">{items.length}</span>/{videoReferenceLimits[kind]}</span></div>
-      <div className="video-workflow-references nowheel" data-canvas-scroll="wheel" aria-labelledby={id + '-' + kind}
-        onDragOver={event => {
-          if (!acceptDrag(event, kind, items.at(-1)?.id)) return;
-          const bounds = event.currentTarget.getBoundingClientRect();
-          if (event.clientX < bounds.left + 28) event.currentTarget.scrollLeft -= 16;
-          if (event.clientX > bounds.right - 28) event.currentTarget.scrollLeft += 16;
-        }} onDrop={event => dropReference(event, kind, items.at(-1)?.id)}
+      <div ref={element => sorting.row(kind, element)} className="video-workflow-references nowheel" data-canvas-scroll="wheel" data-reference-sorting={Boolean(sorting.dragId)} aria-labelledby={id + '-' + kind}
+        onDragOver={event => sorting.over(event, kind)} onDragLeave={sorting.leave}
+        onDrop={event => { sorting.drop(event, kind); suppressPreviewUntil.current = Date.now() + 200; }}
         onWheel={event => {
           if (event.ctrlKey || event.metaKey || event.altKey) return;
           event.stopPropagation(); if (!event.deltaX) event.currentTarget.scrollLeft += event.deltaY;
         }}>
-        {items.map((reference, index) => thumbnail(reference, () => removeReference(reference), index))}
-        {items.length < videoReferenceLimits[kind] && <button type="button" className="fusion-reference video-workflow-reference-add" aria-label={addLabel} data-tooltip={addLabel} onClick={() => onReference(kind)}><NodeIcon src={referenceAssets.addReference} size={20} /></button>}
+        {items.map(reference => thumbnail(reference, () => removeReference(reference), visualOrder.indexOf(reference.id)))}
+        {items.length < videoReferenceLimits[kind] && <button type="button" className="fusion-reference video-workflow-reference-add" style={{ order: items.length }} aria-label={addLabel} data-tooltip={addLabel} onClick={() => onReference(kind)}><NodeIcon src={referenceAssets.addReference} size={20} /></button>}
       </div>
     </div>;
   }
