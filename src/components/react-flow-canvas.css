@@ -41,17 +41,18 @@
 .lc-react-flow .lc-flow-free-handle.react-flow__handle-right { right: calc(-12px * var(--canvas-inverse-scale)); }
 .lc-react-flow[data-connectable='true'] .react-flow__node:hover .lc-flow-free-handle,
 .lc-react-flow[data-connectable='true'] .react-flow__node.selected .lc-flow-free-handle[data-node-kind='editor'],
+.lc-react-flow[data-connectable='true'] .lc-flow-free-handle[data-reconnectable='true'],
 .lc-react-flow[data-connectable='true'] .lc-flow-free-handle[data-add-menu='true']:is(:focus-visible, [aria-expanded='true']),
 .lc-react-flow[data-connectable='true'][data-connecting='true'] .lc-flow-free-handle[data-node-kind='editor'],
 .lc-react-flow[data-connectable='true'] .lc-flow-free-handle[data-feedback='source'] {
   opacity: 1; pointer-events: all; cursor: crosshair;
 }
-.lc-react-flow .lc-flow-free-handle:is(:hover, [data-feedback='source'], [data-feedback='valid'], [data-feedback='invalid'])::after {
+.lc-react-flow .lc-flow-free-handle:is(:hover, [data-reconnect-hovered='true'], [data-feedback='source'], [data-feedback='valid'], [data-feedback='invalid'])::after {
   transform: translate(-50%, -50%) scale(1.25);
   border-color: var(--border-brand); background: var(--brand-primary);
 }
 .lc-react-flow .lc-flow-free-handle[data-add-menu='true']:focus-visible::after { border-color: var(--border-brand); }
-.lc-react-flow .lc-flow-free-handle:is(:hover, [data-feedback='source'], [data-feedback='valid'], [data-feedback='invalid']) .lc-flow-handle-plus {
+.lc-react-flow .lc-flow-free-handle:is(:hover, [data-reconnect-hovered='true'], [data-feedback='source'], [data-feedback='valid'], [data-feedback='invalid']) .lc-flow-handle-plus {
   transform: translate(-50%, -50%) scale(1.25); color: var(--text-primary);
 }
 .canvas-context-menu.lc-flow-add-menu { width: 160px; }
@@ -69,8 +70,13 @@
 .lc-react-flow[data-connectable='false'] .lc-flow-free-edge,
 .lc-react-flow[data-connectable='false'] .lc-flow-free-edge .react-flow__edgeupdater { pointer-events: none; }
 .lc-react-flow .lc-flow-free-edge .react-flow__edgeupdater {
-  fill: var(--control-fill-default); stroke: var(--border-brand); stroke-width: calc(2px * var(--canvas-inverse-scale));
+  /* The library centre is the Handle centre (reconnectRadius=0). Geometry
+     below enlarges only the hit area; CanvasConnectionHandle draws the dot. */
+  r: calc(16px * var(--canvas-inverse-scale));
+  fill: transparent; stroke: none; cursor: crosshair; transition: none;
 }
+.lc-react-flow[data-connectable='true'][data-connecting='false'] .lc-flow-free-handle[data-reconnectable='true'] { pointer-events: none; }
+.lc-react-flow[data-connecting='true'] .lc-flow-free-edge .react-flow__edgeupdater { pointer-events: none; }
 .lc-flow-connection path { fill: none; transition-property: stroke; }
 .lc-flow-edge-line { stroke: var(--border-medium); stroke-width: calc(2px * var(--canvas-inverse-scale, 1)); }
 .lc-flow-connection[data-active='true'] .lc-flow-edge-line { stroke: var(--border-brand); stroke-dasharray: calc(8px * var(--canvas-inverse-scale, 1)) calc(6px * var(--canvas-inverse-scale, 1)); animation: lc-flow-ants 800ms linear infinite; }

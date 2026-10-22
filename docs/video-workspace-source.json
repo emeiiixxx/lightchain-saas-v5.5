@@ -356,6 +356,18 @@
     "template dialog and reference image states"
   ],
   "userOverrides": {
+    "connectionRenderingAndReconnect": {
+      "renderer": "Automatic and free connections share the fusion canvas line renderer.",
+      "selection": "A free edge or either endpoint node selected shows a brand-color marching dashed line over a dark underlay at layer 4. Otherwise show a gray solid line at layer -1. Do not highlight unrelated branches through group association.",
+      "motion": "Marching line uses an 800ms linear loop; color and port transitions retain 200ms ease-out. Reduced motion disables marching.",
+      "reconnect": "Keep one visible CanvasConnectionHandle for both connection and reconnection: 16px default, 20px hover, 4px external gap, plus SVG for editors. Native reconnectRadius is 0 to align its center with the Handle; CSS expands only the transparent hit area to 32px and maps hover to the same port.",
+      "gestures": "A click on an editor plus opens its add menu; dragging the reconnect area reconnects only. For multiple selected edges, only the last selected edge exposes reconnectable endpoints to avoid shared-port conflicts.",
+      "portVisibility": "Media ports remain hover-only for node selection; keep the drag origin and explicitly selected edge endpoints visible.",
+      "interactionReference": {
+        "url": "https://docs.tapnow.ai/zh/docs/canvas/understand-nodes-and-connections",
+        "scope": "Official documentation supports dragging connections to nodes and retaining media when disconnected. It is not visual verification of port styles or animations."
+      }
+    },
     "connectionPointMenu": {
       "appearance": "Original plus SVG inside both editor connection circles; media output ports remain plain circles.",
       "actions": ["添加图片", "添加视频"],

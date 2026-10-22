@@ -1,4 +1,4 @@
-import { Children, cloneElement, isValidElement, memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from 'react';
 import { BaseEdge, ConnectionMode, getBezierPath, Handle, Position, ReactFlow, SelectionMode, useUpdateNodeInternals, type Connection, type ConnectionLineComponentProps, type Edge, type EdgeChange, type EdgeProps, type Node, type NodeChange, type NodeProps } from '@xyflow/react';
 import { boundsOf, type CanvasImage, type Viewport } from '../canvas';
 import { canConnectCanvasNodes, canvasConnectionSides, type CanvasConnection, type CanvasConnectionInput, type CanvasConnectionNode, type CanvasConnectionNodes } from '../canvas-connections';
@@ -10,9 +10,9 @@ import { CanvasConnectionHandle, type AddConnectionMedia } from './CanvasConnect
 import './react-flow-canvas.css';
 
 type ContentProps = { children?: ReactNode; style?: CSSProperties; className?: string; 'data-canvas-id'?: string; 'data-fusion-id'?: string; image?: CanvasImage; target?: CanvasImage; active?: boolean; zoom?: number };
-type ContentNode = Node<{ content: ReactElement<ContentProps>; connectionNode?: CanvasConnectionNode; freeConnections: boolean; connectable: boolean; zoom: number; locale?: Locale; onAddConnectionMedia?: AddConnectionMedia }, 'lightchain'>;
+type ContentNode = Node<{ content: ReactElement<ContentProps>; connectionNode?: CanvasConnectionNode; freeConnections: boolean; connectable: boolean; zoom: number; locale?: Locale; onAddConnectionMedia?: AddConnectionMedia; reconnectHandle?: string | null; reconnectHovered?: boolean }, 'lightchain'>;
 type ConnectionEdge = Edge<{ image: CanvasImage; target: CanvasImage; active: boolean; zoom: number; freeConnections: boolean }, 'lightchain'>;
-type FreeConnectionEdge = Edge<{ zoom: number }, 'lightchain-free'>;
+type FreeConnectionEdge = Edge<{ zoom: number; active: boolean }, 'lightchain-free'>;
 type CanvasEdge = ConnectionEdge | FreeConnectionEdge;
 const handles = [Position.Left, Position.Right];
 const freeHandles = [Position.Left, Position.Right];
@@ -27,9 +27,32 @@ const LightchainNode = memo(({ id, data }: NodeProps<ContentNode>) => {
     {!data.freeConnections && handles.flatMap(side => ['source', 'target'].map(type => <Handle key={`${type}-${side}`} id={`${type}-${side}`} type={type as 'source' | 'target'} position={side} isConnectable={false} className="lc-flow-handle" />))}
     {data.content}
     {data.freeConnections && canvasConnectionSides(data.connectionNode).map(side => <CanvasConnectionHandle key={`free-${side}`}
-      nodeId={id} side={side} node={data.connectionNode} connectable={data.connectable} locale={data.locale} onAdd={data.onAddConnectionMedia} />)}
+      nodeId={id} side={side} node={data.connectionNode} connectable={data.connectable} locale={data.locale} onAdd={data.onAddConnectionMedia}
+      reconnectable={data.reconnectHandle === `free-${side}`} reconnectHovered={data.reconnectHandle === `free-${side}` && data.reconnectHovered} />)}
   </>;
 });
+// Automatic and free lines share the same ink and animation. Only the free
+// line has an interaction path; raised ink leaves the actual port circles clear.
+function ConnectionStroke({ path, active, zoom, ports, interactive = false }: {
+  path: string; active: boolean; zoom: number; interactive?: boolean;
+  ports?: { sourceX: number; sourceY: number; targetX: number; targetY: number };
+}) {
+  const maskId = useId();
+  const padding = ports ? Math.abs(ports.targetX - ports.sourceX) + Math.abs(ports.targetY - ports.sourceY) + 256 + 32 / zoom : 0;
+  const bounds = ports ? { x: Math.min(ports.sourceX, ports.targetX) - padding, y: Math.min(ports.sourceY, ports.targetY) - padding,
+    width: Math.abs(ports.targetX - ports.sourceX) + 2 * padding, height: Math.abs(ports.targetY - ports.sourceY) + 2 * padding } : undefined;
+  return <g className="lc-flow-connection" data-active={active} style={{ '--canvas-inverse-scale': 1 / zoom } as CSSProperties}>
+    {ports && active && <defs><mask id={maskId} maskUnits="userSpaceOnUse" {...bounds}>
+      <rect {...bounds} fill="white" />
+      <circle cx={ports.sourceX} cy={ports.sourceY} r={10 / zoom} fill="black" />
+      <circle cx={ports.targetX} cy={ports.targetY} r={10 / zoom} fill="black" />
+    </mask></defs>}
+    <g mask={ports && active ? `url(#${maskId})` : undefined}>
+      {active && <path d={path} className="lc-flow-edge-underlay" />}
+      {interactive ? <BaseEdge path={path} className="lc-flow-edge-line" interactionWidth={20 / zoom} /> : <path d={path} className="lc-flow-edge-line" />}
+    </g>
+  </g>;
+}
 const LightchainEdge = memo((props: EdgeProps<ConnectionEdge>) => {
   const { data } = props;
   if (!data) return null;
@@ -45,18 +68,12 @@ const LightchainEdge = memo((props: EdgeProps<ConnectionEdge>) => {
     : `M ${sx} ${sy} C ${sx + handle * direction} ${sy}, ${tx - handle * direction} ${ty}, ${tx} ${ty}`;
   // React Flow scales an HTML viewport around the SVG. Compensate explicitly
   // for that scale instead of relying on SVG-only non-scaling-stroke behavior.
-  return <g className="lc-flow-connection" data-active={active} style={{ '--canvas-inverse-scale': 1 / zoom } as CSSProperties}>
-    {active && <path d={d} className="lc-flow-edge-underlay" />}
-    <path d={d} className="lc-flow-edge-line" />
-  </g>;
+  return <ConnectionStroke path={d} active={active} zoom={zoom} ports={data.freeConnections ? props : undefined} />;
 });
 const LightchainFreeEdge = memo((props: EdgeProps<FreeConnectionEdge>) => {
   const [path] = getBezierPath(props);
   const zoom = props.data?.zoom ?? 1;
-  return <g className="lc-flow-connection" data-active={!!props.selected} style={{ '--canvas-inverse-scale': 1 / zoom } as CSSProperties}>
-    {props.selected && <path d={path} className="lc-flow-edge-underlay" />}
-    <BaseEdge path={path} className="lc-flow-edge-line" interactionWidth={20 / zoom} />
-  </g>;
+  return <ConnectionStroke path={path} active={!!props.data?.active} zoom={zoom} ports={props} interactive />;
 });
 const LightchainConnectionLine = (props: ConnectionLineComponentProps<ContentNode>) => {
   const [path] = getBezierPath({ sourceX: props.fromX, sourceY: props.fromY, sourcePosition: props.fromPosition,
@@ -68,6 +85,13 @@ const LightchainConnectionLine = (props: ConnectionLineComponentProps<ContentNod
 const nodeTypes = { lightchain: LightchainNode };
 const edgeTypes = { lightchain: LightchainEdge, 'lightchain-free': LightchainFreeEdge };
 const controlSelector = 'button,input,textarea,select,[contenteditable="true"],[data-select-popup]';
+function reconnectTarget(target: EventTarget | null) {
+  if (!(target instanceof Element)) return null;
+  const updater = target.closest('.react-flow__edgeupdater');
+  const edgeId = updater?.closest('.lc-flow-free-edge')?.getAttribute('data-id');
+  if (!updater || !edgeId) return null;
+  return { edgeId, end: updater.classList.contains('react-flow__edgeupdater-source') ? 'source' as const : 'target' as const };
+}
 
 type Props = {
   children: ReactNode; view: Viewport; selectedIds: string[]; hand: boolean; referenceMode: boolean; snap: boolean;
@@ -91,6 +115,8 @@ export function ReactFlowCanvas(props: Props) {
   const selectionRef = useRef(props.selectedIds); selectionRef.current = props.selectedIds;
   const connectionSelectionRef = useRef(props.selectedConnectionIds ?? []); connectionSelectionRef.current = props.selectedConnectionIds ?? [];
   const [connecting, setConnecting] = useState(false);
+  const [reconnectHover, setReconnectHover] = useState<{ edgeId: string; end: 'source' | 'target' } | null>(null);
+  const reconnectClick = useRef<{ nodeId: string; handleId: string; dragged: boolean } | null>(null);
   const reconnectingId = useRef<string | null>(null);
   const freeConnections = !!props.onConnect;
   const connectable = freeConnections && !props.hand && !props.referenceMode;
@@ -108,6 +134,10 @@ export function ReactFlowCanvas(props: Props) {
   const bypass = useRef(false);
   const graph = useMemo(() => {
     const nodes: ContentNode[] = [], edges: CanvasEdge[] = [];
+    // A shared port may belong to several lines. Reconnect only the most
+    // recently selected line, while keeping all selected lines highlighted.
+    const selectedEdges = props.selectedConnectionIds ?? [];
+    const reconnectEdge = connectable && props.onReconnect ? props.connections?.find(edge => edge.id === selectedEdges[selectedEdges.length - 1]) : undefined;
     const visit = (children: ReactNode) => Children.forEach(children, child => {
       if (!isValidElement<ContentProps>(child)) return;
       const p = child.props;
@@ -127,7 +157,9 @@ export function ReactFlowCanvas(props: Props) {
             freeConnections ? { sides: canvasConnectionSides(connectionNode), zoom: props.view.zoom } : undefined),
           selected: props.selectedIds.includes(id), zIndex: Number(style.zIndex) || 1,
           data: { content: cloneElement(child, { style: { ...style, left: 0, top: 0, position: 'relative', zIndex: undefined } }),
-            connectionNode, freeConnections, connectable, zoom: props.view.zoom, locale: props.locale, onAddConnectionMedia: props.onAddConnectionMedia } });
+            connectionNode, freeConnections, connectable, zoom: props.view.zoom, locale: props.locale, onAddConnectionMedia: props.onAddConnectionMedia,
+            reconnectHandle: reconnectEdge?.source === id ? reconnectEdge.sourceHandle ?? 'free-right' : reconnectEdge?.target === id ? reconnectEdge.targetHandle ?? 'free-left' : undefined,
+            reconnectHovered: !!reconnectEdge && reconnectHover?.edgeId === reconnectEdge.id && reconnectEdge[reconnectHover.end] === id } });
       } else visit(p.children);
     });
     visit(props.children);
@@ -136,13 +168,14 @@ export function ReactFlowCanvas(props: Props) {
       for (const connection of props.connections ?? []) {
         if (!nodeIds.has(connection.source) || !nodeIds.has(connection.target)) continue;
         const selected = !!props.selectedConnectionIds?.includes(connection.id);
+        const active = selected || props.selectedIds.includes(connection.source) || props.selectedIds.includes(connection.target);
         edges.push({ ...connection, sourceHandle: connection.sourceHandle ?? 'free-right', targetHandle: connection.targetHandle ?? 'free-left',
           type: 'lightchain-free', className: 'lc-flow-free-edge', selected, selectable: connectable, focusable: false,
-          reconnectable: connectable && selected && !!props.onReconnect, zIndex: 0, data: { zoom: props.view.zoom } });
+          reconnectable: reconnectEdge?.id === connection.id, zIndex: active ? 4 : -1, data: { zoom: props.view.zoom, active } });
       }
     }
     return { nodes, edges };
-  }, [props.children, props.selectedIds, props.view.zoom, props.connections, props.connectionNodes, props.selectedConnectionIds, props.onReconnect, props.locale, props.onAddConnectionMedia, freeConnections, connectable]);
+  }, [props.children, props.selectedIds, props.view.zoom, props.connections, props.connectionNodes, props.selectedConnectionIds, props.onReconnect, props.locale, props.onAddConnectionMedia, freeConnections, connectable, reconnectHover]);
   const graphRef = useRef(graph); graphRef.current = graph;
   const isValidConnection = useCallback((connection: Connection | CanvasEdge) => {
     const p = latest.current;
@@ -206,8 +239,18 @@ export function ReactFlowCanvas(props: Props) {
     if (v.x !== current.x || v.y !== current.y || v.zoom !== current.zoom) latest.current.onView(v);
   }, []);
   return <div className="lc-react-flow" data-hand={props.hand} data-free-connections={freeConnections} data-connectable={connectable} data-connecting={connecting} style={{ '--canvas-inverse-scale': 1 / props.view.zoom } as CSSProperties}
-    onPointerMoveCapture={e => { bypass.current = e.altKey; }}
+    onPointerMoveCapture={e => {
+      bypass.current = e.altKey;
+      const next = reconnectTarget(e.target);
+      setReconnectHover(previous => previous?.edgeId === next?.edgeId && previous?.end === next?.end ? previous : next);
+    }}
+    onPointerLeave={() => setReconnectHover(null)}
     onPointerDownCapture={e => {
+      reconnectClick.current = null;
+      const endpoint = e.button === 0 ? reconnectTarget(e.target) : null;
+      const edge = endpoint && latest.current.connections?.find(item => item.id === endpoint.edgeId);
+      if (endpoint && edge) reconnectClick.current = { nodeId: edge[endpoint.end],
+        handleId: (endpoint.end === 'source' ? edge.sourceHandle : edge.targetHandle) ?? (endpoint.end === 'source' ? 'free-right' : 'free-left'), dragged: false };
       if (e.target instanceof Element) {
         const control = e.target.closest(controlSelector);
         control?.classList.add('nodrag');
@@ -246,6 +289,17 @@ export function ReactFlowCanvas(props: Props) {
       setSelection(ids.includes(id) ? ids.filter(selected => selected !== id) : [...ids, id]);
     }}
     onClickCapture={e => {
+      const endpoint = reconnectClick.current;
+      reconnectClick.current = null;
+      if (endpoint) {
+        e.preventDefault(); e.stopPropagation();
+        if (!endpoint.dragged) {
+          // The transparent updater owns the pointer gesture, but a click still
+          // belongs to the original port and opens its existing media menu.
+          e.currentTarget.querySelector<HTMLElement>(`.react-flow__node[data-id="${CSS.escape(endpoint.nodeId)}"] .lc-flow-free-handle[data-handleid="${CSS.escape(endpoint.handleId)}"]`)?.click();
+        }
+        return;
+      }
       if (!shiftClick.current) return;
       shiftClick.current = false;
       e.stopPropagation();
@@ -271,12 +325,14 @@ export function ReactFlowCanvas(props: Props) {
       proOptions={{ hideAttribution: true }}
       minZoom={0.03} maxZoom={2} zoomOnDoubleClick={false} deleteKeyCode={null}
       nodesConnectable={connectable} edgesReconnectable={false} connectionMode={ConnectionMode.Loose} connectOnClick={false}
-      isValidConnection={isValidConnection} connectionLineComponent={LightchainConnectionLine} connectionRadius={24 / props.view.zoom} reconnectRadius={8 / props.view.zoom}
+      // A zero library radius keeps the updater centred on the real Handle.
+      // CSS supplies its transparent hit radius without shifting the anchor.
+      isValidConnection={isValidConnection} connectionLineComponent={LightchainConnectionLine} connectionRadius={24 / props.view.zoom} reconnectRadius={0}
       onConnect={connection => { if (isValidConnection(connection)) latest.current.onConnect?.(connection); }}
       onConnectStart={() => setConnecting(true)} onConnectEnd={() => setConnecting(false)}
       onReconnect={props.onReconnect ? (edge, connection) => { if (edge.type === 'lightchain-free' && isValidConnection(connection)) latest.current.onReconnect?.(edge.id, connection); } : undefined}
-      onReconnectStart={(_, edge) => { reconnectingId.current = edge.id; setConnecting(true); }}
-      onReconnectEnd={() => { reconnectingId.current = null; setConnecting(false); }}
+      onReconnectStart={(_, edge) => { if (reconnectClick.current) reconnectClick.current.dragged = true; reconnectingId.current = edge.id; setConnecting(true); }}
+      onReconnectEnd={() => { reconnectingId.current = null; setReconnectHover(null); setConnecting(false); }}
       elevateNodesOnSelect={false} elevateEdgesOnSelect={false}
       autoPanOnNodeDrag={false} autoPanOnSelection={false} autoPanOnConnect={false} disableKeyboardA11y
       onPaneClick={() => {

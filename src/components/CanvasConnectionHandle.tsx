@@ -15,8 +15,8 @@ const copy = {
   ja: { add: '素材を追加', image: '画像を追加', video: '動画を追加' },
 };
 
-export const CanvasConnectionHandle = memo(({ nodeId, side, node, connectable, locale = 'zh-CN', onAdd }: {
-  nodeId: string; side: 'left' | 'right'; node?: CanvasConnectionNode; connectable: boolean; locale?: Locale; onAdd?: AddConnectionMedia;
+export const CanvasConnectionHandle = memo(({ nodeId, side, node, connectable, reconnectable = false, reconnectHovered = false, locale = 'zh-CN', onAdd }: {
+  nodeId: string; side: 'left' | 'right'; node?: CanvasConnectionNode; connectable: boolean; reconnectable?: boolean; reconnectHovered?: boolean; locale?: Locale; onAdd?: AddConnectionMedia;
 }) => {
   const handleId = `free-${side}`, kind = node?.kind ?? 'editor', t = copy[locale];
   const editable = kind === 'editor' && !!onAdd;
@@ -93,6 +93,7 @@ export const CanvasConnectionHandle = memo(({ nodeId, side, node, connectable, l
   return <>
     <Handle ref={trigger} id={handleId} type="source" position={side === 'left' ? Position.Left : Position.Right}
       isConnectable={connectable} className="lc-flow-free-handle nodrag nopan" data-node-kind={kind} data-feedback={feedback}
+      data-reconnectable={reconnectable || undefined} data-reconnect-hovered={reconnectHovered || undefined}
       data-add-menu={editable || undefined} role={editable ? 'button' : undefined} tabIndex={editable && connectable ? 0 : -1}
       aria-label={editable ? t.add : undefined} aria-haspopup={editable ? 'menu' : undefined} aria-controls={editable ? id : undefined} aria-expanded={editable ? open : undefined}
       onPointerDown={event => {
@@ -122,7 +123,9 @@ export const CanvasConnectionHandle = memo(({ nodeId, side, node, connectable, l
       onClick={event => {
         if (!editable) return;
         event.stopPropagation();
-        const gesture = pointer.current;
+        // A pure click on the transparent reconnect hit area is forwarded here.
+        // It must not inherit an earlier native drag's pointer state.
+        const gesture = event.detail === 0 ? null : pointer.current;
         pointer.current = null;
         if (gesture?.moved) return;
         (gesture?.wasOpen ?? open) ? setOpen(false) : expand();
