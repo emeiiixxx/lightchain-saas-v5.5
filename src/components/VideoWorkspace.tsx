@@ -68,6 +68,40 @@ function videoConnectionNodes(snapshot: Snapshot): CanvasConnectionNodes {
   };
   return nodes;
 }
+
+// A manually connected frame keeps its edge identity so removing or reconnecting
+// that edge updates the same frame slot in the same undoable transaction.
+function detachFrameConnections(node: VideoWorkflow, removed: Set<string>): VideoWorkflow {
+  return {
+    ...node,
+    main: node.main?.connectionId && removed.has(node.main.connectionId) ? undefined : node.main,
+    endFrame: node.endFrame?.connectionId && removed.has(node.endFrame.connectionId) ? undefined : node.endFrame,
+  };
+}
+
+function planVideoConnection(snapshot: Snapshot, input: CanvasConnectionInput, replacingId?: string, newId = 'pending-video-connection'): Snapshot | null {
+  if (!canConnectCanvasNodes(input, videoConnectionNodes(snapshot))) return null;
+  const old = replacingId ? snapshot.connections.find(edge => edge.id === replacingId) : undefined;
+  if (replacingId && !old) return null;
+  if (snapshot.connections.some(edge => edge.id !== replacingId && edge.source === input.source && edge.target === input.target)) return null;
+  const originalTarget = snapshot.workflows.find(node => node.id === input.target);
+  const previousSlot = replacingId && originalTarget?.main?.connectionId === replacingId ? 'main'
+    : replacingId && originalTarget?.endFrame?.connectionId === replacingId ? 'endFrame' : undefined;
+  const workflows = old ? snapshot.workflows.map(node => detachFrameConnections(node, new Set([old.id]))) : [...snapshot.workflows];
+  const target = workflows.find(node => node.id === input.target);
+  if (target?.main?.sourceImageId === input.source || target?.endFrame?.sourceImageId === input.source) return null;
+  const edge: CanvasConnection = { ...input, id: replacingId ?? newId };
+  const source = snapshot.images.find(image => image.id === input.source && !image.video);
+  if (target?.mode === 'frames' && source) {
+    const slot = previousSlot ?? (!target.main ? 'main' : !target.endFrame ? 'endFrame' : undefined);
+    if (!slot || target[slot]) return null;
+    const reference: VideoReference = { id: source.id, sourceImageId: source.id, connectionId: edge.id, name: source.name, url: source.url, kind: 'image' };
+    workflows[workflows.indexOf(target)] = { ...target, [slot]: reference };
+  }
+  return { ...snapshot, workflows,
+    connections: old ? snapshot.connections.map(item => item.id === old.id ? edge : item) : [...snapshot.connections, edge],
+    selected: [], selectedConnections: [edge.id] };
+}
 const isField = (target: EventTarget | null) => target instanceof HTMLElement && !!target.closest('input,textarea,select,[contenteditable="true"]');
 
 function fitVideoImages(images: CanvasImage[], width: number, height: number): Viewport {
@@ -204,20 +238,22 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (!previous.selected.length && !previous.selectedConnections.length) return;
     const removed = new Set(previous.selected), removedConnections = new Set(previous.selectedConnections);
     commit({ ...previous, images: previous.images.filter(image => !removed.has(image.id)),
-      workflows: previous.workflows.filter(node => !removed.has(node.id)).map(node => node.main?.sourceImageId && removed.has(node.main.sourceImageId) ? { ...node, main: undefined } : node),
+      workflows: previous.workflows.filter(node => !removed.has(node.id)).map(node => {
+        const next = detachFrameConnections(node, removedConnections);
+        return { ...next,
+          main: next.main?.sourceImageId && removed.has(next.main.sourceImageId) ? undefined : next.main,
+          endFrame: next.endFrame?.sourceImageId && removed.has(next.endFrame.sourceImageId) ? undefined : next.endFrame };
+      }),
       connections: previous.connections.filter(edge => !removedConnections.has(edge.id) && !removed.has(edge.source) && !removed.has(edge.target)),
       selected: [], selectedConnections: [] });
   }, [commit]);
   const connectNodes = useCallback((input: CanvasConnectionInput, replacingId?: string) => {
     const previous = current.current;
-    if (!canConnectCanvasNodes(input, videoConnectionNodes(previous))) return;
-    if (replacingId && !previous.connections.some(edge => edge.id === replacingId)) return;
-    if (previous.connections.some(edge => edge.id !== replacingId && edge.source === input.source && edge.target === input.target)
-      || previous.workflows.some(node => node.id === input.target && node.main?.sourceImageId === input.source)) return;
     const old = previous.connections.find(edge => edge.id === replacingId);
     if (old && old.source === input.source && old.target === input.target && old.sourceHandle === input.sourceHandle && old.targetHandle === input.targetHandle) return;
-    const edge: CanvasConnection = { ...input, id: replacingId ?? `video-connection-${crypto.randomUUID()}` };
-    commit({ ...previous, connections: replacingId ? previous.connections.map(item => item.id === replacingId ? edge : item) : [...previous.connections, edge], selected: [], selectedConnections: [edge.id] });
+    const next = planVideoConnection(previous, input, replacingId, `video-connection-${crypto.randomUUID()}`);
+    if (!next) return;
+    commit(next);
     closeCanvasMenu(); canvas.current?.focus({ preventScroll: true });
   }, [commit, closeCanvasMenu]);
   const closeModal = useCallback(() => { uploadEpoch.current++; pendingMediaRead.current?.abort(); uploadLocked.current = false; setReading(false); setModal(null); }, []);
@@ -379,8 +415,16 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }
   function openAssets() { closeCanvasMenu(); if (active && !reading) setModal('assets'); }
   function updateWorkflow(id: string, patch: Partial<VideoWorkflow>) {
-    if (!current.current.workflows.some(node => node.id === id)) return;
-    commit({ ...current.current, workflows: current.current.workflows.map(node => {
+    const previous = current.current, currentNode = previous.workflows.find(node => node.id === id);
+    if (!currentNode) return;
+    const removed = new Set<string>();
+    for (const field of ['main', 'endFrame'] as const) {
+      const edgeId = currentNode[field]?.connectionId;
+      if (field in patch && edgeId && patch[field]?.connectionId !== edgeId) removed.add(edgeId);
+    }
+    commit({ ...previous, connections: previous.connections.filter(edge => !removed.has(edge.id)),
+      selectedConnections: previous.selectedConnections.filter(edgeId => !removed.has(edgeId)),
+      workflows: previous.workflows.map(node => {
       if (node.id !== id) return node;
       const next = { ...node, ...patch };
       if (next.mode !== node.mode) {
@@ -425,7 +469,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         images.push(source);
       }
       const main = { id: source.id, sourceImageId: source.id, name: source.name, url: source.url };
-      const connections = current.current.connections.filter(edge => !(edge.source === main.sourceImageId && edge.target === node.id));
+      const connections = current.current.connections.filter(edge => edge.id !== node.main?.connectionId && !(edge.source === main.sourceImageId && edge.target === node.id));
       commit({ ...current.current, images, workflows: current.current.workflows.map(item => item.id === node.id ? { ...item, main } : item), connections,
         selectedConnections: current.current.selectedConnections.filter(id => connections.some(edge => edge.id === id)) });
     } else if (target.field === 'endFrame') updateWorkflow(node.id, { endFrame: reference });
@@ -545,6 +589,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       {active && items.length > 0 && <>
         <ReactFlowCanvas view={view} selectedIds={snapshot.selected} hand={spaceDown || mode === 'hand'} referenceMode={false} snap={snapToGrid}
           connections={snapshot.connections} connectionNodes={connectionNodes} selectedConnectionIds={snapshot.selectedConnections} onConnect={connectNodes} onReconnect={(id, input) => connectNodes(input, id)}
+          validateConnection={(input, replacingId) => planVideoConnection(current.current, input, replacingId) !== null}
           onConnectionSelection={ids => replace({ ...current.current, selectedConnections: ids })}
           onView={setView} onSelection={ids => replace({ ...current.current, selected: ids })}
           onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node) })}
@@ -567,7 +612,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
           </div>)}
           {snapshot.workflows.map(node => {
             const source = snapshot.images.find(image => image.id === node.main?.sourceImageId);
-            return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
+            return source && !node.main?.connectionId ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
           })}
           {snapshot.workflows.map(node => <div key={node.id} data-canvas-id={node.id} className="fusion-position video-workflow-position" data-selected={snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoWorkflowSize(node.mode) }} role="group" tabIndex={0} aria-label={locale === 'zh-CN' ? '服装短视频' : locale === 'ja' ? 'ファッション動画' : 'Fashion video'}
             onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id], selectedConnections: [] }); } }}>

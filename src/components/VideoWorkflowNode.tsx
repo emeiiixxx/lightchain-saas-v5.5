@@ -120,7 +120,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
       <Divider /></>}
       <div className="fusion-field video-workflow-references-field">
         <div className="fusion-label"><span>{frames ? t.frameImages : t.media}</span><Button className="video-reference-info" aria-label={frames ? t.framesTip : t.mediaTip} title={frames ? t.framesTip : t.mediaTip}><NodeIcon name="info" /></Button></div>
-        <div className="video-workflow-references nowheel nodrag nopan" data-canvas-scroll aria-label={frames ? t.frameImages : t.media} onWheel={event => {
+        <div className="video-workflow-references nowheel" data-canvas-scroll="wheel" aria-label={frames ? t.frameImages : t.media} onWheel={event => {
           if (event.ctrlKey || event.metaKey || event.altKey) return;
           event.stopPropagation();
           if (!event.deltaX) event.currentTarget.scrollLeft += event.deltaY;

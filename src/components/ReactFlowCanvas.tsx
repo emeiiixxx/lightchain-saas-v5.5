@@ -89,6 +89,7 @@ type Props = {
   onSelecting: (active: boolean) => void; onDragStart: () => void; onDragEnd: () => void; onGuides: (guides: SnapGuides | null) => void;
   connections?: CanvasConnection[]; selectedConnectionIds?: string[];
   connectionNodes?: CanvasConnectionNodes;
+  validateConnection?: (connection: CanvasConnectionInput, replacingId?: string) => boolean;
   onConnect?: (connection: CanvasConnectionInput) => void;
   onReconnect?: (id: string, connection: CanvasConnectionInput) => void;
   onConnectionSelection?: (ids: string[]) => void;
@@ -163,6 +164,8 @@ export function ReactFlowCanvas(props: Props) {
     if (!nodes.some(node => node.id === connection.source) || !nodes.some(node => node.id === connection.target)) return false;
     if (p.connectionNodes && !canConnectCanvasNodes({ source: connection.source, target: connection.target,
       sourceHandle: connection.sourceHandle ?? null, targetHandle: connection.targetHandle ?? null }, p.connectionNodes)) return false;
+    if (p.validateConnection && !p.validateConnection({ source: connection.source, target: connection.target,
+      sourceHandle: connection.sourceHandle ?? null, targetHandle: connection.targetHandle ?? null }, reconnectingId.current ?? undefined)) return false;
     return !graphRef.current.edges.some(edge => edge.id !== reconnectingId.current && edge.source === connection.source && edge.target === connection.target);
   }, []);
   const onEdgeChanges = useCallback((changes: EdgeChange<CanvasEdge>[]) => {
@@ -220,7 +223,9 @@ export function ReactFlowCanvas(props: Props) {
         const control = e.target.closest(controlSelector);
         control?.classList.add('nodrag');
         if (!control) e.currentTarget.closest<HTMLElement>('main')?.focus({ preventScroll: true });
-        const field = e.target.closest('textarea,[data-canvas-scroll]');
+        // Wheel-only rows keep their empty space available for dragging the node.
+        // Their buttons remain protected by controlSelector above.
+        const field = e.target.closest('textarea,[data-canvas-scroll]:not([data-canvas-scroll="wheel"])');
         field?.classList.add('nodrag');
       }
     }}
