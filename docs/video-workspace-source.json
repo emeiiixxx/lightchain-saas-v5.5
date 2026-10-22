@@ -3,6 +3,7 @@
   "route": "#/video-workspace",
   "nodes": {
     "initial": "64:2057",
+    "initialEntries": "64:2061",
     "singleImageCanvas": "76:5683",
     "uploadedVideoCanvas": "97:6649",
     "singleImageToolbar": "76:5775",
@@ -19,6 +20,17 @@
   "assets": {
     "directory": "public/assets/video-workspace",
     "initialIcons": "64:2057",
+    "initialEntryIcons": {
+      "updated": "2026-10-22",
+      "directory": "public/assets/video-entry-20261022",
+      "slotSize": 24,
+      "rootSize": 24,
+      "templates": { "slot": "I64:2062;1782:24376", "file": "templates.svg" },
+      "materialGeneration": { "slot": "I64:2063;1782:24376", "file": "material-generation.svg" },
+      "videoGeneration": { "slot": "I64:2064;1782:24376", "file": "video-generation.svg" },
+      "videoRemake": { "slot": "I64:2065;1782:24376", "file": "video-remake.svg" },
+      "videoEdit": { "slot": "I64:2204;1782:24376", "file": "video-edit.svg" }
+    },
     "uploadedVideoIcons": {
       "directory": "public/assets/video-canvas",
       "modify": { "nodeId": "103:6927", "file": "modify.svg" },
@@ -55,6 +67,14 @@
     },
     "mapping": "User-supplied original MP4 files matched by orientation; copied without transcoding.",
     "fallback": "Original Figma media-layer poster and a loading-error notice."
+  },
+  "initialEntries": {
+    "nodeId": "64:2061",
+    "labels": ["视频模版", "素材生成", "视频生成", "视频复刻", "视频编辑"],
+    "button": { "variant": "Outline L", "width": 144, "height": 48, "radius": 12, "iconSize": 24, "contentGap": 8 },
+    "gap": 16,
+    "badge": { "label": "NEW", "nodeId": "64:2066", "left": 109, "top": -8, "height": 20 },
+    "interaction": "Templates opens the existing modal; video generation creates an empty fashion-video node; the other entries show the existing service-not-connected feedback."
   },
   "singleImageCanvas": {
     "designSize": { "width": 1920, "height": 1080 },

@@ -1,7 +1,14 @@
 const videoAssetBase = `${import.meta.env.BASE_URL}assets/video-workspace/`;
+const entryAssetBase = `${import.meta.env.BASE_URL}assets/video-entry-20261022/`;
 
 // Original artwork from Figma file 1dBgOC793NRsKgbNIaLZMK, node 64:2057.
 export const videoAssets = {
+  // Figma 64:2061, updated 2026-10-22; original 24×24 entry-slot exports.
+  entryTemplates: `${entryAssetBase}templates.svg`,
+  entryMaterialGeneration: `${entryAssetBase}material-generation.svg`,
+  entryVideoGeneration: `${entryAssetBase}video-generation.svg`,
+  entryVideoRemake: `${entryAssetBase}video-remake.svg`,
+  entryVideoEdit: `${entryAssetBase}video-edit.svg`,
   workspacePlate: `${videoAssetBase}workspacePlate.png`,
   workspaceIcon: `${videoAssetBase}workspaceIcon.svg`,
   templates: `${videoAssetBase}templates.svg`,

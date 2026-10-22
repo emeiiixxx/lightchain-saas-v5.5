@@ -8,7 +8,7 @@
 .video-empty-headline h1 { margin: 0; color: var(--text-secondary); font-size: 24px; font-weight: 700; line-height: 32px; }
 .video-empty-headline p { margin: 0; color: var(--text-tertiary); font-size: 16px; font-weight: 500; line-height: 24px; text-wrap: balance; }
 .video-entry-tools { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; width: 100%; }
-.video-entry-tool { position: relative; width: 144px; height: 48px; gap: 8px; }
+.video-entry-tool { position: relative; flex: 0 0 auto; width: 144px; height: 48px; gap: 8px; }
 .video-entry-tool > .video-icon { flex-shrink: 0; }
 .video-entry-tool .video-entry-badge { top: -8px; left: 109px; right: auto; }
 .video-entry-tool:lang(en), .video-entry-tool:lang(ja) { padding-inline: 8px; font-size: 14px; }
