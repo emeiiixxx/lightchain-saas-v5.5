@@ -1,15 +1,18 @@
 'use client';
 
 // React Bits GradientText, adapted from the component source supplied by the
-// user. React-only: preserve its variants and add typed props/lifecycle guards.
+// user. React-only: retain its variants and add shared icon coordinates, a
+// single-band shimmer variant, typed props and lifecycle guards.
 import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import './GradientText.css';
 
-type Variant = 'linear' | 'flow' | 'conic';
+type Variant = 'linear' | 'flow' | 'conic' | 'shimmer';
 type Props = {
   children: ReactNode;
   colors?: string[];
   animationSpeed?: number;
+  /** Seconds at rest between shimmer sweeps. */
+  pauseDuration?: number;
   variant?: Variant;
   angle?: number;
   direction?: 'horizontal' | 'vertical' | 'diagonal';
@@ -29,14 +32,14 @@ const TAU = Math.PI * 2;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 export default function GradientText({ children, colors = ['#5227FF', '#FF9FFC', '#B497CF'],
-  animationSpeed = 8, variant = 'linear', angle = 90, direction, scale = 3,
+  animationSpeed = 8, pauseDuration = 0, variant = 'linear', angle = 90, direction, scale = 3,
   yoyo = true, glow = 0, showBorder = false, borderWidth = 1.5,
   pauseOnHover = false, followPointer = false, className = '', style }: Props) {
   const rootRef = useRef<HTMLSpanElement>(null);
   const contentRef = useRef<HTMLSpanElement>(null);
   const wakeRef = useRef<(() => void) | null>(null);
   const palette = colors.length > 1 ? colors : [colors[0] ?? '#ffffff', colors[0] ?? '#ffffff'];
-  const settings = { colors: palette, speed: Math.max(0.2, animationSpeed), variant,
+  const settings = { colors: palette, speed: Math.max(0.2, animationSpeed), pause: Math.max(0, pauseDuration), variant,
     angle: direction ? ANGLES[direction] : angle, scale: clamp(scale, 1, 6), yoyo, pauseOnHover, followPointer };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -72,7 +75,19 @@ export default function GradientText({ children, colors = ['#5227FF', '#FF9FFC',
     const paint = () => {
       const s = settingsRef.current, list = s.colors, cycle = state.time / s.speed;
       let image: string;
-      if (s.variant === 'flow') {
+      if (s.variant === 'shimmer') {
+        const elapsed = state.time % (s.speed + s.pause);
+        const base = list[0], highlight = list[1];
+        if (reducedMotion.matches || elapsed >= s.speed) {
+          image = `linear-gradient(${s.angle}deg, ${base}, ${base})`;
+        } else {
+          // The entire band starts and finishes outside the content. Resting
+          // frames therefore stay at the base color, with no reset flash.
+          const halfBand = 18;
+          const center = -halfBand + (100 + 2 * halfBand) * elapsed / s.speed;
+          image = `linear-gradient(${s.angle}deg, ${base} ${(center - halfBand).toFixed(2)}%, ${highlight} ${center.toFixed(2)}%, ${base} ${(center + halfBand).toFixed(2)}%)`;
+        }
+      } else if (s.variant === 'flow') {
         const blobs = list.map((color, i) => {
           const spin = cycle * TAU, rate = .55 + ((i * .618) % 1) * .5;
           let x = 50 + 44 * Math.sin(spin * rate + i * 2.1);
@@ -101,10 +116,11 @@ export default function GradientText({ children, colors = ['#5227FF', '#FF9FFC',
       raf = 0;
       if (!alive || !state.visible || document.hidden) return;
       const s = settingsRef.current;
-      const dt = Math.min(.05, Math.max(0, (now - last) / 1000));
+      const elapsed = Math.max(0, (now - last) / 1000);
+      const dt = Math.min(.05, elapsed);
       last = now;
       const paused = reducedMotion.matches || (s.pauseOnHover && state.inside);
-      if (!paused) state.time += dt;
+      if (!paused) state.time += s.variant === 'shimmer' ? elapsed : dt;
       const target = !reducedMotion.matches && s.followPointer && state.inside ? 1 : 0;
       state.pull += (target - state.pull) * (1 - Math.exp(-dt * 6));
       const stiffness = 160;
@@ -159,7 +175,9 @@ export default function GradientText({ children, colors = ['#5227FF', '#FF9FFC',
   }, []);
 
   const loop = [...palette, palette[0]];
-  const initialGradient = variant === 'linear'
+  const initialGradient = variant === 'shimmer'
+    ? `linear-gradient(${settings.angle}deg, ${palette[0]}, ${palette[0]})`
+    : variant === 'linear'
     ? `repeating-linear-gradient(${settings.angle}deg, ${loop.map((color, i) => `${color} ${(i / (loop.length - 1)) * 100 * settings.scale}%`).join(', ')})`
     : `linear-gradient(${settings.angle}deg, ${loop.join(', ')})`;
   return <span ref={rootRef} className={`gradient-text${showBorder ? ' gradient-text--border' : ''}${className ? ` ${className}` : ''}`}

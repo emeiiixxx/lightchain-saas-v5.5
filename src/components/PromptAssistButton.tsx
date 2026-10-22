@@ -11,7 +11,7 @@ type Props = {
   expandLabel?: string;
   onAction: (action: PromptAssistAction) => void;
 };
-const colors = ['var(--prompt-assist-gradient-start)', 'var(--prompt-assist-gradient-end)'];
+const colors = ['var(--text-link)', 'color-mix(in srgb, var(--text-link) 40%, white)'];
 
 // Shared by the inline node and expanded prompt editor. AI requests belong to
 // the caller; this component only selects the action and renders its effect.
@@ -19,7 +19,7 @@ export function PromptAssistButton({ value, icon, generateLabel = '提示词生�
   const action: PromptAssistAction = value.trim() ? 'expand' : 'generate';
   const label = action === 'generate' ? generateLabel : expandLabel;
   return <Button className="video-prompt-expand prompt-assist-button" onClick={() => onAction(action)}>
-    <GradientText colors={colors} animationSpeed={3} variant="linear" angle={90} yoyo={false} glow={0}>
+    <GradientText colors={colors} animationSpeed={2} pauseDuration={0.5} variant="shimmer" angle={90} yoyo={false} glow={0}>
       {icon}<span>{label}</span>
     </GradientText>
   </Button>;

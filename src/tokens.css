@@ -87,17 +87,11 @@
   --gradient-cyan-300: #61fff4;
   --gradient-aquamarine-300: #71f4d3;
   --gradient-perfume-300: #ccb2ff;
-  --prompt-assist-gradient-start: var(--gradient-aquamarine-300);
-  --prompt-assist-gradient-end: var(--gradient-perfume-300);
   --brand-gradient-chat: linear-gradient(24.943905deg, var(--gradient-cyan-300) 0%, var(--gradient-perfume-300) 100%);
 }
 
-/* Light prompt-effect palette from the user-supplied primitive swatches. */
+/* Primitive palette from the user-supplied design swatches. */
 :root { --primitive-brand-500: #0bc1b8; --primitive-purple-400: #a78bfa; }
-[data-theme="light"] {
-  --prompt-assist-gradient-start: var(--primitive-brand-500);
-  --prompt-assist-gradient-end: var(--primitive-purple-400);
-}
 
 /* Asset picker: live 5.1 Beta bindings, docs/asset-picker-source.json. */
 [data-theme="dark"] {
