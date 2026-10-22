@@ -666,7 +666,10 @@
         "nested library return"
       ],
       "generationLabel": "提示词生成",
-      "generationService": "Not connected; show an explicit notice without fabricated content.",
+      "expansionLabel": "提示词扩写",
+      "assistLabelRule": "Use generationLabel when the current prompt is blank after trimming; otherwise use expansionLabel. Update immediately in both inline and expanded editors.",
+      "expandedAssistPlacement": "Before the character counter, preserving save, prompt library and clear controls.",
+      "generationService": "Generation and expansion are not connected; show an explicit notice without changing existing content.",
       "assistCounterGap": 4,
       "generationButtonRadius": 6,
       "generationButtonTooltip": false
