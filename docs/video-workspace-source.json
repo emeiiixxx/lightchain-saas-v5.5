@@ -356,6 +356,14 @@
     "template dialog and reference image states"
   ],
   "userOverrides": {
+    "connectionPointMenu": {
+      "appearance": "Original plus SVG inside both editor connection circles; media output ports remain plain circles.",
+      "actions": ["添加图片", "添加视频"],
+      "availability": "Frames accept images up to two slots and disable video; references accept images and video.",
+      "picker": "Reuse AssetPicker with image/video type filtering; single local uploads apply after decoding.",
+      "binding": "Create media on the clicked side or reuse existing canvas media; connect and fill the frame/main/reference in one undo transaction. Reuse an existing graph edge when present. Removing or reconnecting a bound edge or deleting its media updates the input.",
+      "gestures": "Click opens menu; native drag-to-connect, compatibility feedback, keyboard access and 200ms transitions remain available."
+    },
     "workflowMainImageRemoval": "No main-image delete button inside either editor. Deleting its canvas source or manually created binding edge clears the corresponding slot; retain node/prompt/other references and allow undo. Automatic toolbar bindings retain their existing source-removal rule.",
     "desktopDialogHeight": 720,
     "templateSidebar": "Use the same sidebar in content and empty states: 256px desktop width, shared spacing and selection styles, no horizontal divider below the title.",

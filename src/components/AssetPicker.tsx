@@ -11,8 +11,14 @@ import { prepareVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-
 const sources = ['historyUploads', 'generationHistory', 'personalAssets', 'teamAssets', 'platformAssets'] as const;
 type PickerAsset = LibraryImage | UploadedVideo;
 function isVideoAsset(asset: PickerAsset): asset is UploadedVideo { return 'kind' in asset && asset.kind === 'video'; }
+const videoOnlyMessages = {
+  'zh-CN': { hint: '点击 / 拖放视频到此处', drop: '将视频拖放到这里', limit: '每次请选择一个视频。', error: '视频读取失败，请选择当前浏览器可播放的视频。' },
+  en: { hint: 'Click or drop a video here', drop: 'Drop a video here', limit: 'Choose one video at a time.', error: 'Unable to read this video. Choose a video this browser can play.' },
+  ja: { hint: 'クリック、または動画をドロップ', drop: 'ここに動画をドロップ', limit: '動画を 1 つ選択してください。', error: '動画を読み込めません。このブラウザーで再生できる動画を選択してください。' },
+};
 type Props = {
   allowSvg?: boolean;
+  mediaKind?: 'image' | 'video';
   maxCount?: number;
   excludedUrls?: string[];
   limitMessage?: string;
@@ -29,11 +35,13 @@ type Props = {
   onClose: () => void;
 };
 
-export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUpload, onVideoUpload, onConfirm, onConfirmVideo, onConfirmBatch, onConfirmMediaBatch, onClose, maxCount = 20, excludedUrls = [], limitMessage, allowSvg = false }: Props) {
+export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUpload, onVideoUpload, onConfirm, onConfirmVideo, onConfirmBatch, onConfirmMediaBatch, onClose, maxCount = 20, excludedUrls = [], limitMessage, allowSvg = false, mediaKind }: Props) {
   const t = messages[locale];
   const multiple = !!onConfirmBatch || !!onConfirmMediaBatch;
-  const allowVideo = !!onConfirmMediaBatch || (!!onConfirmVideo && !multiple);
+  const allowVideo = mediaKind !== 'image' && (!!onConfirmMediaBatch || (!!onConfirmVideo && !multiple));
+  const videoOnly = mediaKind === 'video';
   const videoText = videoReferenceUploadMessages[locale];
+  const uploadText = videoOnly ? videoOnlyMessages[locale] : videoText;
   const [chosen, setChosen] = useState<PickerAsset[]>([]);
   const [localVideos, setLocalVideos] = useState<UploadedVideo[]>([]);
   const [source, setSource] = useState<(typeof sources)[number]>('historyUploads');
@@ -56,7 +64,7 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
       unclaimedVideos.current.clear();
     };
   }, [phase]);
-  const historyAssets: PickerAsset[] = [...uploads, ...(allowVideo ? [...videoUploads, ...localVideos] : []), ...(multiple ? multiDemoAssets : demoAssets)];
+  const historyAssets: PickerAsset[] = [...(videoOnly ? [] : uploads), ...(allowVideo ? [...videoUploads, ...localVideos] : []), ...(videoOnly ? [] : multiple ? multiDemoAssets : demoAssets)];
   const candidates = source === 'historyUploads' ? [...new Map(historyAssets.map(asset => [asset.url, asset])).values()] : [];
   const visible = candidates.filter(asset => !excludedUrls.includes(asset.url)).filter(asset => asset.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
 
@@ -67,6 +75,11 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
   async function upload(files: FileList | File[]) {
     if (!active.current || locked.current || !files.length) return;
     if (multiple ? files.length + chosen.length > maxCount : files.length !== 1) { setError('limit'); return; }
+    if (mediaKind && Array.from(files).some(file => videoOnly
+      ? !allowVideo || !file.type.startsWith('video/')
+      : !['image/png', 'image/jpeg', 'image/webp', ...(allowSvg ? ['image/svg+xml'] : [])].includes(file.type))) {
+      setError('read'); return;
+    }
     const id = ++request.current;
     locked.current = true; setBusy(true); setError(null);
     try {
@@ -112,6 +125,7 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
 
   async function useAsset(asset: PickerAsset) {
     if (locked.current || !active.current) return;
+    if ((videoOnly && !isVideoAsset(asset)) || (mediaKind === 'image' && isVideoAsset(asset))) return;
     const id = ++request.current;
     locked.current = true; setBusy(true); setError(null);
     try {
@@ -128,6 +142,7 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
 
   function toggleAsset(asset: PickerAsset) {
     if (locked.current || !active.current) return;
+    if ((videoOnly && !isVideoAsset(asset)) || (mediaKind === 'image' && isVideoAsset(asset))) return;
     if (chosen.some(item => item.id === asset.id)) {
       setChosen(previous => previous.filter(item => item.id !== asset.id)); setError(null);
     } else if (chosen.length >= maxCount) setError('limit');
@@ -166,7 +181,7 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
         onDragOver={event => { event.preventDefault(); if (event.dataTransfer.types.includes('Files')) setDragOver(true); }}
         onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragOver(false); }}
         onDrop={event => { event.preventDefault(); event.stopPropagation(); setDragOver(false); void upload(event.dataTransfer.files); }}>
-        <Icon name="upload" size={32} /><span className="asset-upload-title">{busy ? t.reading : dragOver ? (allowVideo ? videoText.drop : t.dropImagesHere) : t.localUpload}</span><span className="asset-upload-hint">{dragOver && !busy ? t.releaseToUpload : allowVideo ? videoText.hint : allowSvg ? promptCoverMessages[locale].formats : t.localUploadHint}</span>
+        <Icon name="upload" size={32} /><span className="asset-upload-title">{busy ? t.reading : dragOver ? (allowVideo ? uploadText.drop : t.dropImagesHere) : t.localUpload}</span><span className="asset-upload-hint">{dragOver && !busy ? t.releaseToUpload : allowVideo ? uploadText.hint : allowSvg ? promptCoverMessages[locale].formats : t.localUploadHint}</span>
       </button>}
       {visible.map(asset => multiple ? <button type="button" key={asset.id} className="asset-card asset-card--multiple" aria-label={asset.name} aria-pressed={chosen.some(item => item.id === asset.id)} disabled={busy} onClick={() => toggleAsset(asset)}>
         <ProgressiveImage src={isVideoAsset(asset) ? asset.posterUrl : asset.url} alt="" />
@@ -184,8 +199,8 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
       </div>)}
       {!visible.length && (source !== 'historyUploads' || query.trim()) && <div className="asset-empty">{query.trim() ? t.noSearchResults : t.noAssets}</div>}
     </div>
-    <input ref={input} type="file" hidden multiple={multiple} accept={allowVideo ? 'image/png,image/jpeg,image/webp,video/*' : allowSvg ? 'image/png,image/jpeg,image/webp,image/svg+xml' : 'image/png,image/jpeg,image/webp'} onChange={event => { if (event.target.files) void upload(event.target.files); event.target.value = ''; }} />
-    {error && <p className="asset-error error-message" role="alert">{error === 'limit' ? (multiple ? (limitMessage || (allowVideo ? videoText.batchLimit.replace('{count}', String(maxCount)) : t.batchImageLimit)) : allowVideo ? videoText.limit : allowSvg ? promptCoverMessages[locale].limit : t.mainImageLimit) : allowVideo ? videoText.error : allowSvg ? promptCoverMessages[locale].error : t.uploadError}</p>}
+    <input ref={input} type="file" hidden multiple={multiple} accept={videoOnly ? 'video/*' : allowVideo ? 'image/png,image/jpeg,image/webp,video/*' : allowSvg ? 'image/png,image/jpeg,image/webp,image/svg+xml' : 'image/png,image/jpeg,image/webp'} onChange={event => { if (event.target.files) void upload(event.target.files); event.target.value = ''; }} />
+    {error && <p className="asset-error error-message" role="alert">{error === 'limit' ? (multiple ? (limitMessage || (allowVideo ? videoText.batchLimit.replace('{count}', String(maxCount)) : t.batchImageLimit)) : allowVideo ? uploadText.limit : allowSvg ? promptCoverMessages[locale].limit : t.mainImageLimit) : allowVideo ? uploadText.error : allowSvg ? promptCoverMessages[locale].error : t.uploadError}</p>}
     {multiple && <footer className="asset-footer" data-node-id="17:1865">
       <div className="asset-counter" role="status"><span>{t.selectedCount}</span><strong>{chosen.length} / {maxCount}</strong></div>
       <Button variant="secondary" size="m" onClick={close}>{t.cancel}</Button>

@@ -31,10 +31,17 @@
   transform: translate(-50%, -50%);
   transition: transform var(--motion-duration) var(--motion-easing), background-color var(--motion-duration) var(--motion-easing), border-color var(--motion-duration) var(--motion-easing);
 }
+.lc-react-flow .lc-flow-handle-plus {
+  position: absolute; left: 50%; top: 50%; z-index: 1; pointer-events: none;
+  width: calc(10px * var(--canvas-inverse-scale)); height: calc(10px * var(--canvas-inverse-scale));
+  color: var(--text-secondary); transform: translate(-50%, -50%);
+  transition: transform var(--motion-duration) var(--motion-easing), color var(--motion-duration) var(--motion-easing);
+}
 .lc-react-flow .lc-flow-free-handle.react-flow__handle-left { left: calc(-12px * var(--canvas-inverse-scale)); }
 .lc-react-flow .lc-flow-free-handle.react-flow__handle-right { right: calc(-12px * var(--canvas-inverse-scale)); }
 .lc-react-flow[data-connectable='true'] .react-flow__node:hover .lc-flow-free-handle,
 .lc-react-flow[data-connectable='true'] .react-flow__node.selected .lc-flow-free-handle[data-node-kind='editor'],
+.lc-react-flow[data-connectable='true'] .lc-flow-free-handle[data-add-menu='true']:is(:focus-visible, [aria-expanded='true']),
 .lc-react-flow[data-connectable='true'][data-connecting='true'] .lc-flow-free-handle[data-node-kind='editor'],
 .lc-react-flow[data-connectable='true'] .lc-flow-free-handle[data-feedback='source'] {
   opacity: 1; pointer-events: all; cursor: crosshair;
@@ -43,6 +50,11 @@
   transform: translate(-50%, -50%) scale(1.25);
   border-color: var(--border-brand); background: var(--brand-primary);
 }
+.lc-react-flow .lc-flow-free-handle[data-add-menu='true']:focus-visible::after { border-color: var(--border-brand); }
+.lc-react-flow .lc-flow-free-handle:is(:hover, [data-feedback='source'], [data-feedback='valid'], [data-feedback='invalid']) .lc-flow-handle-plus {
+  transform: translate(-50%, -50%) scale(1.25); color: var(--text-primary);
+}
+.canvas-context-menu.lc-flow-add-menu { width: 160px; }
 .lc-react-flow .lc-flow-free-handle[data-feedback='valid']::after { border-color: var(--status-success); background: var(--status-success); }
 .lc-react-flow .lc-flow-free-handle[data-feedback='invalid']::after { border-color: var(--status-danger); background: var(--status-danger); }
 /* Keep the selection overlay visual-only. Its native drag surface otherwise

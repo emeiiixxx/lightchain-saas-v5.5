@@ -13,6 +13,8 @@ export type CanvasMediaKind = 'image' | 'video';
 export type CanvasConnectionNode = {
   kind: CanvasMediaKind | 'editor';
   accepts?: CanvasMediaKind[];
+  /** Media still available to add after applying the editor's current capacity. */
+  addable?: CanvasMediaKind[];
   output?: CanvasMediaKind;
 };
 export type CanvasConnectionNodes = Record<string, CanvasConnectionNode>;
