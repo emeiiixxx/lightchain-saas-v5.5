@@ -152,6 +152,9 @@
 [data-theme="dark"] { --status-warning: rgb(252, 167, 59); }
 [data-theme="light"] { --status-warning: rgb(250, 140, 22); }
 
+/* Beta Status/success, VariableID:31:5; docs/beta-tokens-live-2026-09-15.json. */
+[data-theme] { --status-success: rgb(54, 209, 131); }
+
 /* Beta State/selected-tab-sliding, live source 136:16116 / 136:16144. */
 [data-theme='dark'] { --state-selected-tab-sliding: rgba(255,255,255,.15); }
 [data-theme='light'] { --state-selected-tab-sliding: #fff; }

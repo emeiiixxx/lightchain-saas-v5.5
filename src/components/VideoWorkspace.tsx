@@ -25,7 +25,7 @@ import { ImageConnection } from './ImageConnection';
 import { createVideoWorkflow, videoWorkflowBox, VIDEO_NODE_WIDTH, VIDEO_NODE_HEIGHT, type VideoWorkflow, type VideoReference } from '../video-workflow';
 import { copyVideoCanvasSelection, pasteVideoCanvasSelection, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
 import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, writeCanvasClipboardEvent, writeCanvasClipboardSystem, type CanvasClipboard } from '../canvas-clipboard-session';
-import type { CanvasConnection, CanvasConnectionInput } from '../canvas-connections';
+import { canConnectCanvasNodes, type CanvasConnection, type CanvasConnectionInput, type CanvasConnectionNodes } from '../canvas-connections';
 import { videoReferenceUploadMessages, type UploadedVideo } from '../video-reference-upload';
 import { notify } from './Toast';
 import { Button, Dialog, Icon } from './ui';
@@ -55,11 +55,19 @@ type WorkflowUpload = { id: string; field: 'main' | 'endFrame' | 'references' };
 type Modal = 'templates' | 'assets' | 'help';
 type Props = { locale: Locale; active: boolean; onBack: () => void };
 const connectionHelp = {
-  'zh-CN': '拖动节点左右两边的连接点可自由连线。点击连线选中，按 Delete 删除，拖动选中连线的端点可重新连接。Shift + 点击可多选，Ctrl / ⌘ + Z 可撤销。',
-  en: 'Drag between connection points on the left or right side of a node to connect. Select a line and press Delete to remove it, or drag its endpoint to reconnect. Shift-click to select multiple items; Ctrl / ⌘ + Z undoes.',
-  ja: 'ノードの左右にある接続点をドラッグして自由に接続できます。線を選択してDeleteで削除、端点をドラッグして接続先を変更します。Shift + クリックで複数選択、Ctrl / ⌘ + Zで取り消します。',
+  'zh-CN': '悬停图片或视频时显示右侧连接点，编辑器支持左右连接点。拖线靠近编辑器时，绿色表示可连接，红色表示不可连接。点击连线选中，按 Delete 删除，拖动端点可重新连接。Shift + 点击可多选，Ctrl / ⌘ + Z 可撤销。',
+  en: 'Hover over an image or video to reveal its right connection point. Editors have points on both sides. When dragging near an editor, green means the connection is allowed and red means it is not. Select a line and press Delete to remove it, or drag an endpoint to reconnect. Shift-click to select multiple items; Ctrl / ⌘ + Z undoes.',
+  ja: '画像・動画にマウスを重ねると右側の接続点が表示されます。エディターは左右に接続点があります。線を近づけると、接続できる場合は緑、できない場合は赤になります。線を選択してDeleteで削除、端点をドラッグして接続先を変更できます。Shift + クリックで複数選択、Ctrl / ⌘ + Zで取り消します。',
 };
 const sceneItems = (snapshot: Snapshot) => [...snapshot.images, ...snapshot.workflows.map(videoWorkflowBox)];
+function videoConnectionNodes(snapshot: Snapshot): CanvasConnectionNodes {
+  const nodes: CanvasConnectionNodes = {};
+  for (const image of snapshot.images) nodes[image.id] = { kind: image.video ? 'video' : 'image' };
+  for (const node of snapshot.workflows) nodes[node.id] = {
+    kind: 'editor', output: 'video', accepts: node.mode === 'references' ? ['image', 'video'] : ['image'],
+  };
+  return nodes;
+}
 const isField = (target: EventTarget | null) => target instanceof HTMLElement && !!target.closest('input,textarea,select,[contenteditable="true"]');
 
 function fitVideoImages(images: CanvasImage[], width: number, height: number): Viewport {
@@ -156,6 +164,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const shownWorkflowUpload = usePresence(active ? workflowUpload : null);
   const shownVideoPreview = usePresence(active ? videoPreview : null);
   const items = useMemo(() => sceneItems(snapshot), [snapshot.images, snapshot.workflows]);
+  const connectionNodes = useMemo(() => videoConnectionNodes(snapshot), [snapshot.images, snapshot.workflows]);
   const shownDrop = usePresence(dropActive && items.length ? true : null);
   const shownGuides = usePresence(guides);
   const groupBounds = useMemo(() => snapshot.selected.length > 1 ? boundsOf(items.filter(image => snapshot.selected.includes(image.id))) : null, [items, snapshot.selected]);
@@ -195,8 +204,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       selected: [], selectedConnections: [] });
   }, [commit]);
   const connectNodes = useCallback((input: CanvasConnectionInput, replacingId?: string) => {
-    const previous = current.current, ids = new Set(sceneItems(previous).map(item => item.id));
-    if (!ids.has(input.source) || !ids.has(input.target) || input.source === input.target) return;
+    const previous = current.current;
+    if (!canConnectCanvasNodes(input, videoConnectionNodes(previous))) return;
     if (replacingId && !previous.connections.some(edge => edge.id === replacingId)) return;
     if (previous.connections.some(edge => edge.id !== replacingId && edge.source === input.source && edge.target === input.target)
       || previous.workflows.some(node => node.id === input.target && node.main?.sourceImageId === input.source)) return;
@@ -510,7 +519,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       </div>}
       {active && items.length > 0 && <>
         <ReactFlowCanvas view={view} selectedIds={snapshot.selected} hand={spaceDown || mode === 'hand'} referenceMode={false} snap={snapToGrid}
-          connections={snapshot.connections} selectedConnectionIds={snapshot.selectedConnections} onConnect={connectNodes} onReconnect={(id, input) => connectNodes(input, id)}
+          connections={snapshot.connections} connectionNodes={connectionNodes} selectedConnectionIds={snapshot.selectedConnections} onConnect={connectNodes} onReconnect={(id, input) => connectNodes(input, id)}
           onConnectionSelection={ids => replace({ ...current.current, selectedConnections: ids })}
           onView={setView} onSelection={ids => replace({ ...current.current, selected: ids })}
           onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node) })}
