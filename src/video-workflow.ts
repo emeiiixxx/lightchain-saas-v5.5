@@ -11,6 +11,7 @@ export type VideoWorkflow = {
   main?: VideoFrameReference;
   endFrame?: VideoReference;
   references: VideoReference[];
+  referenceOrder?: string[];
   prompt: string;
   resolution: string;
   duration: string;
@@ -25,7 +26,7 @@ export const videoGenerationConfig = {
 } as const;
 
 export function videoWorkflowSize(mode: VideoWorkflow['mode']) {
-  const sizes = { frames: { width: 320, height: 523 }, references: { width: 320, height: 523 } };
+  const sizes = { frames: { width: 320, height: 629 }, references: { width: 320, height: 653 } };
   return sizes[mode];
 }
 
@@ -50,18 +51,46 @@ export function normalizeVideoWorkflowSettings(node: VideoWorkflow): VideoWorkfl
   return { ...node, generationMode, resolution, audio, duration };
 }
 
-// The bound canvas source stays in one slot when switching modes.
+export const videoReferenceLimits = { image: 9, video: 3 } as const;
+
+// Main-image identity stays separate from its visual position and business link.
 export function videoWorkflowReferences(node: VideoWorkflow): VideoReference[] {
-  return [...(node.main ? [{ ...node.main, kind: 'image' as const }] : []), ...node.references];
+  const seen = new Set<string>();
+  const references = [...(node.main ? [{ ...node.main, kind: 'image' as const }] : []), ...node.references].filter(reference => {
+    if (seen.has(reference.url)) return false;
+    seen.add(reference.url); return true;
+  });
+  const byId = new Map(references.map(reference => [reference.id, reference]));
+  const ordered: VideoReference[] = [];
+  for (const id of node.referenceOrder ?? []) {
+    const reference = byId.get(id);
+    if (reference) { ordered.push(reference); byId.delete(id); }
+  }
+  return [...ordered, ...byId.values()];
 }
-export function createVideoWorkflow(x: number, y: number, source?: CanvasImage): VideoWorkflow {
-  return { id: crypto.randomUUID(), x, y, mode: 'frames', generationMode: 'fast',
+
+// Move within one media section; other kinds retain their positions. The caller
+// commits this array as referenceOrder in one undoable node update.
+export function reorderVideoReferences(node: VideoWorkflow, kind: VideoReference['kind'], sourceId: string, targetId: string): string[] {
+  const references = videoWorkflowReferences(node);
+  const section = references.filter(reference => reference.kind === kind);
+  const source = section.findIndex(reference => reference.id === sourceId);
+  const target = section.findIndex(reference => reference.id === targetId);
+  if (source < 0 || target < 0 || source === target) return references.map(reference => reference.id);
+  section.splice(target, 0, ...section.splice(source, 1));
+  let index = 0;
+  return references.map(reference => reference.kind === kind ? section[index++].id : reference.id);
+}
+
+export function createVideoWorkflow(x: number, y: number, source?: CanvasImage, mode: VideoWorkflow['mode'] = 'frames'): VideoWorkflow {
+  const longVideo = mode === 'references';
+  return { id: crypto.randomUUID(), x, y, mode, generationMode: longVideo ? 'professional' : 'fast',
     main: source ? { id: source.id, sourceImageId: source.id, name: source.name, url: source.url } : undefined,
-    references: [], prompt: '', resolution: '2K', duration: '5s', ratio: '9:16', audio: 'auto' };
+    references: [], prompt: '', resolution: longVideo ? '1080p' : '2K', duration: longVideo ? '30s' : '5s', ratio: '9:16', audio: 'auto' };
 }
 
 // Canvas navigation and React Flow share the same geometry for images and nodes.
 export function videoWorkflowBox(node: VideoWorkflow): CanvasImage {
   return { id: node.id, x: node.x, y: node.y, ...videoWorkflowSize(node.mode),
-    name: node.mode === 'frames' ? '服装短视频' : '视频生成', url: node.main?.url ?? node.references.find(reference => reference.kind === 'image')?.url ?? '' };
+    name: node.mode === 'frames' ? '服装短视频' : '服装长视频', url: node.main?.url ?? videoWorkflowReferences(node).find(reference => reference.kind === 'image')?.url ?? '' };
 }

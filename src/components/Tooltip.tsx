@@ -60,7 +60,8 @@ export function TooltipHost() {
       if (!anchor.isConnected || anchor.closest('[inert]') || (anchor.closest('dialog') && !anchor.closest('dialog')!.open)) { setTarget(null); return; }
       const a = anchor.getBoundingClientRect();
       const w = window.innerWidth, h = window.innerHeight;
-      const side = anchor.closest('.canvas-side-toolbar') && w - a.right > tip.offsetWidth + 16 ? 'right' : a.top >= tip.offsetHeight + 12 ? 'top' : 'bottom';
+      const preferRight = anchor.dataset.tooltipSide === 'right' || anchor.closest('.canvas-side-toolbar');
+      const side = preferRight && w - a.right > tip.offsetWidth + 16 ? 'right' : a.top >= tip.offsetHeight + 12 ? 'top' : 'bottom';
       tip.dataset.side = side;
       const tw = tip.offsetWidth, th = tip.offsetHeight;
       const x = side === 'right' ? a.right + 4 : a.left + a.width / 2 - tw / 2;

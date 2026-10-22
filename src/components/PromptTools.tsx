@@ -1,5 +1,5 @@
 import { notify } from './Toast';
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Button, Icon, type IconName } from './ui';
 import { usePresence } from '../usePresence';
@@ -8,17 +8,17 @@ import type { PromptEntry as Entry } from '../prompt-types';
 import type { PromptStoreResult } from '../prompt-storage';
 import { usePromptLibrary } from '../PromptLibraryContext';
 import { PromptCoverField } from './PromptCoverField';
-export function PromptTools({value,onChange,labels,expandIcon='fusionExpand',expandDisabled=false,hideInlineActions=false,iconSize=16}:{expandIcon?:IconName;expandDisabled?:boolean;hideInlineActions?:boolean;iconSize?:number;value:string;onChange:(v:string)=>void;labels:{expand:string;save:string;library:string;prompt:string;clear:string;close:string}}){
+export function PromptTools({value,onChange,labels,expandIcon='fusionExpand',expandDisabled=false,hideInlineActions=false,iconSize=16,maxLength=2000,inlineIcons}:{expandIcon?:IconName;expandDisabled?:boolean;hideInlineActions?:boolean;iconSize?:number;maxLength?:number;inlineIcons?:{expand:ReactNode;save:ReactNode;library:ReactNode};value:string;onChange:(v:string)=>void;labels:{expand:string;save:string;library:string;prompt:string;clear:string;close:string}}){
  const [editorOpen,setEditorOpen]=useState(false), editorShown=usePresence(editorOpen?true:null);
  const [libraryOpen,setLibraryOpen]=useState(false), libraryShown=usePresence(libraryOpen?true:null);
  const [anchor,setAnchor]=useState<HTMLElement|null>(null), saveShown=usePresence(anchor);
  const {entries,store}=usePromptLibrary();
  const save=(el:HTMLElement)=>{if(!value.trim()){notify('请输入提示词后再保存');return;}setAnchor(el);};
  const openLibrary=()=>setLibraryOpen(true);
- const actions=(large=false)=><><Button className={large?'':'fusion-xs-icon'} aria-label={labels.save} onClick={e=>save(e.currentTarget)}><Icon name="fusionSave" size={large?20:16}/></Button><Button className={large?'':'fusion-xs-icon'} aria-label={labels.library} onClick={openLibrary}><Icon name="fusionPrompts" size={large?20:16}/></Button></>;
- return <><Button className="fusion-xs-icon" aria-label={labels.expand} disabled={expandDisabled} onClick={()=>setEditorOpen(true)}><Icon name={expandIcon} size={iconSize}/></Button>{!hideInlineActions&&actions()}
- {editorShown.value&&createPortal(<ExpandedPrompt phase={editorShown.phase} title={labels.prompt} value={value} onChange={onChange} onClose={()=>setEditorOpen(false)} actions={actions(true)} clear={labels.clear}/>,document.body)}
- {libraryShown.value&&createPortal(<PromptLibrary phase={libraryShown.phase} entries={entries} onStore={store} onClose={()=>setLibraryOpen(false)} onApply={(text,mode)=>{const next=mode==='append'&&value.trim()?value+(value.endsWith('\n')?'':'\n')+text:text;if(next.length>2000){notify('插入合并后超过2000字,请先精简原文或选择覆盖', 'error');return;}onChange(next);setLibraryOpen(false);}}/>,document.body)}
+ const actions=(large=false)=><><Button className={large?'':'fusion-xs-icon'} aria-label={labels.save} title={labels.save} onClick={e=>save(e.currentTarget)}>{!large&&inlineIcons?inlineIcons.save:<Icon name="fusionSave" size={large?20:16}/>}</Button><Button className={large?'':'fusion-xs-icon'} aria-label={labels.library} title={labels.library} onClick={openLibrary}>{!large&&inlineIcons?inlineIcons.library:<Icon name="fusionPrompts" size={large?20:16}/>}</Button></>;
+ return <><Button className="fusion-xs-icon" aria-label={labels.expand} title={labels.expand} disabled={expandDisabled} onClick={()=>setEditorOpen(true)}>{inlineIcons?inlineIcons.expand:<Icon name={expandIcon} size={iconSize}/>}</Button>{!hideInlineActions&&actions()}
+ {editorShown.value&&createPortal(<ExpandedPrompt phase={editorShown.phase} title={labels.prompt} value={value} maxLength={maxLength} onChange={onChange} onClose={()=>setEditorOpen(false)} actions={actions(true)} clear={labels.clear}/>,document.body)}
+ {libraryShown.value&&createPortal(<PromptLibrary phase={libraryShown.phase} entries={entries} maxLength={maxLength} onStore={store} onClose={()=>setLibraryOpen(false)} onApply={(text,mode)=>{const next=mode==='append'&&value.trim()?value+(value.endsWith('\n')?'':'\n')+text:text;if(next.length>maxLength){notify(mode==='append'?`插入合并后超过${maxLength}字，请先精简原文或选择覆盖`:`提示词超过${maxLength}字，请先精简内容`, 'error');return;}onChange(next);setLibraryOpen(false);}}/>,document.body)}
  {saveShown.value&&createPortal(<SavePrompt anchor={saveShown.value} phase={saveShown.phase} onClose={()=>setAnchor(null)} onSave={async name=>{const result=await store([{id:crypto.randomUUID(),name,content:value},...entries]);if(result.ok)setAnchor(null);return result;}}/>, saveShown.value.closest('dialog')??document.body)}
  </>;
 }
@@ -33,7 +33,7 @@ function SavePrompt({anchor,phase,onClose,onSave}:{anchor:HTMLElement;phase:'ent
  <footer><Button variant="secondary" disabled={busy} onClick={onClose}>取消</Button><Button variant="primary" disabled={!name.trim()||busy} onClick={()=>void submit()}>保存</Button></footer></div>;
 }
 function useModal(ref:React.RefObject<HTMLDialogElement|null>){useEffect(()=>{const old=document.activeElement as HTMLElement|null;const el=ref.current!;el.showModal();return()=>{el.close();if(old?.isConnected)old.focus({preventScroll:true});};},[]);}
-function ExpandedPrompt({phase,title,value,onChange,onClose,actions,clear}:{phase:'enter'|'exit';title:string;value:string;onChange:(v:string)=>void;onClose:()=>void;actions:React.ReactNode;clear:string}){
+function ExpandedPrompt({phase,title,value,maxLength,onChange,onClose,actions,clear}:{phase:'enter'|'exit';title:string;value:string;maxLength:number;onChange:(v:string)=>void;onClose:()=>void;actions:ReactNode;clear:string}){
  const ref=useRef<HTMLDialogElement>(null);useModal(ref);
  const [box,setBox]=useState(()=>({x:Math.max(16,(innerWidth-960)/2),y:Math.max(96,(innerHeight-680)/2),w:Math.min(960,innerWidth-32),h:Math.min(640,innerHeight-152)}));
  const drag=useRef<{x:number;y:number;box:typeof box;corner:string}|null>(null);
@@ -42,10 +42,10 @@ function ExpandedPrompt({phase,title,value,onChange,onClose,actions,clear}:{phas
  return <dialog ref={ref} data-overlay data-select-popup className="prompt-fullscreen" data-phase={phase} inert={phase==='exit'} aria-label={title} onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
  <p className="prompt-screen-tip">💡Tips：支持按 esc 或点击空白处退出全屏输入框</p>
  <section className="prompt-expanded" style={{left:box.x,top:box.y,width:box.w}}><header><h2>{title}</h2><Button aria-label="收起输入框" onClick={onClose}><Icon name="promptCollapse"/></Button></header>
- <div className="prompt-expanded-field" style={{height:box.h}}><textarea autoFocus aria-label={title} value={value} maxLength={2000} onChange={e=>onChange(e.target.value)}/><footer><div>{actions}</div><span>{value.length}/2000</span><Button variant="secondary" onClick={()=>onChange('')}>{clear}</Button></footer>
+ <div className="prompt-expanded-field" style={{height:box.h}}><textarea autoFocus aria-label={title} value={value} maxLength={maxLength} onChange={e=>onChange(e.target.value)}/><footer><div>{actions}</div><span>{value.length}/{maxLength}</span><Button variant="secondary" onClick={()=>onChange('')}>{clear}</Button></footer>
  {['nw','ne','sw','se'].map(c=><span key={c} className={`prompt-resize ${c}`} aria-hidden="true" onPointerDown={e=>{e.preventDefault();drag.current={x:e.clientX,y:e.clientY,box,corner:c};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={move} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}}/>)}<img className="prompt-resize-mark" src="/assets/fusion/promptResize.svg" alt=""/></div></section></dialog>;
 }
-function PromptLibrary({phase,entries,onStore,onApply,onClose}:{phase:'enter'|'exit';entries:Entry[];onStore:(e:Entry[])=>Promise<PromptStoreResult>;onApply:(text:string,mode:'append'|'replace')=>void;onClose:()=>void}){
+function PromptLibrary({phase,entries,maxLength,onStore,onApply,onClose}:{phase:'enter'|'exit';entries:Entry[];maxLength:number;onStore:(e:Entry[])=>Promise<PromptStoreResult>;onApply:(text:string,mode:'append'|'replace')=>void;onClose:()=>void}){
  const ref=useRef<HTMLDialogElement>(null);useModal(ref);
  const {uploads,onUpload,locale}=usePromptLibrary();
  const [selected,setSelected]=useState(entries[0]?.id??'');
@@ -57,6 +57,8 @@ function PromptLibrary({phase,entries,onStore,onApply,onClose}:{phase:'enter'|'e
  const [menu,setMenu]=useState<{entry:Entry;anchor:HTMLElement}|null>(null);
  const previousSelection=useRef(selected);
  const isNew=!!draft&&!entries.some(e=>e.id===draft.id);
+ // Existing long entries remain editable and save intact from any workspace.
+ const draftMaxLength=Math.max(maxLength,entries.find(entry=>entry.id===draft?.id)?.content.length??0);
  const sorted=[...entries].sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned));
  const listed=isNew?[draft!,...sorted]:sorted;
  const visible=listed.filter(e=>(e.name+' '+e.content).toLowerCase().includes(query.toLowerCase()));
@@ -130,7 +132,7 @@ function PromptLibrary({phase,entries,onStore,onApply,onClose}:{phase:'enter'|'e
    :draft?<>
      <label><span>提示词标题 <em className="prompt-required">*</em></span><div className="prompt-edit-title"><input aria-label="编辑提示词名称" placeholder="请输入名称" required maxLength={50} disabled={saving} value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/><span>{draft.name.length}/50</span></div></label>
      <div inert={saving}><PromptCoverField key={draft.id} value={draft.coverUrl} uploads={uploads} onUpload={onUpload} locale={locale} onBusy={setCoverBusy} onChange={coverUrl=>setDraft(currentDraft=>currentDraft?{...currentDraft,coverUrl}:null)}/></div>
-     <label className="prompt-content-edit"><span>提示词内容 <em className="prompt-required">*</em></span><div className="prompt-edit-content"><textarea aria-label="编辑提示词内容" placeholder="请输入提示词内容..." required maxLength={2000} disabled={saving} value={draft.content} onChange={e=>setDraft({...draft,content:e.target.value})}/><span>{draft.content.length}/2000</span></div></label>
+     <label className="prompt-content-edit"><span>提示词内容 <em className="prompt-required">*</em></span><div className="prompt-edit-content"><textarea aria-label="编辑提示词内容" placeholder="请输入提示词内容..." required maxLength={draftMaxLength} disabled={saving} value={draft.content} onChange={e=>setDraft({...draft,content:e.target.value})}/><span>{draft.content.length}/{draftMaxLength}</span></div></label>
    </>:current?<div className="prompt-detail-card" data-node-id="111:5494"><h3>{current.name}</h3>{current.coverUrl&&<img className="prompt-detail-cover" src={current.coverUrl} alt={current.name}/>}<p className="prompt-detail-content">{current.content}</p></div>:<p className="prompt-empty">选择或新增一条提示词</p>}
  </div>
  {!isEmpty&&<footer>{draft?<>

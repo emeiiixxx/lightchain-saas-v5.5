@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Locale } from '../i18n';
 import { clampVideoDuration, videoDurationLimit, videoGenerationConfig, type VideoWorkflow } from '../video-workflow';
@@ -37,8 +37,8 @@ function ParameterSegments({ label, options, value, onChange, vertical = false }
   </div></div>;
 }
 
-export function VideoGenerationSettings({ locale, value, onChange }: {
-  locale: Locale; value: Settings; onChange: (patch: Partial<Settings>) => void;
+export function VideoGenerationSettings({ locale, value, onChange, autoIcon, chevron }: {
+  locale: Locale; value: Settings; onChange: (patch: Partial<Settings>) => void; autoIcon?: string; chevron?: ReactNode;
 }) {
   const t = copy[locale];
   const [open, setOpen] = useState(false);
@@ -170,8 +170,8 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
       onKeyDown={event => {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Tab' && open && !event.shiftKey) { event.preventDefault(); event.stopPropagation(); expand(true); }
       }}>
-      <span className="icon video-generation-settings-ratio-icon" aria-hidden="true" style={{ '--icon-url': `url("${ratioIcon(value.ratio)}")` } as CSSProperties} />
-      <span className="lc-setting-select-value">{summary}</span><Icon name="imgChevron" size={16} className="lc-setting-select-chevron" />
+      <span className="icon video-generation-settings-ratio-icon" aria-hidden="true" style={{ '--icon-url': `url("${value.ratio === 'auto' && autoIcon ? autoIcon : ratioIcon(value.ratio)}")` } as CSSProperties} />
+      <span className="lc-setting-select-value">{summary}</span>{chevron ?? <Icon name="imgChevron" size={16} className="lc-setting-select-chevron" />}
     </button>
     {shown.value && createPortal(<div ref={panel} id={id} className="video-generation-settings nodrag nopan nowheel" popover="manual" role="dialog" aria-label={t.settings}
       data-node-id={config.nodeId} data-select-popup data-overlay data-phase={shown.phase} inert={shown.phase === 'exit'} onPointerDown={event => event.stopPropagation()} onWheel={event => event.stopPropagation()}

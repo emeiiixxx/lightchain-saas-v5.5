@@ -1,13 +1,13 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { usePresence } from '../usePresence';
 import { Icon, type IconName } from './ui';
 
-type Props = { label: string; value: string; placeholder?: string; icon?: IconName; options: { value: string; label: string }[]; onChange: (value: string) => void };
+type Props = { label: string; value: string; placeholder?: string; icon?: IconName; chevron?: ReactNode; options: { value: string; label: string }[]; onChange: (value: string) => void };
 
 // 5.1 Beta Select 66:194 + DropdownMenuContent 891:4592 + Option 380:2728.
 // The trigger belongs to its node. The menu belongs to the viewport's top layer.
-export function SettingSelect({ label, value, placeholder, icon, options, onChange }: Props) {
+export function SettingSelect({ label, value, placeholder, icon, chevron, options, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const shown = usePresence(open ? true : null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -78,7 +78,7 @@ export function SettingSelect({ label, value, placeholder, icon, options, onChan
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); expand(true); }
         if (event.key === 'Escape' && open) { event.stopPropagation(); close(false); }
       }}>
-      {icon && <Icon name={icon} size={16} />}<span className="lc-setting-select-value">{options.find(option => option.value === value)?.label ?? placeholder}</span><Icon name="imgChevron" size={16} className="lc-setting-select-chevron" />
+      {icon && <Icon name={icon} size={16} />}<span className="lc-setting-select-value">{options.find(option => option.value === value)?.label ?? placeholder}</span>{chevron ?? <Icon name="imgChevron" size={16} className="lc-setting-select-chevron" />}
     </button>
     {shown.value && createPortal(<div ref={menu} popover="manual" className="lc-select-popup" data-select-popup data-overlay data-node-id="891:4592" data-phase={shown.phase} inert={shown.phase === 'exit'} role="menu" id={id} aria-label={label}
       onKeyDown={event => {

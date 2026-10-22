@@ -12,17 +12,18 @@
     "imageVideoGenerationMenu": "113:9502",
     "singleImage": "76:5776",
     "fashionVideoFirstLastFrame": "84:6110",
-    "fashionVideoMultipleReferences": "112:7764",
+    "fashionVideoMultipleReferences": "121:17924",
     "canvasSideToolbar": "76:5745",
     "templateWithoutUploads": "64:4219",
     "templateWithUploads": "76:5003",
     "landscapeTemplate": "76:5477",
     "emptyTemplate": "64:4644",
     "uploadStates": "76:5455",
-    "fashionVideoMultipleReferencesInstance": "112:7765",
     "videoGenerationSettings": "113:8302",
     "videoGenerationFastSettings": "113:8633",
-    "videoGenerationProfessionalSettings": "113:8634"
+    "videoGenerationProfessionalSettings": "113:8634",
+    "fashionVideoFirstLastFrameFilled": "119:11242",
+    "fashionVideoMultipleReferencesFilled": "121:18150"
   },
   "assets": {
     "directory": "public/assets/video-workspace",
@@ -30,7 +31,11 @@
       "updated": "2026-10-22",
       "directory": "public/assets/video-image-toolbar",
       "fileCount": 15,
-      "sourceNodes": ["113:8878", "113:9464", "113:9502"],
+      "sourceNodes": [
+        "113:8878",
+        "113:9464",
+        "113:9502"
+      ],
       "source": "Original SVGs exported from the toolbar and its material/video generation menu slots.",
       "displaySize": 20,
       "upscaleDisplaySize": 16
@@ -125,6 +130,11 @@
       "width": 384,
       "height": 384,
       "displaySize": 128
+    },
+    "finalWorkflowNodes": {
+      "manifest": "docs/video-node-final-assets.json",
+      "originalSvgCount": 42,
+      "source": "Final short-video empty/filled and long-video empty/filled designs."
     }
   },
   "media": {
@@ -201,9 +211,23 @@
       "radius": 12,
       "groupGap": 4,
       "groups": [
-        ["materialGeneration", "videoGeneration", "separator"],
-        ["videoRemake", "separator", "cutout", "upscale", "separator"],
-        ["saveAsset", "download", "sendImage"]
+        [
+          "materialGeneration",
+          "videoGeneration",
+          "separator"
+        ],
+        [
+          "videoRemake",
+          "separator",
+          "cutout",
+          "upscale",
+          "separator"
+        ],
+        [
+          "saveAsset",
+          "download",
+          "sendImage"
+        ]
       ],
       "buttonHeight": 32,
       "chineseButtonWidths": {
@@ -220,14 +244,30 @@
     "hoverMenus": {
       "materialGeneration": {
         "nodeId": "113:9464",
-        "labelsZh": ["快捷编辑", "多视角", "分镜图"],
-        "actions": ["quickEdit", "multiView", "storyboardImage"],
+        "labelsZh": [
+          "快捷编辑",
+          "多视角",
+          "分镜图"
+        ],
+        "actions": [
+          "quickEdit",
+          "multiView",
+          "storyboardImage"
+        ],
         "behavior": "Each action gives the existing not-connected notice; do not create output, tasks or charges."
       },
       "videoGeneration": {
         "nodeId": "113:9502",
-        "labelsZh": ["服装短视频", "服装长视频", "分镜成片"],
-        "actions": ["fashionVideo", "multiReference", "storyboard"],
+        "labelsZh": [
+          "服装短视频",
+          "服装长视频",
+          "分镜成片"
+        ],
+        "actions": [
+          "fashionVideo",
+          "multiReference",
+          "storyboard"
+        ],
         "behavior": "Fashion short video creates a frames editor; fashion long video creates a references editor. Both carry the actual selected image as the inherited main image and add an automatic business line. Editor creation, mode and association are one undo transaction. Storyboard video remains not connected."
       },
       "panel": {
@@ -311,14 +351,7 @@
     ],
     "sourceGap": 80,
     "referenceTileSize": 64,
-    "promptLimit": 2000,
-    "defaultSettings": {
-      "resolution": "2K",
-      "duration": "5s",
-      "ratio": "9:16",
-      "generationMode": "fast",
-      "audio": "auto"
-    },
+    "promptLimit": 5000,
     "generationSettings": {
       "summaryOrder": [
         "ratio",
@@ -346,15 +379,22 @@
         "4:3"
       ],
       "resolutionsByMode": {
-        "fast": ["768p", "2K"],
-        "professional": ["480p", "720p", "1080p"]
+        "fast": [
+          "768p",
+          "2K"
+        ],
+        "professional": [
+          "480p",
+          "720p",
+          "1080p"
+        ]
       },
       "defaultResolutionByMode": {
         "fast": "2K",
         "professional": "1080p"
       },
       "modeChange": "Normalize against the target mode. An unsupported resolution falls back to that mode's default: 1080p for professional, 2K for fast. Fast mode forces audio to auto and clamps durations above 15 seconds to 15. Commit mode and all normalized settings as one undo transaction; undo restores the complete previous configuration. Keep valid settings within the same mode, ratio, prompt and media. Do not add hidden per-mode configuration memory.",
-      "interaction": "Ratio, resolution and audio apply immediately without closing; duration uses the mode-dependent slider and numeric input. Keep the complete ratio | resolution | duration summary and selected-ratio icon; audio stays out of the summary. Retain per-node settings across frame/reference modes with canvas undo/redo. Outside click or Escape closes; preserve keyboard operation, dark/light themes and shared 200ms exit motion.",
+      "interaction": "Ratio, resolution and audio apply immediately without closing; duration uses the existing mode-dependent slider and numeric input. Keep the ratio | resolution | duration summary and selected-ratio icon; audio stays out of the summary. Both editor types reuse the same controls and retain existing per-node values with canvas undo/redo. Outside click or Escape closes; preserve keyboard operation, dark/light themes and shared 200ms exit motion.",
       "durationSlider": {
         "library": "Lightchain SaaS v5.1 libraries Beta",
         "source": {
@@ -373,12 +413,27 @@
         ],
         "geometry": {
           "rowPaddingHorizontal": 4,
-          "control": { "width": 292, "height": 24 },
-          "minimumLabel": { "text": "5", "width": 7, "height": 16, "gapAfter": 8 },
-          "slider": { "width": 205, "height": 18, "verticalAlign": "center" },
+          "control": {
+            "width": 292,
+            "height": 24
+          },
+          "minimumLabel": {
+            "text": "5",
+            "width": 7,
+            "height": 16,
+            "gapAfter": 8
+          },
+          "slider": {
+            "width": 205,
+            "height": 18,
+            "verticalAlign": "center"
+          },
           "trackHeight": 6,
           "thumbSize": 18,
-          "thumbStroke": { "width": 2, "align": "inside" },
+          "thumbStroke": {
+            "width": 2,
+            "align": "inside"
+          },
           "radius": 999,
           "shadow": "0 2px 4px Overlay/weak"
         },
@@ -452,8 +507,13 @@
       "resolutionControlHeight": 32,
       "audio": {
         "optionsByMode": {
-          "fast": ["auto"],
-          "professional": ["auto", "mute"]
+          "fast": [
+            "auto"
+          ],
+          "professional": [
+            "auto",
+            "mute"
+          ]
         },
         "default": "auto",
         "labelsZh": {
@@ -462,92 +522,83 @@
         },
         "controlHeight": 32,
         "behavior": "Fast mode has the fixed auto option; professional mode can select auto or mute, defaulting to auto. Switching back to fast resets audio to auto. Audio generation service is not connected."
-      }
+      },
+      "finalDesignValues": "Static fast / 1080p / Auto values in the final node screenshots do not override the existing fast/professional menus, legal parameters or BetaSlider behavior. New short editors use fast/2K/5s; new long editors use professional/1080p/30s. Preserve existing values."
     },
     "costLabel": "999",
-    "interaction": "Keep main, endFrame and references in their existing fields. Multi-reference mode displays the inherited main image first in the unified reference image/video list, followed by ordinary references. Mode switching does not move or clear media; the end frame remains separate. Share prompt and settings. Single-image uploads apply directly; multi-reference picking also accepts one local video. Deduplicate by URL across main and references, including local upload confirmation. Retain fixed main-image business associations only.",
-    "generation": "Frames mode requires main; multi-reference mode requires at least one inherited main image or ordinary image/video reference, without a hidden main requirement. If multi-reference media is empty, open its image/video picker. Then require a non-empty prompt. Video-only references can proceed to the service-not-connected notice. Generation and AI prompt expansion are not connected; no tasks or charges.",
+    "interaction": "Short-video editors retain separate main and optional endFrame fields. Long-video editors show separate image and video reference rows, with independent upload actions and counts. Images allow up to 9 including inherited main; videos allow up to 3. Reorder and renumber within the same media type only. Keep main identity and its sourceImageId association regardless of its position. Deduplicate by URL across main and references. Retain fixed main-image business associations only, and support dragging non-interactive editor space.",
+    "generation": "Short video keeps click validation: missing main opens its image picker and missing prompt focuses the input. Long video requires at least one image or video and a non-empty prompt; video-only references are valid. Video generation and prompt generation services are not connected; report this honestly without tasks, charges or fabricated prompt content.",
     "geometryByMode": {
       "frames": {
-        "nodeId": "84:6110",
+        "emptyNodeId": "84:6110",
+        "filledNodeId": "119:11242",
         "updated": "2026-10-22",
+        "title": "视频生成-服装短视频",
         "width": 320,
-        "height": 523,
-        "headerHeight": 44,
-        "tabsHeight": 34,
-        "contentTopGap": 0,
-        "contentHeight": 388,
-        "footerHeight": 57,
-        "geometrySource": "Resolved instance 84:6150 metadata; generated 64px header differs from actual 44px."
+        "height": 629,
+        "headerHeight": 80,
+        "bannerHeight": 28,
+        "banner": "上传首尾帧图片，智能生成短视频",
+        "tabs": false
       },
       "references": {
-        "nodeId": "112:7764",
-        "instanceId": "112:7765",
+        "emptyNodeId": "121:17924",
+        "filledNodeId": "121:18150",
         "updated": "2026-10-22",
+        "title": "视频生成-服装长视频",
         "width": 320,
-        "height": 523,
-        "headerHeight": 44,
-        "tabsHeight": 34,
-        "contentTopGap": 0,
-        "contentHeight": 388,
-        "footerHeight": 57,
-        "geometrySource": "Resolved instance 112:7765 metadata; generated 64px header differs from actual 44px."
+        "height": 653,
+        "headerHeight": 80,
+        "bannerHeight": 28,
+        "banner": "支持上传图片/视频作为参考，生成最多30s视频",
+        "tabs": false
       }
     },
     "firstLastFrameLayout": {
-      "label": "首尾帧图",
-      "tileSize": 64,
+      "title": "视频生成-服装短视频",
+      "mainRequired": true,
+      "endFrameRequired": false,
+      "uploadCard": {
+        "width": 296,
+        "height": 64
+      },
+      "thumbnail": {
+        "width": 48,
+        "height": 48
+      },
       "order": [
         "main",
         "endFrame"
       ],
-      "emptyEntry": "One original plus icon tile opens the existing main-image picker. Once main exists, allow one optional end frame.",
-      "main": "Preview and show a delete button on hover, matching the last frame. Delete clears only this frame; deleting the first frame also removes its automatic main-image association. Preserve the canvas source, editor, other frame and settings. The last frame retains its slot and does not become the first frame. Support a single undo transaction.",
-      "promptAssist": "Labelled expand-text button without tooltip, radius 6px; character counter with 4px gap. No image-to-prompt icon.",
-      "generationModes": [
-        "fast",
-        "professional"
-      ],
-      "defaultGenerationMode": "fast",
-      "modeControlWidth": 104,
-      "generationButtonWidth": 296,
-      "actionGap": 0,
-      "history": "Generation mode and duration retained per node with undo/redo. Switching to fast clamps duration above 15 seconds in the same transaction; frame/reference switching preserves all media and settings.",
+      "emptyEntry": "Keep independent main-image and optional end-frame upload cards, using the existing single-image AssetPicker.",
+      "removal": "Delete clears only that frame. Removing main also clears its automatic business line, while preserving the canvas source, editor, prompt, settings and end frame. End frame is never promoted to main. Support undo.",
+      "entry": "Initial videoGeneration creates the empty short-video editor. The image toolbar short-video action inherits the actual selected image.",
       "connections": {
         "maximumImages": 2,
-        "assignment": [
-          "main",
-          "endFrame"
-        ],
-        "existingUploadsCount": true,
-        "whenFull": "Do not offer another image slot once both frames are filled; preserve existing images.",
-        "binding": "Frames are added through the editor picker. The first frame retains its canvas source association. Deleting a frame clears only that slot; deleting the first frame also clears its automatic business line, while preserving the source and other frame in one undo transaction.",
-        "automaticEdges": "Main-image associations created through a toolbar action or editor upload produce automatic business lines. No free edges or manual reconnect interactions."
-      },
-      "modeControl": "SettingSelect in generation settings row; fast/professional, default fast",
-      "parameterControlWidth": 184,
-      "settingsGap": 8,
-      "entry": "Initial videoGeneration directly creates the shared 84:6110 frames node."
+        "binding": "Only the main image retains its canvas source association. Editor upload and image-toolbar creation establish the automatic business line. No ports, free edges or manual reconnect interactions."
+      }
     },
     "multipleReferenceLayout": {
-      "nodeId": "112:7764",
-      "instanceId": "112:7765",
-      "title": "视频生成",
-      "label": "参考图 / 视频",
+      "emptyNodeId": "121:17924",
+      "filledNodeId": "121:18150",
+      "title": "视频生成-服装长视频",
+      "required": true,
       "tileSize": 64,
-      "order": [
-        "inherited main, when present",
-        "references"
+      "rows": [
+        "images",
+        "videos"
       ],
-      "mainRow": "No separate main-image row. Show inherited main as the first thumbnail; keep its existing sourceImageId association.",
-      "addIcon": "Reuse original plus SVG 64:2241, public/assets/video-workflow/add.svg, displayed at 20px.",
-      "media": "Unified image/video list, horizontally scrollable, with preview and hover delete for every item. Delete main clears its binding and automatic line while preserving the canvas source. Delete an ordinary reference removes only that entry. End frame remains independent.",
+      "imageLimit": 9,
+      "videoLimit": 3,
+      "mainCountsTowardImageLimit": true,
+      "upload": "Separate image and video upload actions with separate current/maximum counts. Decode local videos before applying; errors preserve existing content.",
+      "ordering": "Drag to reorder within the same media type and number each row by its current order. Keep inherited main identity and its sourceImageId association when reordered; do not reassign the main binding based on position.",
+      "media": "Preview and hover delete for every thumbnail. Delete main clears its binding and automatic line while preserving the canvas source and editor. Ordinary reference deletion removes only that entry.",
       "deduplication": "Use URL across inherited main and references; enforce in picker exclusions and local image/video confirmation.",
-      "promptAssist": "Same labelled expand-text button as frames: no tooltip, 6px radius, 4px gap to counter; remove image-to-prompt auxiliary icon.",
-      "generationRequirement": "At least one main image or ordinary image/video reference plus prompt; empty state opens the image/video reference picker."
+      "generationRequirement": "At least one image or video plus a non-empty prompt; video-only references are valid."
     },
     "sharedGenerationControls": {
-      "modes": [
+      "editors": [
         "frames",
         "references"
       ],
@@ -555,13 +606,47 @@
         "fast",
         "professional"
       ],
-      "defaultGenerationMode": "fast",
-      "defaultDuration": "5s",
       "modeControlWidth": 104,
       "parameterControlWidth": 184,
       "gap": 8,
-      "defaults": "New nodes start fast, 9:16, 5s, 2K and audio auto. Professional mode uses 1080p when its resolution needs a default; audio defaults to auto. Design example durations of 15s or 30s do not overwrite existing values or the 5s initial duration.",
+      "defaultsByEditor": {
+        "frames": "fast, 9:16, 2K, 5s, audio auto",
+        "references": "professional, 9:16, 1080p, 30s, audio auto"
+      },
+      "existingValues": "Retain existing per-node choices. Reuse the existing settings menus and BetaSlider without adopting incompatible static screenshot values.",
       "footer": "One full-width generation button with unchanged cost 999."
+    },
+    "editorSelection": "Separate short-video and long-video editors are created from the image toolbar. No in-node frame/reference mode tabs; the initial video-generation entry creates an empty short-video editor.",
+    "defaultSettingsByMode": {
+      "frames": {
+        "resolution": "2K",
+        "duration": "5s",
+        "ratio": "9:16",
+        "generationMode": "fast",
+        "audio": "auto"
+      },
+      "references": {
+        "resolution": "1080p",
+        "duration": "30s",
+        "ratio": "9:16",
+        "generationMode": "professional",
+        "audio": "auto"
+      }
+    },
+    "promptTools": {
+      "maxLength": 5000,
+      "component": "PromptTools",
+      "flows": [
+        "expand editor",
+        "save prompt",
+        "prompt library",
+        "nested library return"
+      ],
+      "generationLabel": "提示词生成",
+      "generationService": "Not connected; show an explicit notice without fabricated content.",
+      "assistCounterGap": 4,
+      "generationButtonRadius": 6,
+      "generationButtonTooltip": false
     }
   },
   "scope": [
@@ -571,26 +656,26 @@
     "single image canvas and toolbar",
     "image toolbar material and video generation hover menus",
     "uploaded video canvas and toolbar",
-    "fashion video workflow modes",
+    "separate fashion short-video and long-video editors",
     "reference image and video uploads",
     "template dialog and reference image states"
   ],
   "userOverrides": {
     "fixedBusinessAssociations": {
       "mode": "Use the same fixed business association model as the fusion canvas. Retain normal video editors, editor uploads, reference videos and canvas media interactions.",
-      "creation": "Image toolbar video-generation menu actions create a frames editor for fashion video or a references editor for fashion long video, carrying the actual selected image and establishing its main-image association automatically in one undo transaction. Main-image uploads inside the editor also establish the association. Empty video-generation entry creates a frames editor; multi-reference mode allows ordinary image/video reference uploads without requiring a hidden main image.",
+      "creation": "Image toolbar video-generation actions create separate short-video or long-video editors, inheriting the selected image and establishing its main-image association in one undo transaction. Main uploads inside a short editor also establish the association. The initial entry creates an empty short editor. Long editors accept image or video references without a hidden main-image requirement.",
       "interaction": "Do not show connection ports or provide free dragging, reconnection, selectable-edge deletion or port plus menus. Automatic lines do not intercept pointer input.",
       "geometry": "Automatic business lines use the fusion canvas geometry and follow the actual relative left/right positions of media and editor.",
       "selection": "Selecting either endpoint shows a brand-color marching line over a dark underlay at layer 4. Otherwise show a gray solid line at layer -1. Do not highlight unrelated branches through group association.",
       "motion": "Marching line uses an 800ms linear loop; color transitions retain 200ms ease-out. Reduced motion disables marching.",
       "clipboard": "Copy selected image and video media only. Do not copy editors, free relationships or connections back to original nodes."
     },
-    "workflowMainImageRemoval": "First/last-frame thumbnails and every multi-reference thumbnail, including inherited main, show delete on hover. Deletion clears only that slot or list item. Deleting main clears its automatic association while preserving the canvas source, editor, prompt, settings and other references, with undo. End frame remains independent and is not promoted or moved into references. Deleting the canvas source clears its main binding.",
+    "workflowMainImageRemoval": "Every frame and reference thumbnail supports preview and hover delete. Deletion clears only that slot or item. Deleting main clears its automatic association while preserving the canvas source, editor, prompt, settings and other references, with undo. End frame remains independent and is not promoted. Deleting the canvas source clears its main binding.",
     "desktopDialogHeight": 720,
     "templateSidebar": "Use the same sidebar in content and empty states: 256px desktop width, shared spacing and selection styles, no horizontal divider below the title.",
     "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",
     "referenceImageHover": "Clip the image and hover overlay inside rounded containers.",
-    "workflowBlankAreaDrag": "Non-interactive editor space, including blank areas beside frame/reference thumbnails, drags the node. Reference rows remain wheel-scrollable; individual controls still block dragging."
+    "workflowBlankAreaDrag": "Non-interactive editor space, including blank areas beside frame/reference thumbnails, drags the node. Reference ordering, upload, preview, delete and form controls retain their own interactions."
   },
   "deferred": [
     "multiple image visual design",
@@ -605,12 +690,13 @@
     "upscale",
     "save to assets",
     "send image",
-    "AI prompt expansion",
+    "AI prompt generation",
     "image to prompt"
   ],
   "verification": {
     "browser": "not run, per user instruction",
-    "localBuildAndTests": "not run, per project instruction",
-    "deployment": "existing GitHub Pages workflow"
+    "localBuildAndTests": "not run for the final video-node update, per user instruction",
+    "deployment": "existing GitHub Pages workflow",
+    "localChecks": "not run for the final video-node update, per user instruction"
   }
 }
