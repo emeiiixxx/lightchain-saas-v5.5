@@ -173,6 +173,7 @@
 - 空节点以107:5118为准：主图区域改为56px高、State/default底、无边框、16px圆角的居中「添加主图」入口；文本Text/primary，悬停State/hover。使用AssetPicker单选模式，本地多文件拒绝；确认后只为该节点补回一张主图，节点位置与已有配置保留，主图放左侧80px并恢复连线，使用新图片ID避免旧抠图来源误关联。添加支持撤销。空节点生成按钮保持设计默认颜色，点击先要求添加主图，不发起生成。
 
 ### Prompt input and IconButton correction (2026-09-15)
+- 放大提示词输入框顶部标题（含「视频描述」）使用 `Text/on-brand-black`，对应 `--text-on-brand-black`；不继承输入正文的 Text/secondary。
 - Shared Button detects icon-only content and applies square geometry without text padding. Default S/M/L = 32/40/48 square; explicit 24px prompt actions and 40px floating controls retain their square dimensions. Keep size selectors low-specificity so local size contracts work.
 - Prompt library editor uses live 5.1 Beta Input M (133:1355/1357/1359/1361): height32, horizontal padding8, radius8, font12/16; State/default and State/hover fills; hover retains Border/weak; focus uses Control/fill/focus and Brand/primary, no native outline.
 - Prompt library TextArea M (325:2446/2449/2452/2455): padding12, radius12, font14/20; Control/fill/default, hover, focus; weak border default/hover and Brand/primary focus. Source file FO7bCfBv6NPle8egsVaDvG. Reuse theme tokens, never hardcode a dark-only focus border.

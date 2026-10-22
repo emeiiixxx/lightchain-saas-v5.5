@@ -8,6 +8,7 @@
 .prompt-expanded {position:absolute;display:flex;flex-direction:column;gap:8px;transition:none;}
 .prompt-expanded header,.prompt-library header>div,.prompt-library section>header,.prompt-save-popover header {display:flex;align-items:center;justify-content:space-between;gap:16px;}
 .prompt-expanded h2,.prompt-library h2 {font-size:20px;font-weight:700;line-height:28px;margin:0;}
+.prompt-expanded h2 {color:var(--text-on-brand-black);}
 .prompt-expanded header {height:32px;}
 .prompt-expanded-field {position:relative;display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--border-weak);border-radius:16px;background:var(--control-fill-default);transition:none;}
 .prompt-expanded-field:focus-within {border-color:var(--border-brand);}
