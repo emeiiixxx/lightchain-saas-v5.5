@@ -705,6 +705,7 @@
     "templateSidebar": "Use the same sidebar in content and empty states: 256px desktop width, shared spacing and selection styles, no horizontal divider below the title.",
     "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",
     "referenceImageHover": "Clip the image and hover overlay inside rounded containers.",
+    "referenceDeleteOverlay": "Place the 24px circular Tonal delete action across the thumbnail top-right corner, offset -8px on both axes. Use BackgroundBlur/S via --background-blur-s with the existing dark media overlay and white icon. Clip only the inner preview, and reserve scroll-container space so the action remains visible and clickable.",
     "workflowBlankAreaDrag": "Non-interactive editor space, including blank areas beside frame/reference thumbnails, drags the node. Reference ordering, upload, preview, delete and form controls retain their own interactions."
   },
   "deferred": [
