@@ -286,6 +286,38 @@
       ],
       "interaction": "Ratio and resolution apply immediately without closing; duration uses the mode-dependent slider and numeric input. Keep the complete ratio | resolution | duration summary and selected-ratio icon; audio stays out of the summary. Retain per-node settings across frame/reference modes with canvas undo/redo. Outside click or Escape closes; preserve keyboard operation, dark/light themes and shared 200ms exit motion.",
       "durationSlider": {
+        "library": "Lightchain SaaS v5.1 libraries Beta",
+        "source": {
+          "sliderControlInstance": "I113:8302;891:4593;113:8485",
+          "sliderControlMode": "Input",
+          "sliderControlComponentKey": "18344c81fe5ef50e786c256f7da43e56151c3f0f",
+          "sliderComponentSetKey": "190e412c7435d6e268fa198927c59b00ff18279d",
+          "sliderVariant": "Size=M, State=default, Value=50",
+          "sliderComponentKey": "2a2384d7aa44ec7bf47c45779826f4e3940fdb62"
+        },
+        "implementation": [
+          "src/components/Slider.tsx",
+          "src/components/slider.css"
+        ],
+        "geometry": {
+          "control": { "width": 300, "height": 24 },
+          "slider": { "width": 228, "height": 18, "verticalAlign": "center" },
+          "trackHeight": 6,
+          "thumbSize": 18,
+          "thumbStroke": { "width": 2, "align": "inside" },
+          "radius": 999,
+          "shadow": "0 2px 4px Overlay/weak"
+        },
+        "tokens": {
+          "track": "Border/strong (design instance override)",
+          "progress": "Brand/primary",
+          "thumbFill": "Control/fill/white (#ffffff in both themes)",
+          "thumbStroke": "Border/medium; Border/weak at the minimum endpoint",
+          "hoverThumbStroke": "Brand/primary-hover",
+          "disabledThumbFill": "Control/fill/disabled",
+          "disabledTrack": "Border/weak",
+          "disabledProgress": "Brand/primary-disabled"
+        },
         "unit": "seconds",
         "step": 1,
         "ranges": {

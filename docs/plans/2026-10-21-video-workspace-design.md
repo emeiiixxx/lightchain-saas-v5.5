@@ -49,6 +49,7 @@
 - 生成设置弹层按 `113:8302`，尺寸324×306px，Surface/default背景、12px内边距、16px圆角；Border/weak覆盖描边不占布局空间。比例、清晰度、时长、音频四组间隔16px，标题为12/16px、Text/tertiary，组内间隔8px。比例项高42px，外层上下各4px，共50px；清晰度与音频分段容器高32px。可用空间不足时内部滚动。
 - 比例依次为Auto、21:9、9:16、16:9、1:1、3:4、4:3，中文也使用Auto；清晰度仅768p和2K，默认2K。音频只有「智能」（auto）一个固定选项，默认选中；当前未接入音频生成服务。节点初始值保持快速、9:16、5s，清晰度为2K，音频为auto。摘要仍按「比例｜清晰度｜时长」显示，不加入音频。
 - 时长使用滑块与可输入秒数：专业模式5–30秒，快速模式5–15秒，步进1秒，不采用设计中隐藏的0标签。时长行高24px，左侧滑块自适应，间隔8px，右侧输入框64×24px；不显示滑块下方范围或右上角数值。拖动即时显示，结束后提交一次历史；输入数字后，Enter、失焦或关闭弹层时按当前模式范围钳制并提交一次历史。切换为快速时，超过15秒调整为15秒，模式与时长一起计入一次撤销。两种素材模式共用设置，各节点独立保留。
+- 时长控件使用5.1 Beta `SliderControl / Mode=Input`，内层调用共用 `Slider`：Slider高18px居中于24px行，轨道高6px、滑块18px、内描边2px、圆角999px、阴影为0 2 4px Overlay/weak。保留实例的Border/strong底轨；白色滑块使用Control/fill/white，默认描边Border/medium，最小值时Border/weak，悬停描边Brand/primary-hover。禁用态使用Control/fill/disabled、Border/weak及Brand/primary-disabled，深浅主题跟随语义token。
 - 比例、清晰度选择后面板保持打开，点击外部或按Escape关闭；保留键盘操作、200ms退出和深浅主题。设置摘要前的比例图标随选择切换，与菜单对应项使用同一SVG；仅选择Auto时显示智能比例图标。
 - 生成按钮显示费用999。首尾帧模式缺主图时打开主图上传；多参考模式只需至少一个继承主图或普通图片／视频参考，无素材时打开图片／视频参考上传，不要求隐藏主图。缺描述聚焦输入。服务尚未接入，填写完成后点击生成保留配置并提示，纯视频参考也可继续至该提示，不创建任务或扣费。
 - 节点标题及非交互空白处均可拖动，包括图片缩略图旁边的空白区；按钮、图片预览和输入框保持原交互，横向滚轮仍可滚动参考素材。节点支持选择、删除、撤销重做及画布导航。整理时保留主图与节点关系；删除节点不删除主图。
@@ -65,7 +66,7 @@
 
 ## 组件与资源
 
-共用 `CanvasBackground`、`CanvasProjectPanel`、`ReactFlowCanvas`、`CanvasChrome`、`MediaToolbar`、`CutoutEditor`、`AssetPicker`、`PromptTools`、`Dialog`、`Button`、`GenerateTaskButton` 与主题 token。生成设置复用已有控件和原比例SVG，弹层布局与选项以 `113:8302` 为准；时长使用按生成模式限值的滑块及秒数输入框。视频工作台使用独立业务状态，不扩展图片融合参数。
+共用 `CanvasBackground`、`CanvasProjectPanel`、`ReactFlowCanvas`、`CanvasChrome`、`MediaToolbar`、`CutoutEditor`、`AssetPicker`、`PromptTools`、`Dialog`、`Button`、`GenerateTaskButton`、`Slider` 与主题 token。生成设置复用已有控件和原比例SVG，弹层布局与选项以 `113:8302` 为准；时长直接调用 `src/components/Slider.tsx`／`slider.css` 并配合秒数输入框。SliderControl实例为 `I113:8302;891:4593;113:8485`，组件key、状态和token映射见 `docs/video-workspace-source.json`。视频工作台使用独立业务状态，不扩展图片融合参数。
 
 图标、封面与缺省插画来自 Figma 原始资源。预览使用用户提供的原始 MP4，竖屏对应电商视频，横屏对应品牌故事。播放器使用浏览器原生控件，保留视频原比例；加载失败时展示原封面和错误提示。
 

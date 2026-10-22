@@ -4,6 +4,7 @@ import type { Locale } from '../i18n';
 import { clampVideoDuration, videoDurationLimit, type VideoWorkflow } from '../video-workflow';
 import { usePresence } from '../usePresence';
 import { Icon } from './ui';
+import { Slider } from './Slider';
 import '../video-generation-settings.css';
 
 // Figma 113:8302: keep the original ratio artwork and shared selection behavior.
@@ -60,7 +61,6 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
   const rangeActive = useRef(false);
   const latest = useRef({ value, onChange });
   latest.current = { value, onChange };
-  const durationProgress = (Number.parseInt(durationDraft, 10) - 5) / (durationLimit - 5) * 100;
   const summary = `${value.ratio === 'auto' ? t.auto : value.ratio} ｜ ${value.resolution} ｜ ${durationDraft}`;
 
   useEffect(() => {
@@ -188,8 +188,8 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
       <section className="video-duration-setting">
         <h3><label htmlFor={sliderId}>{t.duration}</label></h3>
         <div className="video-duration-control">
-          <div className="video-duration-range" data-active={durationDragging} style={{ '--slider-progress': `${durationProgress}%` } as CSSProperties}>
-            <input id={sliderId} type="range" className="nodrag nopan" min={5} max={durationLimit} step={1} value={Number.parseInt(durationDraft, 10)} aria-valuetext={durationDraft}
+          <Slider id={sliderId} className="video-duration-range nodrag nopan" trackTone="strong" active={durationDragging}
+              min={5} max={durationLimit} step={1} value={Number.parseInt(durationDraft, 10)} aria-valuetext={durationDraft}
               onChange={event => {
                 const duration = clampVideoDuration(`${event.currentTarget.value}s`, generationMode);
                 durationRef.current = duration;
@@ -206,7 +206,6 @@ export function VideoGenerationSettings({ locale, value, onChange }: {
                 if (event.key === 'Escape') { event.preventDefault(); close(); trigger.current?.focus(); }
               }}
               onKeyUp={event => { event.stopPropagation(); commitDuration(); }} />
-          </div>
           <label className="video-duration-value">
             <input type="text" inputMode="numeric" className="nodrag nopan" value={durationInput} aria-label={`${t.duration} (${t.seconds})`}
               onChange={event => {

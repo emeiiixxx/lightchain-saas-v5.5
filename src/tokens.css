@@ -174,3 +174,8 @@
 
 /* Beta Shadow/L, bound to Overlay/weak in both themes. */
 :root { --shadow-l: 0 12px 28px -4px var(--overlay-weak); }
+
+/* Live Beta Slider bindings, docs/video-workspace-source.json. */
+[data-theme] { --control-fill-white: #fff; }
+[data-theme='dark'] { --control-fill-disabled: rgb(67.116, 74.1132, 75.684); }
+[data-theme='light'] { --control-fill-disabled: rgb(228, 231, 229); }
