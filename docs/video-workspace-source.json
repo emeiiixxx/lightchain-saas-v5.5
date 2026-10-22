@@ -9,13 +9,14 @@
     "singleImageToolbar": "76:5775",
     "singleImage": "76:5776",
     "fashionVideoFirstLastFrame": "84:6110",
-    "fashionVideoMultipleReferences": "91:6434",
+    "fashionVideoMultipleReferences": "112:7764",
     "canvasSideToolbar": "76:5745",
     "templateWithoutUploads": "64:4219",
     "templateWithUploads": "76:5003",
     "landscapeTemplate": "76:5477",
     "emptyTemplate": "64:4644",
-    "uploadStates": "76:5455"
+    "uploadStates": "76:5455",
+    "fashionVideoMultipleReferencesInstance": "112:7765"
   },
   "assets": {
     "directory": "public/assets/video-workspace",
@@ -85,7 +86,6 @@
       "directory": "public/assets/video-workflow",
       "info": "64:2228",
       "expandText": "3:868",
-      "imageToPrompt": "3:876",
       "auto": "84:6078",
       "displaySize": 16,
       "add": {
@@ -249,7 +249,8 @@
     "defaultSettings": {
       "resolution": "1080p",
       "duration": "5s",
-      "ratio": "9:16"
+      "ratio": "9:16",
+      "generationMode": "fast"
     },
     "generationSettings": {
       "summaryOrder": [
@@ -275,16 +276,27 @@
         "720p",
         "1080p"
       ],
-      "durations": [
-        "5s",
-        "10s",
-        "15s"
-      ],
-      "interaction": "Apply each selection immediately without closing; retain per node across modes with canvas undo/redo. Outside click or Escape closes; use original segmented controls, keyboard selection and shared 200ms motion."
+      "interaction": "Ratio and resolution apply immediately without closing; duration uses the mode-dependent slider. Retain settings per node across frame/reference modes with canvas undo/redo. Outside click or Escape closes; preserve keyboard operation and shared 200ms motion.",
+      "durationSlider": {
+        "unit": "seconds",
+        "step": 1,
+        "ranges": {
+          "fast": {
+            "min": 5,
+            "max": 15
+          },
+          "professional": {
+            "min": 5,
+            "max": 30
+          }
+        },
+        "modeChange": "Switching to fast clamps durations above 15 seconds to 15; commit mode and duration together as one undo transaction.",
+        "interaction": "Display the current duration immediately while dragging; commit one history record when the gesture finishes."
+      }
     },
     "costLabel": "999",
-    "interaction": "Source image and prompt shared across modes; last-frame and multiple-reference assets retained separately. Shared single-image picker optionally accepts one local video. Editors retain Flow navigation, selection and undo, with automatic main-image business associations only.",
-    "generation": "Configuration UI only; generation and AI prompt services are not connected.",
+    "interaction": "Keep main, endFrame and references in their existing fields. Multi-reference mode displays the inherited main image first in the unified reference image/video list, followed by ordinary references. Mode switching does not move or clear media; the end frame remains separate. Share prompt and settings. Single-image uploads apply directly; multi-reference picking also accepts one local video. Deduplicate by URL across main and references, including local upload confirmation. Retain fixed main-image business associations only.",
+    "generation": "Frames mode requires main; multi-reference mode requires at least one inherited main image or ordinary image/video reference, without a hidden main requirement. If multi-reference media is empty, open its image/video picker. Then require a non-empty prompt. Video-only references can proceed to the service-not-connected notice. Generation and AI prompt expansion are not connected; no tasks or charges.",
     "geometryByMode": {
       "frames": {
         "nodeId": "84:6110",
@@ -299,14 +311,17 @@
         "geometrySource": "Resolved instance 84:6150 metadata; generated 64px header differs from actual 44px."
       },
       "references": {
-        "nodeId": "91:6434",
-        "width": 280,
-        "height": 608,
+        "nodeId": "112:7764",
+        "instanceId": "112:7765",
+        "updated": "2026-10-22",
+        "width": 320,
+        "height": 523,
         "headerHeight": 44,
         "tabsHeight": 34,
-        "contentTopGap": 4,
-        "contentHeight": 469,
-        "footerHeight": 57
+        "contentTopGap": 0,
+        "contentHeight": 388,
+        "footerHeight": 57,
+        "geometrySource": "Resolved instance 112:7765 metadata; generated 64px header differs from actual 44px."
       }
     },
     "firstLastFrameLayout": {
@@ -318,7 +333,7 @@
       ],
       "emptyEntry": "One original plus icon tile opens the existing main-image picker. Once main exists, allow one optional end frame.",
       "main": "Preview and show a delete button on hover, matching the last frame. Delete clears only this frame; deleting the first frame also removes its automatic main-image association. Preserve the canvas source, editor, other frame and settings. The last frame retains its slot and does not become the first frame. Support a single undo transaction.",
-      "promptAssist": "Labelled expand-text button and character counter with 4px gap.",
+      "promptAssist": "Labelled expand-text button without tooltip, radius 6px; character counter with 4px gap. No image-to-prompt icon.",
       "generationModes": [
         "fast",
         "professional"
@@ -327,7 +342,7 @@
       "modeControlWidth": 104,
       "generationButtonWidth": 296,
       "actionGap": 0,
-      "history": "Generation mode retained per node with undo/redo; switching frame/reference modes preserves all media and settings.",
+      "history": "Generation mode and duration retained per node with undo/redo. Switching to fast clamps duration above 15 seconds in the same transaction; frame/reference switching preserves all media and settings.",
       "connections": {
         "maximumImages": 2,
         "assignment": [
@@ -343,6 +358,40 @@
       "parameterControlWidth": 184,
       "settingsGap": 8,
       "entry": "Initial videoGeneration directly creates the shared 84:6110 frames node."
+    },
+    "multipleReferenceLayout": {
+      "nodeId": "112:7764",
+      "instanceId": "112:7765",
+      "title": "视频生成",
+      "label": "参考图 / 视频",
+      "tileSize": 64,
+      "order": [
+        "inherited main, when present",
+        "references"
+      ],
+      "mainRow": "No separate main-image row. Show inherited main as the first thumbnail; keep its existing sourceImageId association.",
+      "addIcon": "Reuse original plus SVG 64:2241, public/assets/video-workflow/add.svg, displayed at 20px.",
+      "media": "Unified image/video list, horizontally scrollable, with preview and hover delete for every item. Delete main clears its binding and automatic line while preserving the canvas source. Delete an ordinary reference removes only that entry. End frame remains independent.",
+      "deduplication": "Use URL across inherited main and references; enforce in picker exclusions and local image/video confirmation.",
+      "promptAssist": "Same labelled expand-text button as frames: no tooltip, 6px radius, 4px gap to counter; remove image-to-prompt auxiliary icon.",
+      "generationRequirement": "At least one main image or ordinary image/video reference plus prompt; empty state opens the image/video reference picker."
+    },
+    "sharedGenerationControls": {
+      "modes": [
+        "frames",
+        "references"
+      ],
+      "generationModes": [
+        "fast",
+        "professional"
+      ],
+      "defaultGenerationMode": "fast",
+      "defaultDuration": "5s",
+      "modeControlWidth": 104,
+      "parameterControlWidth": 184,
+      "gap": 8,
+      "defaults": "Preserve existing node selections. Do not replace fast/5s defaults with the professional/30s design example.",
+      "footer": "One full-width generation button with unchanged cost 999."
     }
   },
   "scope": [
@@ -358,14 +407,14 @@
   "userOverrides": {
     "fixedBusinessAssociations": {
       "mode": "Use the same fixed business association model as the fusion canvas. Retain normal video editors, editor uploads, reference videos and canvas media interactions.",
-      "creation": "Toolbar actions or uploads inside the editor establish the main-image association automatically. Empty video-generation entry still creates an editor awaiting an image.",
+      "creation": "Toolbar actions or main-image uploads inside the editor establish the main-image association automatically. Empty video-generation entry creates a frames editor; switching to multi-reference allows ordinary image/video reference uploads without requiring a hidden main image.",
       "interaction": "Do not show connection ports or provide free dragging, reconnection, selectable-edge deletion or port plus menus. Automatic lines do not intercept pointer input.",
       "geometry": "Automatic business lines use the fusion canvas geometry and follow the actual relative left/right positions of media and editor.",
       "selection": "Selecting either endpoint shows a brand-color marching line over a dark underlay at layer 4. Otherwise show a gray solid line at layer -1. Do not highlight unrelated branches through group association.",
       "motion": "Marching line uses an 800ms linear loop; color transitions retain 200ms ease-out. Reduced motion disables marching.",
       "clipboard": "Copy selected image and video media only. Do not copy editors, free relationships or connections back to original nodes."
     },
-    "workflowMainImageRemoval": "Frames mode shows delete on hover for both first and last frame thumbnails. Deleting a frame clears only its slot; deleting the first frame also clears its automatic main-image association. Preserve the canvas source, editor, prompt, settings and other references, with undo. References mode retains main-image replacement and no main-image delete button; deleting its canvas source clears the main slot.",
+    "workflowMainImageRemoval": "First/last-frame thumbnails and every multi-reference thumbnail, including inherited main, show delete on hover. Deletion clears only that slot or list item. Deleting main clears its automatic association while preserving the canvas source, editor, prompt, settings and other references, with undo. End frame remains independent and is not promoted or moved into references. Deleting the canvas source clears its main binding.",
     "desktopDialogHeight": 720,
     "templateSidebar": "Use the same sidebar in content and empty states: 256px desktop width, shared spacing and selection styles, no horizontal divider below the title.",
     "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",

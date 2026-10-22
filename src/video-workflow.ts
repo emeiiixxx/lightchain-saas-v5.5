@@ -18,7 +18,22 @@ export type VideoWorkflow = {
 };
 
 export function videoWorkflowSize(mode: VideoWorkflow['mode']) {
-  return mode === 'frames' ? { width: 320, height: 523 } : { width: 280, height: 608 };
+  const sizes = { frames: { width: 320, height: 523 }, references: { width: 320, height: 523 } };
+  return sizes[mode];
+}
+
+export function videoDurationLimit(mode: VideoWorkflow['generationMode']) {
+  return mode === 'professional' ? 30 : 15;
+}
+
+export function clampVideoDuration(duration: string, mode: VideoWorkflow['generationMode']) {
+  const seconds = Number.parseInt(duration, 10);
+  return `${Math.max(5, Math.min(videoDurationLimit(mode), Number.isFinite(seconds) ? seconds : 5))}s`;
+}
+
+// The bound canvas source stays in one slot when switching modes.
+export function videoWorkflowReferences(node: VideoWorkflow): VideoReference[] {
+  return [...(node.main ? [{ ...node.main, kind: 'image' as const }] : []), ...node.references];
 }
 export function createVideoWorkflow(x: number, y: number, source?: CanvasImage): VideoWorkflow {
   return { id: crypto.randomUUID(), x, y, mode: 'frames', generationMode: 'fast',
@@ -29,5 +44,5 @@ export function createVideoWorkflow(x: number, y: number, source?: CanvasImage):
 // Canvas navigation and React Flow share the same geometry for images and nodes.
 export function videoWorkflowBox(node: VideoWorkflow): CanvasImage {
   return { id: node.id, x: node.x, y: node.y, ...videoWorkflowSize(node.mode),
-    name: '服装短视频', url: node.main?.url ?? '' };
+    name: node.mode === 'frames' ? '服装短视频' : '视频生成', url: node.main?.url ?? node.references.find(reference => reference.kind === 'image')?.url ?? '' };
 }

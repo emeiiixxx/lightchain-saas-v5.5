@@ -22,7 +22,7 @@ import { VideoSelectionToolbar } from './VideoSelectionToolbar';
 import { VideoAssetToolbar } from './VideoAssetToolbar';
 import { VideoWorkflowNode } from './VideoWorkflowNode';
 import { ImageConnection } from './ImageConnection';
-import { createVideoWorkflow, videoWorkflowBox, videoWorkflowSize, type VideoWorkflow, type VideoReference } from '../video-workflow';
+import { clampVideoDuration, createVideoWorkflow, videoWorkflowBox, videoWorkflowReferences, videoWorkflowSize, type VideoWorkflow, type VideoReference } from '../video-workflow';
 import { copyVideoCanvasSelection, pasteVideoCanvasSelection, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
 import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, writeCanvasClipboardEvent, writeCanvasClipboardSystem, type CanvasClipboard } from '../canvas-clipboard-session';
 import { videoReferenceUploadMessages, type UploadedVideo } from '../video-reference-upload';
@@ -361,6 +361,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     commit({ ...previous, workflows: previous.workflows.map(node => {
       if (node.id !== id) return node;
       const next = { ...node, ...patch };
+      next.duration = clampVideoDuration(next.duration, next.generationMode ?? 'fast');
       if (next.mode !== node.mode) {
         const previousSize = videoWorkflowSize(node.mode), nextSize = videoWorkflowSize(next.mode);
         next.x += (previousSize.width - nextSize.width) / 2;
@@ -392,6 +393,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const target = workflowUpload;
     const node = target && current.current.workflows.find(item => item.id === target.id);
     if (!target || !node || !activeRef.current) return;
+    if (target.field === 'references' && videoWorkflowReferences(node).some(reference => reference.url === image.url)) { setWorkflowUpload(null); return; }
     const reference: VideoReference = { id: crypto.randomUUID(), name: image.name, url: image.url, kind: 'image' };
     if (target.field === 'main') {
       let source = current.current.images.find(item => item.url === image.url);
@@ -411,6 +413,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   function applyWorkflowVideo(reference: UploadedVideo) {
     const node = workflowUpload?.field === 'references' && current.current.workflows.find(item => item.id === workflowUpload.id);
     if (!node || !activeRef.current) { if (!ownedUrls.current.has(reference.url)) URL.revokeObjectURL(reference.url); return; }
+    if (videoWorkflowReferences(node).some(item => item.url === reference.url)) { setWorkflowUpload(null); return; }
     rememberVideo(reference);
     updateWorkflow(node.id, { references: [...node.references, reference] });
     setWorkflowUpload(null);
@@ -543,7 +546,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
             const source = snapshot.images.find(image => image.id === node.main?.sourceImageId);
             return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
           })}
-          {snapshot.workflows.map(node => <div key={node.id} data-canvas-id={node.id} className="fusion-position video-workflow-position" data-selected={snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoWorkflowSize(node.mode) }} role="group" tabIndex={0} aria-label={locale === 'zh-CN' ? '服装短视频' : locale === 'ja' ? 'ファッション動画' : 'Fashion video'}
+          {snapshot.workflows.map(node => <div key={node.id} data-canvas-id={node.id} className="fusion-position video-workflow-position" data-selected={snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoWorkflowSize(node.mode) }} role="group" tabIndex={0} aria-label={node.mode === 'references' ? v.videoGeneration : locale === 'zh-CN' ? '服装短视频' : locale === 'ja' ? 'ファッション動画' : 'Fashion video'}
             onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id] }); } }}>
             <VideoWorkflowNode node={node} locale={locale} onChange={patch => updateWorkflow(node.id, patch)} onMain={() => setWorkflowUpload({ id: node.id, field: 'main' })}
               onReference={() => setWorkflowUpload({ id: node.id, field: node.mode === 'frames' ? 'endFrame' : 'references' })} onPreview={reference => void previewReference(reference)}
@@ -593,7 +596,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} />}
     {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} videoUploads={uploadedVideos} onUpload={rememberUpload} onVideoUpload={rememberVideo} onConfirm={image => addMedia([image])} onConfirmMediaBatch={addMedia} limitMessage={m.limit} onClose={closeModal} />}
     {active && shownWorkflowUpload.value && <AssetPicker key={`${shownWorkflowUpload.value.id}-${shownWorkflowUpload.value.field}`} locale={locale} phase={shownWorkflowUpload.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={applyWorkflowImage}
-      excludedUrls={shownWorkflowUpload.value.field === 'references' ? snapshot.workflows.find(node => node.id === shownWorkflowUpload.value!.id)?.references.map(reference => reference.url) : undefined}
+      excludedUrls={shownWorkflowUpload.value.field === 'references' ? snapshot.workflows.filter(node => node.id === shownWorkflowUpload.value!.id).flatMap(node => videoWorkflowReferences(node).map(reference => reference.url)) : undefined}
       videoUploads={uploadedVideos} onConfirmVideo={shownWorkflowUpload.value.field === 'references' ? applyWorkflowVideo : undefined} onClose={() => setWorkflowUpload(null)} />}
     {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p><p className="video-canvas-help">{connectionHelp[locale]}</p></Dialog>}
     {active && shownPreview.value && <FullImageViewer image={shownPreview.value} locale={locale} phase={shownPreview.phase} onClose={() => setPreview(null)} />}

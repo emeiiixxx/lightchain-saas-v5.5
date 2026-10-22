@@ -1,6 +1,6 @@
 const base = `${import.meta.env.BASE_URL}assets/video-workflow/`;
 
-// Original SVGs from 84:6110 / 91:6434 in the v5.5 design file.
+// Original SVGs reused by 84:6110 / 112:7764 in the v5.5 design file.
 export const videoNodeAssets = {
   add: `${base}add.svg`, // Icon/System / Linear / add, 64:2241, latest 84:6110.
   info: `${base}info.svg`, // Icon/System / Linear / info-circle, 64:2228.
