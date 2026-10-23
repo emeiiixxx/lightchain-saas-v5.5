@@ -1,13 +1,13 @@
 /* Final node shells: Figma 84:6110 / 119:11242 and 121:17924 / 121:18150. */
-.fusion-node.video-workflow-node { position: relative; width: 320px; height: 629px; padding: 0; gap: 0; border: 0; }
-.fusion-node.video-workflow-node[data-mode='references'] { height: 653px; }
+.fusion-node.video-workflow-node { position: relative; width: 320px; height: 641px; padding: 0; gap: 0; border: 0; }
+.fusion-node.video-workflow-node[data-mode='references'] { height: 661px; }
 .video-workflow-node::before { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
 .fusion-position[data-selected='true'] .video-workflow-node::before { opacity: 0; }
 .video-workflow-header { height: 80px; flex: 0 0 80px; padding: 12px; gap: 8px; }
 .video-workflow-header h2 { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .video-workflow-header .fusion-tip { flex: 0 0 28px; background: linear-gradient(10.839779284859844deg, rgba(0,161,255,.4) 16.533%, rgba(200,97,255,.4) 83.467%); }
-.video-workflow-content { flex: 0 0 492px; height: 492px; margin: 0; padding: 12px; gap: 12px; }
-.video-workflow-node[data-mode='references'] .video-workflow-content { flex-basis: 516px; height: 516px; }
+.video-workflow-content { flex: 0 0 504px; height: 504px; margin: 0; padding: 12px; gap: 16px; }
+.video-workflow-node[data-mode='references'] .video-workflow-content { flex-basis: 524px; height: 524px; }
 .video-workflow-content > * { flex-shrink: 0; }
 .video-workflow-frame-field { height: 92px; }
 .video-node-icon { flex-shrink: 0; width: 16px; height: 16px; }

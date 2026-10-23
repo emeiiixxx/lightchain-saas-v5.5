@@ -24,7 +24,15 @@
     "videoGenerationFastSettings": "113:8633",
     "videoGenerationProfessionalSettings": "113:8634",
     "fashionVideoFirstLastFrameFilled": "119:11242",
-    "fashionVideoMultipleReferencesFilled": "121:18150"
+    "fashionVideoMultipleReferencesFilled": "121:18150",
+    "templateDetails": "76:5477",
+    "templateSubjectHover": "141:24346",
+    "templateModelHover": "141:24242",
+    "completedPage": "64:1901",
+    "blankCanvasMenu": "151:26421",
+    "videoAssetToolbar": "151:26425",
+    "videoUpscale": "141:26153",
+    "videoUpscaleEditor": "141:26204"
   },
   "assets": {
     "directory": "public/assets/video-workspace",
@@ -136,17 +144,117 @@
       "manifest": "docs/video-node-final-assets.json",
       "originalSvgCount": 42,
       "source": "Final short-video empty/filled and long-video empty/filled designs."
+    },
+    "templateReferences": {
+      "updated": "2026-10-23",
+      "directory": "public/assets/video-template-20261023",
+      "files": {
+        "subject-thumbnail.png": {
+          "nodeId": "141:24190",
+          "displaySize": [
+            90,
+            120
+          ]
+        },
+        "model-thumbnail.png": {
+          "nodeId": "141:24193",
+          "displaySize": [
+            90,
+            120
+          ]
+        },
+        "subject-back.png": {
+          "nodeId": "I141:24350;1157:8572",
+          "displaySize": [
+            245.06886,
+            320
+          ]
+        },
+        "model-preview.png": {
+          "nodeId": "I141:24324;1157:8572",
+          "displayFrame": [
+            183.801651,
+            240
+          ],
+          "imageSize": [
+            196,
+            261.3
+          ],
+          "runtimeSizing": "Preserve source aspect ratio and cap longer side at 240px as explicitly requested."
+        },
+        "subject-front.jpg": {
+          "nodeId": "I141:24347;1157:8572",
+          "intrinsicSize": [
+            932,
+            1400
+          ],
+          "mimeType": "image/jpeg",
+          "displaySizing": "Preserve source aspect ratio; longer side capped at 240px."
+        },
+        "subject-previous.svg": {
+          "nodeId": "I141:25142;334:2319",
+          "displaySize": [
+            16,
+            16
+          ]
+        },
+        "subject-next.svg": {
+          "nodeId": "I141:25138;334:2313",
+          "displaySize": [
+            16,
+            16
+          ]
+        },
+        "brand-subject.png": {
+          "nodeId": "141:24219",
+          "intrinsicSize": [
+            1536,
+            2752
+          ],
+          "template": "brand",
+          "usage": "Original subject thumbnail and full hover image"
+        },
+        "brand-model.png": {
+          "nodeId": "141:24222",
+          "intrinsicSize": [
+            384,
+            652
+          ],
+          "template": "brand",
+          "usage": "Original model thumbnail and full hover image"
+        }
+      },
+      "source": "Original Figma image exports; static template references are separate from user replacement uploads."
+    },
+    "blankCanvasMenu": {
+      "nodeId": "151:26421",
+      "directory": "public/assets/video-context-20261023",
+      "size": 20,
+      "files": {
+        "quick.svg": "https://www.figma.com/api/mcp/asset/9c247dda-c0b2-41c7-8301-66cb48a88e9b.svg",
+        "storyboard-image.svg": "https://www.figma.com/api/mcp/asset/3736221c-ba7b-4d80-b374-dbe960e8decf.svg",
+        "multi-view.svg": "https://www.figma.com/api/mcp/asset/78ece6e8-6bc1-4f16-8381-a42411bd351d.svg",
+        "fashion-video.svg": "https://www.figma.com/api/mcp/asset/4b095811-1631-474a-a71b-f1beea8933e2.svg",
+        "pro-fashion-video.svg": "https://www.figma.com/api/mcp/asset/23b3d235-eaa9-4b3a-9248-8e26aca34aff.svg",
+        "storyboard-video.svg": "https://www.figma.com/api/mcp/asset/e23ecc5d-479e-4d38-9bcc-969118d966fb.svg",
+        "upload.svg": "https://www.figma.com/api/mcp/asset/4c027aa8-7046-471a-bd61-9a9a1b496f64.svg",
+        "paste.svg": "https://www.figma.com/api/mcp/asset/3062cb88-69e2-489f-bb8f-b7c8f110f6fc.svg"
+      }
     }
   },
   "media": {
     "player": "native HTML video controls with contain sizing",
     "portraitSource": {
       "asset": "public/assets/video-workspace/ecommerce.mp4",
-      "userFile": "视频工作台-2026-10-21 13-39-09.mp4",
-      "width": 720,
-      "height": 1280,
-      "durationSeconds": 10.078,
-      "bytes": 3212665
+      "userFile": "视频工作台-2026-10-21 21-31-38.mp4",
+      "width": 1176,
+      "height": 1756,
+      "durationSeconds": 10.04,
+      "bytes": 5670483,
+      "poster": "public/assets/video-workspace/ecommerce-poster-20261021-213138.png",
+      "posterSource": "First frame extracted from the replacement user video; original MP4 copied without transcoding.",
+      "cacheVersion": "20261021-213138",
+      "updated": "2026-10-23"
     },
     "landscapeSource": {
       "asset": "public/assets/video-workspace/brand-story.mp4",
@@ -157,7 +265,7 @@
       "bytes": 11079896
     },
     "mapping": "User-supplied original MP4 files matched by orientation; copied without transcoding.",
-    "fallback": "Original Figma media-layer poster and a loading-error notice."
+    "fallback": "Commerce uses the replacement video first frame; brand story retains its original Figma media-layer poster. Both retain the loading-error notice."
   },
   "initialEntries": {
     "nodeId": "64:2061",
@@ -183,7 +291,13 @@
       "variant": "Outline L",
       "width": "max-content",
       "horizontalPadding": 24,
-      "chineseDesignWidths": [144, 144, 128, 160, 176],
+      "chineseDesignWidths": [
+        144,
+        144,
+        128,
+        160,
+        176
+      ],
       "stroke": "1px inset, excluded from layout",
       "height": 48,
       "radius": 12,
@@ -231,7 +345,6 @@
       "instanceId": "113:8879",
       "updated": "2026-10-23",
       "width": "max-content",
-      "chineseDesignWidth": 699,
       "textButtonWidth": "auto",
       "textButtonPaddingInline": 8,
       "height": 40,
@@ -245,7 +358,6 @@
           "separator"
         ],
         [
-          "storyboard",
           "videoRemake",
           "separator",
           "cutout",
@@ -265,8 +377,7 @@
         "videoRemake": 88,
         "cutout": 64,
         "upscale": 84,
-        "iconOnly": 32,
-        "storyboard": 88
+        "iconOnly": 32
       },
       "localization": "Chinese, English and Japanese; text controls and toolbar size to their contents.",
       "scope": "Video-workspace image selection only. Preserve fusion-canvas and uploaded-video toolbars."
@@ -286,25 +397,27 @@
           "storyboardImage",
           "gridSplit"
         ],
-        "behavior": "Each action gives the existing not-connected notice; do not create output, tasks or charges.",
+        "behavior": "Create the matching quick-image, multiple-views, storyboard-image or grid-crop editor and inherit the selected canvas image. Uploads and references are editable; generation services are not connected.",
         "height": 160
       },
       "videoGeneration": {
         "nodeId": "113:9502",
         "labelsZh": [
           "服装短视频",
-          "专业服装视频"
+          "专业服装视频",
+          "分镜成片"
         ],
         "actions": [
           "fashionVideo",
-          "multiReference"
+          "multiReference",
+          "storyboard"
         ],
-        "behavior": "Fashion short video creates a frames editor. Professional fashion video creates the existing references editor, retaining its long-video title and product logic. Both inherit the selected image and automatic business line in one undo transaction.",
-        "height": 80
+        "behavior": "Create the short-video or professional-fashion-video editor with matching title and preserve existing generation rules. Both inherit the selected image and automatic business line in one undo transaction. Storyboard video is not connected.",
+        "height": 120
       },
       "panel": {
         "width": 160,
-        "height": "Content-sized: material generation 160px; video generation 80px.",
+        "height": "Content-sized: material generation 160px; video generation 120px.",
         "padding": 4,
         "gap": 8,
         "rowHeight": 32,
@@ -317,8 +430,8 @@
       },
       "reuse": "Reuse v5.4 useHoverDismiss and ElementSendMenu's combined hover area, adapting the current DownloadFormatMenu top-layer positioning and keyboard behavior with usePresence.",
       "interaction": "Open on trigger hover; keep open across the combined trigger/menu hit area with a 120ms pointer-intent dismissal delay and 200ms ease-out visual motion. Also support click and keyboard. Menus are mutually exclusive; Escape, outside interaction or changing the selected image closes them. Follow the toolbar as the canvas moves and avoid viewport edges. Support dark/light themes and Chinese/English/Japanese.",
-      "otherActions": "Storyboard video is a direct toolbar action between video generation and video remake. Reuse real cutout editing and click-open PNG/JPG/AVIF downloads. Storyboard video, video remake, upscale, save to assets and send remain not connected.",
-      "sourceRule": "Use standalone nodes 113:9464 and 113:9502 as authoritative over the older embedded three-item menu."
+      "otherActions": "Storyboard video is the third video-generation menu item. Reuse real cutout editing and click-open PNG/JPG/AVIF downloads. Storyboard video, video remake, upscale, save to assets and send remain not connected.",
+      "sourceRule": "Use standalone nodes 113:9464 and 113:9502 for styling, with the latest user instruction moving storyboard video into the video-generation menu."
     },
     "initialAlignment": "Center image and toolbar together inside the canvas below the 48px topbar; keep toolbar at UI scale.",
     "sideToolbar": {
@@ -368,7 +481,7 @@
         "saveAsset",
         "download"
       ],
-      "designWidthZh": 329,
+      "designWidthZh": 381,
       "padding": 4,
       "groupGap": 4,
       "itemGap": 4,
@@ -376,7 +489,7 @@
       "actionWidthsZh": [
         88,
         88,
-        60,
+        112,
         1,
         32,
         32
@@ -384,7 +497,8 @@
       "iconSize": 20,
       "fontSize": 12,
       "lineHeight": 20,
-      "hdGeometry": "Figma fixed 60px action centers 20px icon + 4px gap + 24px label at x=6; other languages hug their content."
+      "hdGeometry": "Video upscale label hugs its content; 112px in Chinese at the current font and padding, no fixed width.",
+      "nodeId": "151:26425"
     },
     "playButton": {
       "size": 32,
@@ -396,14 +510,14 @@
     "download": "Original local video URL, filename and format; no image conversion or format menu.",
     "canvas": "Shared Flow selection, movement, zoom, delete, arrange, fit and undo/redo. Retain video URLs across history and release on workspace unmount.",
     "preview": "Reuse FullVideoViewer / FullScreenViewer with native controls, full-viewport overlay, Escape and close button; pause on close or workspace switch.",
-    "updated": "2026-10-22",
+    "updated": "2026-10-23",
     "unconnectedActions": [
       "remakeVideo",
       "modifyVideo",
-      "hdVideo",
       "saveAsset"
     ],
-    "sourceManifest": "docs/video-material-assets.json"
+    "sourceManifest": "docs/video-material-assets.json",
+    "upscaleAction": "Creates the 320x505 video upscale editor, inheriting the selected video and an automatic business association in one undo action."
   },
   "fashionVideoWorkflow": {
     "modes": [
@@ -594,29 +708,31 @@
         "emptyNodeId": "84:6110",
         "filledNodeId": "119:11242",
         "updated": "2026-10-23",
-        "title": "视频生成-服装短视频",
+        "title": "服装短视频",
         "width": 320,
-        "height": 629,
+        "height": 641,
         "headerHeight": 80,
         "bannerHeight": 28,
         "banner": "上传首尾帧图片，智能生成短视频",
-        "tabs": false
+        "tabs": false,
+        "contentGap": 16
       },
       "references": {
         "emptyNodeId": "121:17924",
         "filledNodeId": "121:18150",
         "updated": "2026-10-23",
-        "title": "视频生成-服装长视频",
+        "title": "专业服装视频",
         "width": 320,
-        "height": 653,
+        "height": 661,
         "headerHeight": 80,
         "bannerHeight": 28,
         "banner": "支持上传图片/视频作为参考，生成最多30s视频",
-        "tabs": false
+        "tabs": false,
+        "contentGap": 16
       }
     },
     "firstLastFrameLayout": {
-      "title": "视频生成-服装短视频",
+      "title": "服装短视频",
       "mainRequired": true,
       "endFrameRequired": false,
       "uploadCard": {
@@ -642,7 +758,7 @@
     "multipleReferenceLayout": {
       "emptyNodeId": "121:17924",
       "filledNodeId": "121:18150",
-      "title": "视频生成-服装长视频",
+      "title": "专业服装视频",
       "required": true,
       "tileSize": 64,
       "rows": [
@@ -677,7 +793,7 @@
       "existingValues": "Retain existing per-node choices. Reuse the existing settings menus and BetaSlider without adopting incompatible static screenshot values.",
       "footer": "One full-width generation button with unchanged cost 999."
     },
-    "editorSelection": "Image-toolbar fashion short video creates the frames editor; professional fashion video creates the existing long-video references editor without changing its title or product rules. No mode tabs; initial video generation creates an empty short-video editor.",
+    "editorSelection": "Image-toolbar and blank-canvas menu create separate short or professional fashion video editors. Image-toolbar creation inherits the actual selected image; blank-canvas creation uses the right-click world position. No mode tabs or free connections.",
     "defaultSettingsByMode": {
       "frames": {
         "resolution": "2K",
@@ -792,7 +908,10 @@
     "uploaded video canvas and toolbar",
     "separate fashion short-video and long-video editors",
     "reference image and video uploads",
-    "template dialog and reference image states"
+    "template dialog and reference image states",
+    "material generation editors and settings",
+    "blank-canvas grouped creation menu",
+    "video upscale editor"
   ],
   "userOverrides": {
     "fixedBusinessAssociations": {
@@ -818,16 +937,13 @@
   },
   "deferred": [
     "multiple image visual design",
-    "quick image generation",
-    "multiple image views",
-    "storyboard image generation",
-    "grid image splitting",
-    "video remake",
-    "storyboard workflow",
+    "video remake and editing",
+    "storyboard-to-video workflow",
     "template editing workflow",
     "video generation service",
-    "image generation",
-    "upscale",
+    "material generation services",
+    "image upscale workflow",
+    "video upscale service",
     "save to assets",
     "send image",
     "AI smart prompt expansion",
@@ -835,8 +951,251 @@
   ],
   "verification": {
     "browser": "not run, per user instruction",
-    "localBuildAndTests": "not run for the final video-node update, per user instruction",
+    "localBuildAndTests": "not run for the completed-page alignment, per user instruction",
     "deployment": "Local changes only; commit, push and publish only after explicit user request.",
-    "localChecks": "not run for the final video-node update, per user instruction"
+    "localChecks": "No automated checks or browser inspection were run; implementation is based on live Figma design context and source reads."
+  },
+  "templateDetails": {
+    "updated": "2026-10-23",
+    "nodeId": "76:5477",
+    "heading": "Selected template title and description",
+    "referenceCards": {
+      "size": [
+        90,
+        120
+      ],
+      "gap": 8,
+      "radius": 8,
+      "labels": [
+        "主体-{实际图片数量}张",
+        "模特"
+      ],
+      "badgeHeight": 20,
+      "badgeInset": 4
+    },
+    "configuration": {
+      "shots": 4,
+      "appearanceLocked": true,
+      "resolution": "2K",
+      "durationSeconds": 10,
+      "ratioByTemplate": {
+        "commerce": "9:16",
+        "brand": "16:9"
+      },
+      "titleAndRatioDecision": "User confirmed that title and ratio follow the selected template, overriding the commerce title and portrait-ratio placeholders in the landscape design."
+    },
+    "chips": {
+      "component": "TagChip / Filled / default / S",
+      "master": "141:24101",
+      "height": 24,
+      "radius": 6,
+      "paddingInline": 4,
+      "slotGap": 4,
+      "emptySlotWidth": 0.01,
+      "groupGap": 8,
+      "wrap": true
+    },
+    "hoverPreviews": {
+      "subjectNode": "141:24346",
+      "modelNode": "141:24242",
+      "padding": 4,
+      "border": 1,
+      "radius": 8,
+      "imageRadius": 4,
+      "imageGap": 4,
+      "tokens": [
+        "Surface/floating",
+        "Border/weak",
+        "Shadow/M"
+      ],
+      "modelDescription": {
+        "fontSize": 12,
+        "lineHeight": 16,
+        "padding": [
+          24,
+          12,
+          12
+        ],
+        "gradient": "transparent to black 75%"
+      },
+      "interaction": "Hover or keyboard focus opens, touch click also opens; anchor and popover share hover retention. Escape and outside interaction close. Portalled into the modal dialog with native popover top-layer positioning and viewport avoidance. Category changes, upload picker opening and modal exit dismiss the preview. Shared 200ms ease-out and reduced-motion support.",
+      "placement": "Always 8px below the hovered reference card and aligned with its left edge. Scale artwork proportionally to fit remaining space below and to the right, preserving an 8px viewport inset; never flip above or left over the video. Bridge the vertical hover gap.",
+      "figmaSubjectSize": [
+        193.8016357421875,
+        250
+      ],
+      "figmaModelSize": [
+        193.801651,
+        250
+      ],
+      "imageSizing": {
+        "portraitMaxHeight": 240,
+        "landscapeMaxWidth": 240,
+        "squareMaxSize": 240,
+        "aspectRatio": "Use each image intrinsic dimensions, including mixed-orientation subjects; do not crop or upscale smaller originals. Reduce further to fit available viewport space."
+      },
+      "subjectDisplay": "Single active image from the selected template references.subjects array, preserving intrinsic aspect ratio and the 240px longer-side limit.",
+      "subjectSwitcher": {
+        "nodeId": "141:25137",
+        "placement": "Bottom center inside the preview; 10px from outer bottom edge.",
+        "surfaceToken": "Surface/secondary",
+        "textToken": "Text/secondary",
+        "padding": 2,
+        "gap": 8,
+        "radius": "max",
+        "height": 20,
+        "button": {
+          "component": "Button / Ghost / 2XS",
+          "size": [
+            16,
+            16
+          ],
+          "disabledOpacity": 0.65,
+          "iconSize": [
+            16,
+            16
+          ],
+          "sourceInstances": [
+            "141:25142",
+            "141:25138"
+          ]
+        },
+        "counter": {
+          "format": "current/total",
+          "fontSize": 12,
+          "lineHeight": 16
+        },
+        "interaction": "No wraparound; disable previous on the first image and next on the last. Hide controls for one image. Reset to the first image on reopening. Support click, left/right arrows and Home/End without closing the popover. Image fade is 200ms ease-out and respects reduced motion.",
+        "itemsSource": "src/video-template-reference-assets.ts::videoTemplateReferenceSets[templateId].subjects",
+        "countLabel": "Subject thumbnail count and switcher total both derive from the image list."
+      }
+    },
+    "components": [
+      "Dialog",
+      "Button",
+      "Divider",
+      "GenerateTaskButton",
+      "AssetPicker",
+      "TagChip",
+      "VideoTemplateReferences",
+      "ProgressiveImage",
+      "usePresence",
+      "useHoverDismiss"
+    ],
+    "verification": "Edited locally without browser, test or build execution as requested; not published.",
+    "referencesByTemplate": {
+      "commerce": {
+        "subjects": [
+          "subject-front.jpg",
+          "subject-back.png"
+        ],
+        "model": "model-preview.png",
+        "modelDescription": "User-supplied shortened curly-haired model description"
+      },
+      "brand": {
+        "subjects": [
+          "brand-subject.png"
+        ],
+        "model": "brand-model.png",
+        "modelDescription": null,
+        "note": "One subject image is available in the current design. Display the real count and hide the single-image switcher; do not reuse commerce imagery or model copy."
+      }
+    },
+    "designComparison": {
+      "date": "2026-10-23",
+      "sessionId": "7b409990-b521-48c7-a65b-a90664462a93",
+      "highFidelityNodes": [
+        "64:2059",
+        "64:4439",
+        "76:5003",
+        "76:5477",
+        "64:4646",
+        "76:5455",
+        "141:24242",
+        "141:24346"
+      ],
+      "preserved": [
+        "1280x720 shared populated/empty modal and 256px sidebar",
+        "native video playback and user-supplied replacement commerce clip",
+        "real upload values and reference counts",
+        "title and ratio follow selected template",
+        "below-anchor hover placement and 240px natural-aspect image sizing",
+        "Ghost carousel controls and original SVG arrows"
+      ],
+      "changes": [
+        "Use each template original subject and model assets instead of reusing commerce references for brand story"
+      ],
+      "validation": "Figma screenshot and source comparison only. No browser, build, tests or publication."
+    }
+  },
+  "completedPageImplementation": {
+    "date": "2026-10-23",
+    "page": "64:1901",
+    "coverage": [
+      "initial canvas",
+      "template dialog and upload states",
+      "subject and model hover previews",
+      "image and video toolbars",
+      "blank-canvas grouped menu",
+      "short and professional video editors",
+      "material generation editors and settings",
+      "video upscale editor"
+    ],
+    "validation": "Figma design context and source alignment only; no browser, tests, build, commit, push or deployment requested."
+  },
+  "blankCanvasMenu": {
+    "nodeId": "151:26421",
+    "instanceId": "141:26089",
+    "width": 224,
+    "height": 402,
+    "japaneseWidth": 264,
+    "padding": 8,
+    "gap": 8,
+    "radius": 12,
+    "rowHeight": 32,
+    "groups": {
+      "素材生成": [
+        "快捷生图",
+        "分镜图",
+        "多视角"
+      ],
+      "视频生成": [
+        "服装短视频",
+        "专业服装视频",
+        "分镜成片"
+      ]
+    },
+    "actions": [
+      "上传图片/视频",
+      "粘贴"
+    ],
+    "creation": "Create with the node top-left at the original right-click canvas coordinate. Do not avoid collisions or change the viewport for explicit context-menu placement. Existing CanvasContextMenu handles popup positioning, keyboard navigation and dismissal. Fusion menu is unchanged. Storyboard-to-video service is not connected."
+  },
+  "videoUpscaleWorkflow": {
+    "nodeId": "141:26153",
+    "instanceId": "141:26204",
+    "title": "视频高清放大",
+    "width": 320,
+    "height": 505,
+    "headerHeight": 80,
+    "contentHeight": 368,
+    "footerHeight": 57,
+    "contentGap": 16,
+    "videoArea": {
+      "width": 296,
+      "height": 240,
+      "radius": 16,
+      "fit": "contain"
+    },
+    "resolutions": [
+      "540p",
+      "720p",
+      "1080p",
+      "2K",
+      "4K"
+    ],
+    "defaultResolution": "1080p",
+    "costLabel": "20",
+    "behavior": "Create from video toolbar with source binding. Uploading in an empty editor creates or reuses a canvas video in one undo action. Clearing input keeps the canvas asset. Deleting source clears the input. Shares automatic business connections, layout and full-screen playback. Backend is not connected."
   }
 }

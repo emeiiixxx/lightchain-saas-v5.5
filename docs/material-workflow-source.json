@@ -1,0 +1,134 @@
+{
+  "figmaFileKey": "1dBgOC793NRsKgbNIaLZMK",
+  "sourceDate": "2026-10-23",
+  "nodes": {
+    "141:24357": {
+      "kind": "quick",
+      "state": "empty",
+      "width": 320,
+      "height": 533
+    },
+    "141:24359": {
+      "kind": "quick",
+      "state": "references added",
+      "width": 320,
+      "height": 533
+    },
+    "141:25185": {
+      "kind": "multiView",
+      "state": "front",
+      "width": 320,
+      "height": 441
+    },
+    "141:25509": {
+      "kind": "multiView",
+      "state": "back",
+      "width": 320,
+      "height": 541
+    },
+    "141:25380": {
+      "kind": "storyboard",
+      "width": 320,
+      "height": 533,
+      "fields": [
+        "references",
+        "grid",
+        "prompt"
+      ]
+    },
+    "141:25857": {
+      "kind": "gridSplit",
+      "width": 320,
+      "height": 329,
+      "fields": [
+        "references",
+        "grid"
+      ]
+    },
+    "141:24676": {
+      "kind": "generation settings",
+      "width": 476,
+      "height": 242
+    }
+  },
+  "implementation": {
+    "model": "src/material-workflow.ts",
+    "node": "src/components/MaterialWorkflowNode.tsx",
+    "workspace": "src/components/VideoWorkspace.tsx",
+    "settings": "src/components/MaterialGenerationSettings.tsx",
+    "assets": "docs/material-generation-settings-assets.json"
+  },
+  "rules": {
+    "referenceLimit": {
+      "quick": 9,
+      "multiView": 9,
+      "storyboard": 9,
+      "gridSplit": 1
+    },
+    "promptLimit": 2000,
+    "promptNodes": [
+      "quick",
+      "storyboard"
+    ],
+    "settingsNodes": [
+      "quick",
+      "multiView"
+    ],
+    "smartExpandNodes": [
+      "quick"
+    ],
+    "views": [
+      "front",
+      "left45",
+      "left",
+      "right45",
+      "right",
+      "back"
+    ],
+    "backReference": "One required image while Back is selected; retain its stored value when hidden.",
+    "gridOptions": [
+      4,
+      9
+    ],
+    "defaultSettings": {
+      "ratio": "9:16",
+      "resolution": "2K",
+      "count": 1
+    },
+    "cost": 20,
+    "emptyReferences": "Use actual count; do not populate example images or the static 2/9 label.",
+    "generation": "Validate required fields then show service-not-connected notice. No generated result, task or charge.",
+    "canvas": "Reuse canvas assets by image URL, create missing assets at editor left, and bind via sourceImageId in one undo operation. Removing a reference preserves its canvas asset; deleting a canvas asset clears every bound reference.",
+    "referenceRequired": {
+      "quick": false,
+      "multiView": true,
+      "storyboard": true,
+      "gridSplit": true
+    },
+    "quickGeneration": "Reference images are optional (0–9). A non-whitespace prompt is required; disable the quick-generation button while it is empty. Text-only input proceeds to the existing service-not-connected handler without opening the image picker."
+  },
+  "reuse": [
+    "AssetPicker",
+    "ReactFlowCanvas",
+    "ImageConnection",
+    "PromptTools",
+    "Switch",
+    "GenerateTaskButton",
+    "ProgressiveImage",
+    "useVideoReferenceSort",
+    "5.1 Beta theme tokens and original SVGs"
+  ],
+  "designNotes": [
+    "Latest storyboard context is 320x533 without smart expansion or generation settings.",
+    "Multi-view, storyboard and grid crop retain the supplied banner placeholder text until product copy is supplied.",
+    "New images use the existing video workspace image-sizing and placement rules. Sorting only changes reference order, not canvas identity or position."
+  ],
+  "delivery": {
+    "localOnly": true,
+    "browserOpened": false,
+    "checksRun": false,
+    "testsRun": false,
+    "buildRun": false,
+    "published": false
+  }
+}

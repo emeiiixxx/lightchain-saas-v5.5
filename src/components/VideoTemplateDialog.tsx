@@ -7,6 +7,8 @@ import { videoAssets } from '../video-assets';
 import { videoTemplateMessages, videoTemplates, type VideoTemplateId } from '../video-templates';
 import { AssetPicker } from './AssetPicker';
 import { GenerateTaskButton } from './GenerateTaskButton';
+import { TagChip } from './TagChip';
+import { VideoTemplateReferences } from './VideoTemplateReferences';
 import { notify } from './Toast';
 import { Button, Dialog, Divider, Icon } from './ui';
 import '../video-template-dialog.css';
@@ -180,8 +182,15 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
         <div className="video-template-details">
           <div className="video-template-close"><Button aria-label={t.close} onClick={close}><Icon name="close" size={20} /></Button></div>
           <div className="video-template-detail-body">
-            <header className="video-template-heading"><h3>{template.label[locale]}</h3><p>{template.description?.[locale]}</p></header>
-            <ul className="video-template-features"><li>{template.preview === 'portrait' ? t.portraitShots : t.landscapeShots}</li><li>{t.replaceImages}</li><li>{t.adjustNodes}</li></ul>
+            <header className="video-template-heading" data-node-id="141:24213">
+              <div className="video-template-title"><h3>{template.label[locale]}</h3><p>{template.description?.[locale]}</p></div>
+              {template.references && <VideoTemplateReferences key={selected} locale={locale} references={template.references} active={phase === 'enter' && !shownPicker.value} />}
+              {template.configuration && <div className="video-template-configuration" data-node-id="141:24226">
+                <TagChip>{t.shotCount}{template.configuration.shots}</TagChip>
+                <TagChip>{t.appearanceLock}{template.configuration.appearanceLocked ? t.yes : t.no}</TagChip>
+                <TagChip>{template.configuration.ratio} ｜ {template.configuration.resolution} ｜ {template.configuration.duration}s</TagChip>
+              </div>}
+            </header>
             <Divider />
             <div className="video-template-uploads" key={selected}>
               <TemplateImageField locale={locale} slot="garment" value={uploads[selected]?.garment} active={phase === 'enter'} onChange={image => changeImage(selected, 'garment', image)} onUpload={onUpload} onChoose={() => chooseImage('garment')} />

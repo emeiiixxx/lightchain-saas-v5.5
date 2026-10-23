@@ -21,6 +21,10 @@ import { VideoIcon } from './VideoIcon';
 import { VideoSelectionToolbar } from './VideoSelectionToolbar';
 import { VideoAssetToolbar } from './VideoAssetToolbar';
 import { VideoWorkflowNode } from './VideoWorkflowNode';
+import { MaterialWorkflowNode } from './MaterialWorkflowNode';
+import { VideoUpscaleWorkflowNode } from './VideoUpscaleWorkflowNode';
+import { createVideoUpscaleWorkflow, videoUpscaleWorkflowBox, videoUpscaleWorkflowSize, videoUpscaleWorkflowSourceIds, removeVideoUpscaleSources, type VideoUpscaleWorkflow } from '../video-upscale-workflow';
+import { createMaterialWorkflow, materialReferenceLimit, materialWorkflowBox, materialWorkflowSize, materialWorkflowSourceIds, materialWorkflowTitle, removeMaterialWorkflowSources, type MaterialWorkflow, type MaterialWorkflowKind } from '../material-workflow';
 import { ImageConnection } from './ImageConnection';
 import { normalizeVideoWorkflowSettings, createVideoWorkflow, removeVideoWorkflowSources, videoReferenceLimits, videoWorkflowBox, videoWorkflowReferences, videoWorkflowSourceIds, videoWorkflowSize, type VideoWorkflow, type VideoReference } from '../video-workflow';
 import { arrangeVideoWorkflowMedia } from '../video-workflow-layout';
@@ -48,10 +52,18 @@ const mediaCopy = {
   en: { add: 'Click or drop assets here', drop: 'Drop images or videos here', upload: 'Upload assets', video: 'Video', play: 'Play', materials: 'Assets', limit: 'Add up to 20 assets at a time.' },
   ja: { add: 'クリック、または素材をドロップして追加', drop: 'ここに画像・動画をドロップ', upload: '素材をアップロード', video: '動画', play: '再生', materials: '素材', limit: '一度に追加できる素材は20点までです。' },
 };
-type Snapshot = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; selected: string[] };
+const contextCopy = {
+  'zh-CN': { materials: '素材生成', videos: '视频生成', multiView: '多视角', storyboardVideo: '分镜成片', upload: '上传图片/视频', upscale: '视频高清放大' },
+  en: { materials: 'Asset generation', videos: 'Video generation', multiView: 'Multiple views', storyboardVideo: 'Storyboard to video', upload: 'Upload images/videos', upscale: 'Video upscale' },
+  ja: { materials: '素材生成', videos: '動画生成', multiView: 'マルチビュー', storyboardVideo: '絵コンテから動画', upload: '画像・動画をアップロード', upscale: '動画高画質化' },
+};
+type Snapshot = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; materialWorkflows?: MaterialWorkflow[]; upscaleWorkflows?: VideoUpscaleWorkflow[]; selected: string[] };
 type VideoClipboard = CanvasClipboard<VideoCanvasMedia>;
 type CopiedMedia = Pick<VideoClipboard, 'items'>;
-type WorkflowUpload = { id: string; field: 'main' | 'endFrame' | 'references'; kind: VideoReference['kind'] };
+type VideoWorkflowUpload = { editor?: 'video'; id: string; field: 'main' | 'endFrame' | 'references'; kind: VideoReference['kind'] };
+type MaterialWorkflowUpload = { editor: 'material'; id: string; field: 'references' | 'back'; kind: 'image' };
+type UpscaleWorkflowUpload = { editor: 'upscale'; id: string; field: 'video'; kind: 'video' };
+type WorkflowUpload = VideoWorkflowUpload | MaterialWorkflowUpload | UpscaleWorkflowUpload;
 type Modal = 'templates' | 'assets' | 'help';
 type Props = { locale: Locale; active: boolean; onBack: () => void };
 const connectionHelp = {
@@ -59,7 +71,7 @@ const connectionHelp = {
   en: 'Use the asset toolbar or add images and videos in the editor to show assets and their connections on the canvas. Selecting the asset or editor highlights its connection; deselecting restores the grey line.',
   ja: '素材ツールバー、またはエディター内から画像・動画を追加すると、素材と接続線がキャンバスに表示されます。素材やエディターを選択すると接続線が強調され、選択を解除すると灰色に戻ります。',
 };
-const sceneItems = (snapshot: Snapshot) => [...snapshot.images, ...snapshot.workflows.map(videoWorkflowBox)];
+const sceneItems = (snapshot: Snapshot) => [...snapshot.images, ...snapshot.workflows.map(videoWorkflowBox), ...(snapshot.materialWorkflows ?? []).map(materialWorkflowBox), ...(snapshot.upscaleWorkflows ?? []).map(videoUpscaleWorkflowBox)];
 const isField = (target: EventTarget | null) => target instanceof HTMLElement && !!target.closest('input,textarea,select,[contenteditable="true"]');
 
 function fitVideoImages(images: CanvasImage[], width: number, height: number): Viewport {
@@ -77,13 +89,13 @@ function fitVideoImages(images: CanvasImage[], width: number, height: number): V
 }
 
 export function VideoWorkspace({ locale, active, onBack }: Props) {
-  const t = messages[locale], v = copy[locale], m = mediaCopy[locale];
+  const t = messages[locale], v = copy[locale], m = mediaCopy[locale], c = contextCopy[locale];
   const canvas = useRef<HTMLElement>(null);
   const activeRef = useRef(active); activeRef.current = active;
   const [projectName, setProjectName] = useState(() => {
     try { return localStorage.getItem('lc-v55-video-project-name') || 'Untitle'; } catch { return 'Untitle'; }
   });
-  const [snapshot, setSnapshot] = useState<Snapshot>({ images: [], workflows: [], selected: [] });
+  const [snapshot, setSnapshot] = useState<Snapshot>({ images: [], workflows: [], materialWorkflows: [], selected: [] });
   const current = useRef(snapshot); current.current = snapshot;
   const history = useRef<{ past: Snapshot[]; future: Snapshot[] }>({ past: [], future: [] });
   const [view, commitView] = useState<Viewport>(DEFAULT_VIEW);
@@ -159,7 +171,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const shownCutout = usePresence(active ? cutout : null);
   const shownWorkflowUpload = usePresence(active ? workflowUpload : null);
   const shownVideoPreview = usePresence(active ? videoPreview : null);
-  const items = useMemo(() => sceneItems(snapshot), [snapshot.images, snapshot.workflows]);
+  const items = useMemo(() => sceneItems(snapshot), [snapshot.images, snapshot.workflows, snapshot.materialWorkflows, snapshot.upscaleWorkflows]);
   const shownDrop = usePresence(dropActive && items.length ? true : null);
   const shownGuides = usePresence(guides);
   const groupBounds = useMemo(() => snapshot.selected.length > 1 ? boundsOf(items.filter(image => snapshot.selected.includes(image.id))) : null, [items, snapshot.selected]);
@@ -191,7 +203,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }, [replace]);
   const fit = useCallback(() => {
     const element = canvas.current;
-    if (element) setView(current.current.workflows.length ? fitImages(sceneItems(current.current), element.clientWidth, element.clientHeight) : fitVideoImages(current.current.images, element.clientWidth, element.clientHeight));
+    if (element) setView(current.current.workflows.length || current.current.materialWorkflows?.length || current.current.upscaleWorkflows?.length ? fitImages(sceneItems(current.current), element.clientWidth, element.clientHeight) : fitVideoImages(current.current.images, element.clientWidth, element.clientHeight));
   }, [setView]);
   const removeSelected = useCallback(() => {
     const previous = current.current;
@@ -199,6 +211,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const removed = new Set(previous.selected);
     commit({ ...previous, images: previous.images.filter(image => !removed.has(image.id)),
       workflows: previous.workflows.filter(node => !removed.has(node.id)).map(node => removeVideoWorkflowSources(node, removed)),
+      materialWorkflows: (previous.materialWorkflows ?? []).filter(node => !removed.has(node.id)).map(node => removeMaterialWorkflowSources(node, removed)),
+      upscaleWorkflows: (previous.upscaleWorkflows ?? []).filter(node => !removed.has(node.id)).map(node => removeVideoUpscaleSources(node, removed)),
       selected: [] });
   }, [commit]);
   const closeModal = useCallback(() => { uploadEpoch.current++; pendingMediaRead.current?.abort(); uploadLocked.current = false; setReading(false); setModal(null); }, []);
@@ -370,7 +384,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       return next;
     }) });
   }
-  function addWorkflow(sourceId?: string, mode: VideoWorkflow['mode'] = 'frames') {
+  function addWorkflow(sourceId?: string, mode: VideoWorkflow['mode'] = 'frames', point?: { x: number; y: number }) {
     const previous = current.current;
     // Toolbar entries bind the actual canvas asset, including its current
     // geometry, rather than a fading selection overlay's snapshot.
@@ -379,14 +393,70 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const scene = sceneItems(previous), viewport = viewRef.current;
     const size = videoWorkflowSize(mode);
     const node = createVideoWorkflow(
-      source ? source.x + source.width + 80 : (canvasSize.width / 2 - viewport.x) / viewport.zoom - size.width / 2,
-      source ? source.y + (source.height - size.height) / 2 : (canvasSize.height / 2 - viewport.y) / viewport.zoom - size.height / 2,
+      source ? source.x + source.width + 80 : point?.x ?? (canvasSize.width / 2 - viewport.x) / viewport.zoom - size.width / 2,
+      source ? source.y + (source.height - size.height) / 2 : point?.y ?? (canvasSize.height / 2 - viewport.y) / viewport.zoom - size.height / 2,
       source, mode,
     );
-    while (scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
+    // An explicit context-menu point is the user's chosen position; only
+    // toolbar/initial-page creation uses automatic collision avoidance.
+    while (!point && scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
     commit({ ...previous, workflows: [...previous.workflows, node], selected: [node.id] });
-    if (canvas.current) animateView(fitImages([...(source ? [source] : []), videoWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
+    if (canvas.current && !point) animateView(fitImages([...(source ? [source] : []), videoWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });
+  }
+  function updateMaterialWorkflow(id: string, patch: Partial<MaterialWorkflow>) {
+    const previous = current.current;
+    const nodes = previous.materialWorkflows ?? [];
+    if (!nodes.some(node => node.id === id)) return;
+    commit({ ...previous, materialWorkflows: nodes.map(node => {
+      if (node.id !== id) return node;
+      const next = { ...node, ...patch };
+      // A conditional back-reference field changes the editor's height while
+      // keeping the centre at the user's chosen canvas position.
+      next.y += (materialWorkflowSize(node).height - materialWorkflowSize(next).height) / 2;
+      return next;
+    }) });
+  }
+  function addMaterialWorkflow(kind: MaterialWorkflowKind, sourceId?: string, point?: { x: number; y: number }) {
+    const previous = current.current;
+    const source = sourceId ? previous.images.find(image => image.id === sourceId && !image.video) : undefined;
+    if (sourceId && !source) return;
+    const scene = sceneItems(previous), viewport = viewRef.current;
+    const size = materialWorkflowSize({ kind, view: 'front' });
+    const node = createMaterialWorkflow(
+      source ? source.x + source.width + 80 : point?.x ?? (canvasSize.width / 2 - viewport.x) / viewport.zoom - size.width / 2,
+      source ? source.y + (source.height - size.height) / 2 : point?.y ?? (canvasSize.height / 2 - viewport.y) / viewport.zoom - size.height / 2,
+      kind, source,
+    );
+    while (!point && scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
+    commit({ ...previous, materialWorkflows: [...(previous.materialWorkflows ?? []), node], selected: [node.id] });
+    if (canvas.current && !point) animateView(fitImages([...(source ? [source] : []), materialWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
+    canvas.current?.focus({ preventScroll: true });
+  }
+  function addUpscaleWorkflow(sourceId: string) {
+    const previous = current.current;
+    const source = previous.images.find(image => image.id === sourceId && image.video);
+    if (!source) return;
+    const node = createVideoUpscaleWorkflow(source), size = videoUpscaleWorkflowSize();
+    node.x = source.x + source.width + 80;
+    node.y = source.y + (source.height - size.height) / 2;
+    const scene = sceneItems(previous);
+    while (scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
+    commit({ ...previous, upscaleWorkflows: [...(previous.upscaleWorkflows ?? []), node], selected: [node.id] });
+    if (canvas.current) animateView(fitImages([source, videoUpscaleWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
+    canvas.current?.focus({ preventScroll: true });
+  }
+  function updateUpscaleWorkflow(id: string, patch: Partial<VideoUpscaleWorkflow>) {
+    const previous = current.current;
+    if (!previous.upscaleWorkflows?.some(node => node.id === id)) return;
+    commit({ ...previous, upscaleWorkflows: previous.upscaleWorkflows.map(node => node.id === id ? { ...node, ...patch } : node) });
+  }
+  function openMaterialReference(id: string, field: MaterialWorkflowUpload['field']) {
+    const node = current.current.materialWorkflows?.find(item => item.id === id);
+    if (!node || !activeRef.current) return;
+    if (field === 'back' && (node.kind !== 'multiView' || node.view !== 'back')) return;
+    if (field === 'references' && node.references.length >= materialReferenceLimit(node.kind)) return;
+    setWorkflowUpload({ editor: 'material', id, field, kind: 'image' });
   }
   function referenceCapacityAvailable(node: VideoWorkflow, kind: VideoReference['kind']) {
     if (videoWorkflowReferences(node).filter(reference => reference.kind === kind).length < videoReferenceLimits[kind]) return true;
@@ -402,7 +472,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       if (kind === 'image') setWorkflowUpload({ id, field: 'endFrame', kind });
     } else if (referenceCapacityAvailable(node, kind)) setWorkflowUpload({ id, field: 'references', kind });
   }
-  function attachWorkflowMedia(node: VideoWorkflow, field: WorkflowUpload['field'], media: Omit<VideoCanvasMedia, 'x' | 'y'>, reference: VideoReference) {
+  function placeWorkflowMedia(node: CanvasImage, media: Omit<VideoCanvasMedia, 'x' | 'y'>) {
     const previous = current.current;
     // Uploaded-video URLs identify the asset; its canvas URL is only a poster.
     let source = previous.images.find(item => media.video
@@ -411,7 +481,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     let images = previous.images;
     if (!source) {
       source = { ...media, id: crypto.randomUUID(), role: undefined,
-        x: node.x - 80 - media.width, y: node.y + (videoWorkflowSize(node.mode).height - media.height) / 2 };
+        x: node.x - 80 - media.width, y: node.y + (node.height - media.height) / 2 };
       const scene = sceneItems(previous);
       // Stack new inputs in the editor's left column without moving existing assets.
       let overlaps: CanvasImage[];
@@ -420,6 +490,11 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       }
       images = [...images, source];
     }
+    return { images, source };
+  }
+  function attachWorkflowMedia(node: VideoWorkflow, field: VideoWorkflowUpload['field'], media: Omit<VideoCanvasMedia, 'x' | 'y'>, reference: VideoReference) {
+    const previous = current.current;
+    const { images, source } = placeWorkflowMedia(videoWorkflowBox(node), media);
     const bound = { ...reference, sourceImageId: source.id };
     const updated: VideoWorkflow = field === 'main' ? { ...node, main: { ...bound, id: source.id } }
       : field === 'endFrame' ? { ...node, endFrame: bound }
@@ -435,6 +510,27 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   function applyWorkflowImage(uploaded: Omit<CanvasImage, 'x' | 'y'>, expectedTarget: WorkflowUpload) {
     const image = sizeVideoCanvasMedia(uploaded);
     const target = workflowUploadRef.current;
+    if (target?.editor === 'upscale') return;
+    if (target?.editor === 'material') {
+      if (target !== expectedTarget || !activeRef.current) return;
+      const node = current.current.materialWorkflows?.find(item => item.id === target.id);
+      if (!node) { setWorkflowUpload(null); return; }
+      if (target.field === 'back' && (node.kind !== 'multiView' || node.view !== 'back')
+        || target.field === 'references' && (node.references.length >= materialReferenceLimit(node.kind) || node.references.some(reference => reference.url === image.url))) {
+        setWorkflowUpload(null); return;
+      }
+      const previous = current.current;
+      const { images, source } = placeWorkflowMedia(materialWorkflowBox(node), image);
+      const reference: VideoReference = { id: crypto.randomUUID(), sourceImageId: source.id, name: image.name, url: image.url, kind: 'image' };
+      const updated = target.field === 'back' ? { ...node, back: reference } : { ...node, references: [...node.references, reference] };
+      commit({ ...previous, images, materialWorkflows: (previous.materialWorkflows ?? []).map(item => item.id === node.id ? updated : item) });
+      setWorkflowUpload(null);
+      if (canvas.current) {
+        const sourceIds = new Set(materialWorkflowSourceIds(updated));
+        animateView(fitImages([...images.filter(item => sourceIds.has(item.id)), materialWorkflowBox(updated)], canvas.current.clientWidth, canvas.current.clientHeight));
+      }
+      return;
+    }
     const node = target && current.current.workflows.find(item => item.id === target.id);
     if (!target || target !== expectedTarget || target.kind !== 'image' || !node || !activeRef.current) return;
     if ((target.field === 'references') !== (node.mode === 'references')) { setWorkflowUpload(null); return; }
@@ -447,8 +543,20 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }
   function applyWorkflowVideo(reference: UploadedVideo, expectedTarget: WorkflowUpload) {
     const target = workflowUploadRef.current;
-    const node = target?.field === 'references' && target.kind === 'video' && target === expectedTarget && current.current.workflows.find(item => item.id === target.id);
     const discardUnowned = () => { if (!ownedUrls.current.has(reference.url)) URL.revokeObjectURL(reference.url); };
+    if (target?.editor === 'upscale') {
+      const previous = current.current;
+      const node = previous.upscaleWorkflows?.find(item => item.id === target.id);
+      if (target !== expectedTarget || !node || !activeRef.current) { discardUnowned(); return; }
+      rememberVideo(reference);
+      const { images, source } = placeWorkflowMedia(videoUpscaleWorkflowBox(node), prepareVideoCanvasMedia(reference));
+      const updated = { ...node, video: { ...reference, sourceImageId: source.id } };
+      commit({ ...previous, images, upscaleWorkflows: (previous.upscaleWorkflows ?? []).map(item => item.id === node.id ? updated : item) });
+      setWorkflowUpload(null);
+      if (canvas.current) animateView(fitImages([source, videoUpscaleWorkflowBox(updated)], canvas.current.clientWidth, canvas.current.clientHeight));
+      return;
+    }
+    const node = target?.editor !== 'material' && target?.field === 'references' && target.kind === 'video' && target === expectedTarget && current.current.workflows.find(item => item.id === target.id);
     if (!node || node.mode !== 'references' || reference.kind !== 'video' || !activeRef.current) { discardUnowned(); return; }
     if (videoWorkflowReferences(node).some(item => item.url === reference.url)) { discardUnowned(); setWorkflowUpload(null); return; }
     if (!referenceCapacityAvailable(node, 'video')) { discardUnowned(); setWorkflowUpload(null); return; }
@@ -465,12 +573,14 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }
   function arrangeScene() {
     const previous = current.current;
-    if (!previous.workflows.length) {
+    if (!previous.workflows.length && !previous.materialWorkflows?.length && !previous.upscaleWorkflows?.length) {
       const positions = new Map(arrangeImages(previous.images).map(image => [image.id, { x: image.x, y: image.y }]));
       commit({ ...previous, images: previous.images.map(image => ({ ...image, ...positions.get(image.id)! })) }); fit(); return;
     }
-    const positions = arrangeVideoWorkflowMedia(previous.images, previous.workflows);
-    commit({ ...previous, images: previous.images.map(image => ({ ...image, ...positions.get(image.id)! })), workflows: previous.workflows.map(node => ({ ...node, ...positions.get(node.id)! })) });
+    const positions = arrangeVideoWorkflowMedia(previous.images, previous.workflows, previous.materialWorkflows, previous.upscaleWorkflows);
+    commit({ ...previous, images: previous.images.map(image => ({ ...image, ...positions.get(image.id)! })), workflows: previous.workflows.map(node => ({ ...node, ...positions.get(node.id)! })),
+      materialWorkflows: (previous.materialWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)! })),
+      upscaleWorkflows: (previous.upscaleWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)! })) });
     fit();
   }
   async function downloadSelected(format: DownloadFormat) {
@@ -525,6 +635,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
             {entries.map(entry => <Button key={entry.id} variant="outline" size="l" className="video-entry-tool" disabled={reading} data-node-id={entry.nodeId}
               onClick={() => {
                 if (entry.id === 'templates') setModal('templates');
+                else if (entry.id === 'quickImage') addMaterialWorkflow('quick');
+                else if (entry.id === 'storyboardImage') addMaterialWorkflow('storyboard');
                 else if (entry.id === 'fashionVideo') addWorkflow();
                 else if (entry.id === 'proFashionVideo') addWorkflow(undefined, 'references');
                 else notify(v.pending);
@@ -543,7 +655,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       {active && items.length > 0 && <>
         <ReactFlowCanvas view={view} selectedIds={snapshot.selected} hand={spaceDown || mode === 'hand'} referenceMode={false} snap={snapToGrid}
           onView={setView} onSelection={ids => replace({ ...current.current, selected: ids })}
-          onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node) })}
+          onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
+            materialWorkflows: (current.current.materialWorkflows ?? []).map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
+            upscaleWorkflows: (current.current.upscaleWorkflows ?? []).map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node) })}
           onDragStart={() => { saveUndo(); setDragging(true); }} onDragEnd={() => { setDragging(false); setGuides(null); }} onGuides={setGuides} onSelecting={setSelecting}>
           {snapshot.images.map(image => <div key={image.id} data-image data-canvas-id={image.id} data-node-id={image.video ? '97:6651' : undefined} className={`canvas-image${image.video ? ' canvas-video' : ''}${snapshot.selected.includes(image.id) ? ' selected' : ''}`} style={{ left: image.x, top: image.y, width: image.width, height: image.height }} role="button" tabIndex={0} aria-label={`${image.video ? m.video : t.image}: ${image.name}`} aria-pressed={snapshot.selected.includes(image.id)}
             onContextMenu={event => {
@@ -565,11 +679,30 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
             const source = snapshot.images.find(image => image.id === sourceId);
             return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
           }))}
-          {snapshot.workflows.map(node => <div key={node.id} data-canvas-id={node.id} className="fusion-position video-workflow-position" data-selected={snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoWorkflowSize(node.mode) }} role="group" tabIndex={0} aria-label={node.mode === 'references' ? (locale === 'zh-CN' ? '服装长视频' : locale === 'ja' ? 'ファッション長編動画' : 'Fashion long video') : locale === 'zh-CN' ? '服装短视频' : locale === 'ja' ? 'ファッション動画' : 'Fashion video'}
+          {snapshot.workflows.map(node => <div key={node.id} data-canvas-id={node.id} className="fusion-position video-workflow-position" data-selected={snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoWorkflowSize(node.mode) }} role="group" tabIndex={0} aria-label={node.mode === 'references' ? v.proFashionVideo : v.fashionVideo}
             onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id] }); } }}>
             <VideoWorkflowNode node={node} locale={locale} onChange={patch => updateWorkflow(node.id, patch)} onMain={() => setWorkflowUpload({ id: node.id, field: 'main', kind: 'image' })}
               onReference={kind => openWorkflowReference(node.id, kind)} onPreview={reference => void previewReference(reference)}
               onGenerate={() => notify(locale === 'zh-CN' ? '视频生成服务暂未接入，当前配置已保留。' : locale === 'ja' ? '動画生成は未接続です。現在の設定は保持されます。' : 'Video generation is not connected yet. Your settings are retained.')} />
+          </div>)}
+          {(snapshot.materialWorkflows ?? []).flatMap(node => materialWorkflowSourceIds(node).map(sourceId => {
+            const source = snapshot.images.find(image => image.id === sourceId);
+            return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={materialWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
+          }))}
+          {(snapshot.materialWorkflows ?? []).map(node => <div key={node.id} data-canvas-id={node.id} className="fusion-position video-workflow-position material-workflow-position" data-selected={snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...materialWorkflowSize(node) }} role="group" tabIndex={0} aria-label={materialWorkflowTitle(node.kind, locale)}
+            onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id] }); } }}>
+            <MaterialWorkflowNode node={node} locale={locale} onChange={patch => updateMaterialWorkflow(node.id, patch)} onReference={field => openMaterialReference(node.id, field)} onPreview={reference => void previewReference(reference)}
+              onGenerate={() => notify(locale === 'zh-CN' ? '素材生成服务暂未接入，当前配置已保留。' : locale === 'ja' ? '素材生成は未接続です。現在の設定は保持されます。' : 'Asset generation is not connected yet. Your settings are retained.')} />
+          </div>)}
+          {(snapshot.upscaleWorkflows ?? []).flatMap(node => videoUpscaleWorkflowSourceIds(node).map(sourceId => {
+            const source = snapshot.images.find(image => image.id === sourceId);
+            return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoUpscaleWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
+          }))}
+          {(snapshot.upscaleWorkflows ?? []).map(node => <div key={node.id} data-canvas-id={node.id} className="fusion-position video-workflow-position video-upscale-position" data-selected={snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoUpscaleWorkflowSize() }} role="group" tabIndex={0} aria-label={c.upscale}
+            onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id] }); } }}>
+            <VideoUpscaleWorkflowNode node={node} locale={locale} onChange={patch => updateUpscaleWorkflow(node.id, patch)}
+              onUpload={() => setWorkflowUpload({ editor: 'upscale', id: node.id, field: 'video', kind: 'video' })} onPreview={video => setVideoPreview(video)}
+              onGenerate={() => notify(locale === 'zh-CN' ? '视频高清放大服务暂未接入，当前配置已保留。' : locale === 'ja' ? '動画高画質化は未接続です。現在の設定は保持されます。' : 'Video upscaling is not connected yet. Your settings are retained.')} />
           </div>)}
         </ReactFlowCanvas>
         {shownSingle.value && !selecting && <div className="selection-overlay" data-phase={shownSingle.phase} aria-label={t.selectionTools} style={{ left: shownSingle.value.x * view.zoom + view.x, top: shownSingle.value.y * view.zoom + view.y, width: shownSingle.value.width * view.zoom, height: shownSingle.value.height * view.zoom }}>
@@ -577,7 +710,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
             {shownSingle.value.video ? <VideoAssetToolbar key={shownSingle.value.id} locale={locale} onDownload={downloadSelectedVideo}
               onRemake={() => notify(locale === 'zh-CN' ? '视频复刻功能暂未接入。' : locale === 'ja' ? '動画再現はまだ接続されていません。' : 'Video remake is not connected yet.')}
               onModify={() => notify(locale === 'zh-CN' ? '视频修改功能暂未接入。' : locale === 'ja' ? '動画編集はまだ接続されていません。' : 'Video editing is not connected yet.')}
-              onHD={() => notify(locale === 'zh-CN' ? '视频高清功能暂未接入。' : locale === 'ja' ? '動画の高画質化はまだ接続されていません。' : 'Video upscaling is not connected yet.')}
+              onHD={() => { if (shownSingle.value) addUpscaleWorkflow(shownSingle.value.id); }}
               onSave={() => notify(locale === 'zh-CN' ? '保存到资产功能暂未接入。' : locale === 'ja' ? '素材への保存はまだ接続されていません。' : 'Saving to assets is not connected yet.')} />
               : <VideoSelectionToolbar key={shownSingle.value.id} locale={locale} downloading={downloading} onDownload={format => void downloadSelected(format)} onAction={action => {
               const source = current.current.images.find(image => image.id === shownSingle.value?.id && !image.video);
@@ -585,6 +718,10 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
               if (action === 'cutout') setCutout(source);
               else if (action === 'fashionVideo') addWorkflow(source.id);
               else if (action === 'multiReference') addWorkflow(source.id, 'references');
+              else if (action === 'quickEdit') addMaterialWorkflow('quick', source.id);
+              else if (action === 'multiView') addMaterialWorkflow('multiView', source.id);
+              else if (action === 'storyboardImage') addMaterialWorkflow('storyboard', source.id);
+              else if (action === 'gridSplit') addMaterialWorkflow('gridSplit', source.id);
               else notify(locale === 'zh-CN' ? '此功能暂未接入。' : locale === 'ja' ? 'この機能はまだ接続されていません。' : 'This feature is not connected yet.');
             }} />}
           </div>
@@ -610,7 +747,20 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       {reading && items.length > 0 && <div className="canvas-message" role="status">{t.reading}</div>}
       <span className="sr-only" role="status">{snapshot.images.length} {m.materials} · {snapshot.selected.length} {t.selected}</span>
     </main>
-    <CanvasContextMenu point={active ? canvasMenu : null} canPaste={canPaste} locale={locale} uploadLabel={m.upload} itemMenuLabel={locale === 'zh-CN' ? '素材菜单' : locale === 'ja' ? '素材メニュー' : 'Asset menu'} onClose={closeCanvasMenu} onUpload={openAssets}
+    <CanvasContextMenu point={active ? canvasMenu : null} canPaste={canPaste} locale={locale} uploadLabel={c.upload} itemMenuLabel={locale === 'zh-CN' ? '素材菜单' : locale === 'ja' ? '素材メニュー' : 'Asset menu'} onClose={closeCanvasMenu} onUpload={openAssets}
+      uploadIcon={<VideoIcon name="contextUpload" size={20} />} pasteIcon={<VideoIcon name="contextPaste" size={20} />}
+      groups={[
+        { label: c.materials, items: [
+          { id: 'quick', label: v.quickImage, icon: <VideoIcon name="contextQuick" size={20} />, onSelect: () => addMaterialWorkflow('quick', undefined, canvasMenu ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : undefined) },
+          { id: 'storyboard', label: v.storyboardImage, icon: <VideoIcon name="contextStoryboardImage" size={20} />, onSelect: () => addMaterialWorkflow('storyboard', undefined, canvasMenu ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : undefined) },
+          { id: 'multiView', label: c.multiView, icon: <VideoIcon name="contextMultiView" size={20} />, onSelect: () => addMaterialWorkflow('multiView', undefined, canvasMenu ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : undefined) },
+        ] },
+        { label: c.videos, items: [
+          { id: 'fashion', label: v.fashionVideo, icon: <VideoIcon name="contextFashionVideo" size={20} />, onSelect: () => addWorkflow(undefined, 'frames', canvasMenu ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : undefined) },
+          { id: 'professional', label: v.proFashionVideo, icon: <VideoIcon name="contextProFashionVideo" size={20} />, onSelect: () => addWorkflow(undefined, 'references', canvasMenu ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : undefined) },
+          { id: 'storyboardVideo', label: c.storyboardVideo, icon: <VideoIcon name="contextStoryboardVideo" size={20} />, onSelect: () => notify(locale === 'zh-CN' ? '分镜成片功能暂未接入。' : locale === 'ja' ? '絵コンテから動画はまだ接続されていません。' : 'Storyboard to video is not connected yet.') },
+        ] },
+      ]}
       onCopy={() => { void copySelectedFromMenu(); }}
       onDuplicate={() => { duplicateSelected(); closeCanvasMenu(); }}
       onDelete={() => { removeSelected(); closeCanvasMenu(); }}
@@ -618,8 +768,10 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} />}
     {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} videoUploads={uploadedVideos} onUpload={rememberUpload} onVideoUpload={rememberVideo} onConfirm={image => addMedia([image])} onConfirmMediaBatch={addMedia} limitMessage={m.limit} onClose={closeModal} />}
     {active && shownWorkflowUpload.value && <AssetPicker key={`${shownWorkflowUpload.value.id}-${shownWorkflowUpload.value.field}-${shownWorkflowUpload.value.kind}`} locale={locale} phase={shownWorkflowUpload.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={image => applyWorkflowImage(image, shownWorkflowUpload.value!)} mediaKind={shownWorkflowUpload.value.kind}
-      excludedUrls={shownWorkflowUpload.value.field === 'references' ? snapshot.workflows.filter(node => node.id === shownWorkflowUpload.value!.id).flatMap(node => videoWorkflowReferences(node).map(reference => reference.url)) : undefined}
-      videoUploads={uploadedVideos} onConfirmVideo={shownWorkflowUpload.value.field === 'references' && shownWorkflowUpload.value.kind === 'video' ? reference => applyWorkflowVideo(reference, shownWorkflowUpload.value!) : undefined} onClose={() => setWorkflowUpload(null)} />}
+      excludedUrls={shownWorkflowUpload.value.field === 'references' ? shownWorkflowUpload.value.editor === 'material'
+        ? (snapshot.materialWorkflows ?? []).filter(node => node.id === shownWorkflowUpload.value!.id).flatMap(node => node.references.map(reference => reference.url))
+        : snapshot.workflows.filter(node => node.id === shownWorkflowUpload.value!.id).flatMap(node => videoWorkflowReferences(node).map(reference => reference.url)) : undefined}
+      videoUploads={uploadedVideos} onConfirmVideo={shownWorkflowUpload.value.kind === 'video' ? reference => applyWorkflowVideo(reference, shownWorkflowUpload.value!) : undefined} onClose={() => setWorkflowUpload(null)} />}
     {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p><p className="video-canvas-help">{connectionHelp[locale]}</p></Dialog>}
     {active && shownPreview.value && <FullImageViewer image={shownPreview.value} locale={locale} phase={shownPreview.phase} onClose={() => setPreview(null)} />}
     {active && shownVideoPreview.value && <FullVideoViewer key={shownVideoPreview.value.url} video={shownVideoPreview.value} locale={locale} phase={shownVideoPreview.phase} onClose={() => setVideoPreview(null)} />}

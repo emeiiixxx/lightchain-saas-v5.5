@@ -35,11 +35,11 @@ export function VideoSelectionToolbar({ locale, onAction, onDownload, downloadin
       <ToolbarHoverMenu label={v.video} icon={<ToolbarIcon name="video" />} chevron={<ToolbarIcon name="chevron" />} group={group} nodeId="113:9502" items={[
         { label: v.fashionVideo, icon: <ToolbarIcon name="fashion-video" />, onSelect: () => onAction('fashionVideo') },
         { label: v.multiReference, icon: <ToolbarIcon name="multi-reference" />, onSelect: () => onAction('multiReference') },
+        { label: v.storyboard, icon: <ToolbarIcon name="storyboard-video" />, onSelect: () => onAction('storyboard') },
       ]} />
       <Divider vertical />
     </div>
     <div className="video-image-toolbar-group">
-      <Button onClick={() => onAction('storyboard')}><ToolbarIcon name="storyboard-video" />{v.storyboard}</Button>
       <Button onClick={() => onAction('videoRemake')}><ToolbarIcon name="remake" />{v.videoRemake}</Button>
       <Divider vertical />
       <Button onClick={() => onAction('cutout')}><ToolbarIcon name="cutout" />{t.cutout}</Button>

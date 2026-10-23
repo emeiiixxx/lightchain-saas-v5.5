@@ -27,7 +27,7 @@ export const videoGenerationConfig = {
 } as const;
 
 export function videoWorkflowSize(mode: VideoWorkflow['mode']) {
-  const sizes = { frames: { width: 320, height: 629 }, references: { width: 320, height: 653 } };
+  const sizes = { frames: { width: 320, height: 641 }, references: { width: 320, height: 661 } };
   return sizes[mode];
 }
 
@@ -113,5 +113,5 @@ export function createVideoWorkflow(x: number, y: number, source?: CanvasImage, 
 // Canvas navigation and React Flow share the same geometry for images and nodes.
 export function videoWorkflowBox(node: VideoWorkflow): CanvasImage {
   return { id: node.id, x: node.x, y: node.y, ...videoWorkflowSize(node.mode),
-    name: node.mode === 'frames' ? '服装短视频' : '服装长视频', url: node.main?.url ?? videoWorkflowReferences(node).find(reference => reference.kind === 'image')?.url ?? '' };
+    name: node.mode === 'frames' ? '服装短视频' : '专业服装视频', url: node.main?.url ?? videoWorkflowReferences(node).find(reference => reference.kind === 'image')?.url ?? '' };
 }

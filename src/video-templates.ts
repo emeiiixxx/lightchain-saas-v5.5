@@ -1,4 +1,5 @@
 import type { Locale } from './i18n';
+import { videoTemplateReferenceSets, type VideoTemplateReferenceSet } from './video-template-reference-assets';
 
 type LocalizedText = Record<Locale, string>;
 
@@ -8,6 +9,14 @@ export type VideoTemplate = {
   label: LocalizedText;
   preview?: 'portrait' | 'landscape';
   description?: LocalizedText;
+  references?: VideoTemplateReferenceSet;
+  configuration?: {
+    shots: number;
+    appearanceLocked: boolean;
+    ratio: '9:16' | '16:9';
+    resolution: string;
+    duration: number;
+  };
 };
 
 // Only the two examples supplied in Figma have template content.
@@ -16,6 +25,8 @@ export const videoTemplates: readonly VideoTemplate[] = [
     id: 'commerce',
     label: { 'zh-CN': '电商视频', en: 'E-commerce', ja: 'EC動画' },
     preview: 'portrait',
+    references: videoTemplateReferenceSets.commerce,
+    configuration: { shots: 4, appearanceLocked: true, ratio: '9:16', resolution: '2K', duration: 10 },
     description: {
       'zh-CN': '让消费者快速看清衣服的款式、版型、穿着效果和购买理由',
       en: 'Help shoppers quickly understand the style, fit, look and reasons to buy.',
@@ -28,6 +39,8 @@ export const videoTemplates: readonly VideoTemplate[] = [
     id: 'brand',
     label: { 'zh-CN': '品牌故事', en: 'Brand story', ja: 'ブランドストーリー' },
     preview: 'landscape',
+    references: videoTemplateReferenceSets.brand,
+    configuration: { shots: 4, appearanceLocked: true, ratio: '16:9', resolution: '2K', duration: 10 },
     description: {
       'zh-CN': '通过人物、场景和细节，让观众理解品牌为何做这件衣服',
       en: 'Use people, settings and details to tell the story behind the garment.',
@@ -43,8 +56,7 @@ export const videoTemplates: readonly VideoTemplate[] = [
 export const videoTemplateMessages = {
   'zh-CN': {
     title: '热门视频模版', categories: '模版分类', close: '关闭',
-    portraitShots: '默认 5 个镜头，适合 9:16 竖屏', landscapeShots: '默认 5 个镜头，适合 16:9 横屏',
-    replaceImages: '服装图、模特图均可替换', adjustNodes: '带入画布后可继续调整节点',
+    shotCount: '分镜数量：', appearanceLock: '形象锁定：', yes: '是', no: '否',
     garment: '上传服装图', model: '上传模特图',
     garmentPlaceholder: '替换模版商品，选填', modelPlaceholder: '替换模版人物，选填',
     replace: '替换图片', remove: '删除图片', reading: '正在读取图片…',
@@ -59,8 +71,7 @@ export const videoTemplateMessages = {
   },
   en: {
     title: 'Popular video templates', categories: 'Template categories', close: 'Close',
-    portraitShots: '5 shots by default, designed for 9:16 portrait', landscapeShots: '5 shots by default, designed for 16:9 landscape',
-    replaceImages: 'Replace the garment and model images', adjustNodes: 'Adjust nodes after adding the template to the canvas',
+    shotCount: 'Shots: ', appearanceLock: 'Appearance locked: ', yes: 'Yes', no: 'No',
     garment: 'Upload garment image', model: 'Upload model image',
     garmentPlaceholder: 'Replace template product · Optional', modelPlaceholder: 'Replace template model · Optional',
     replace: 'Replace image', remove: 'Remove image', reading: 'Reading image…',
@@ -75,8 +86,7 @@ export const videoTemplateMessages = {
   },
   ja: {
     title: '人気動画テンプレート', categories: 'テンプレートの分類', close: '閉じる',
-    portraitShots: '標準は5カット、9:16の縦向き動画に対応', landscapeShots: '標準は5カット、16:9の横向き動画に対応',
-    replaceImages: '服装画像とモデル画像は差し替え可能', adjustNodes: 'キャンバスに追加後もノードを調整可能',
+    shotCount: 'カット数：', appearanceLock: '外見固定：', yes: 'あり', no: 'なし',
     garment: '服装画像をアップロード', model: 'モデル画像をアップロード',
     garmentPlaceholder: '商品画像を差し替え（任意）', modelPlaceholder: 'モデル画像を差し替え（任意）',
     replace: '画像を差し替え', remove: '画像を削除', reading: '画像を読み込み中…',

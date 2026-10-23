@@ -16,7 +16,7 @@ import '../video-workflow-node.css';
 const promptLimit = 5000;
 const copy = {
   'zh-CN': {
-    title: '视频生成-服装短视频', referenceTitle: '视频生成-服装长视频',
+    title: '服装短视频', referenceTitle: '专业服装视频',
     framesTip: '上传首尾帧图片，智能生成短视频', longTip: '支持上传图片/视频作为参考，生成最多30s视频',
     main: '主图', mainFrame: '主图（首帧）', addMain: '添加首帧图', endFrame: '尾帧图', addEnd: '添加尾帧图',
     endTip: '建议上传同一模特/背景/服装的连贯动作图', media: '参考素材', mediaTip: '支持拖拽素材调整顺序',
@@ -29,7 +29,7 @@ const copy = {
     generationMode: '生成模式', fast: '快速', professional: '专业',
   },
   en: {
-    title: 'Video generation · Fashion short video', referenceTitle: 'Video generation · Fashion long video',
+    title: 'Fashion short video', referenceTitle: 'Professional fashion video',
     framesTip: 'Upload first and last frames to generate a short video', longTip: 'Use images or videos to generate up to 30 seconds',
     main: 'Main image', mainFrame: 'Main image (first frame)', addMain: 'Add first frame', endFrame: 'Last frame', addEnd: 'Add last frame',
     endTip: 'Use continuous poses with the same model, background and clothing', media: 'Reference media', mediaTip: 'Drag media to reorder',
@@ -42,7 +42,7 @@ const copy = {
     generationMode: 'Generation mode', fast: 'Fast', professional: 'Pro',
   },
   ja: {
-    title: '動画生成・ファッション短編動画', referenceTitle: '動画生成・ファッション長編動画',
+    title: 'ファッション短編動画', referenceTitle: 'プロ向けファッション動画',
     framesTip: '開始・終了画像から短編動画を生成', longTip: '画像や動画を参考に最大30秒の動画を生成',
     main: 'メイン画像', mainFrame: 'メイン画像（開始）', addMain: '開始画像を追加', endFrame: '終了画像', addEnd: '終了画像を追加',
     endTip: '同じモデル・背景・服装で連続した動作の画像を推奨', media: '参考素材', mediaTip: 'ドラッグで素材の順序を変更できます',

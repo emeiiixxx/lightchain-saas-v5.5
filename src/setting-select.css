@@ -21,6 +21,12 @@
 .canvas-context-divider { height: 1px; flex-shrink: 0; background: var(--border-weak); }
 .canvas-context-menu .lc-select-option:disabled { background: transparent; color: var(--text-disabled); cursor: not-allowed; }
 .canvas-context-menu .lc-select-option:disabled .canvas-context-shortcut { color: inherit; }
+/* Video workspace blank-canvas menu, Figma 151:26421 / 141:26089. */
+.canvas-context-menu[data-grouped-menu] { width: 224px; max-height: calc(100dvh - 16px); border: 0; background: var(--surface-floating); box-shadow: var(--shadow-l), inset 0 0 0 1px var(--border-weak); }
+.canvas-context-menu[data-grouped-menu]:lang(ja) { width: 264px; }
+.canvas-context-group { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.canvas-context-heading { height: 20px; padding: 0 4px; color: var(--text-tertiary); font-size: 12px; line-height: 20px; }
+.canvas-context-menu[data-grouped-menu] .canvas-context-shortcut { flex: 0 0 auto; height: 20px; padding: 2px 4px; border-radius: 6px; background: var(--state-default); color: var(--text-placeholder); font-size: 12px; font-weight: 500; line-height: 16px; }
 .lc-select-popup[data-side='bottom'][data-phase='enter'] { animation-name: panel-enter; }
 .lc-select-popup[data-side='bottom'][data-phase='exit'] { animation-name: panel-exit; }
 .lc-select-popup[data-side='top'][data-phase='enter'] { animation-name: select-up-enter; }

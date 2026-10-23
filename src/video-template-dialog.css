@@ -1,4 +1,4 @@
-/* Figma 64:4439 / 76:5003 / 76:5477, using the shared Beta primitives. */
+/* Figma 76:5477, updated 2026-10-23; shared Beta primitives and native player. */
 .lc-dialog.video-template-dialog { width: min(1280px, calc(100vw - 32px)); height: min(720px, calc(100dvh - 80px)); max-width: none; max-height: none; padding: 0; overflow: hidden; border-radius: var(--radius-2xl, 24px); color: var(--text-primary); transition-property: height, color, background-color, border-color, opacity; }
 .video-template-dialog[open] { display: flex; }
 .video-template-dialog::backdrop { background: var(--overlay-scrim); backdrop-filter: none; }
@@ -18,9 +18,10 @@
 .video-template-close .lc-button { width: 32px; min-width: 32px; height: 32px; padding: 0; }
 .video-template-detail-body { display: flex; flex: 1; flex-direction: column; gap: 8px; min-height: 0; padding-bottom: 16px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .video-template-heading { display: flex; flex-shrink: 0; flex-direction: column; gap: 8px; }
+.video-template-title { display: flex; flex-direction: column; gap: 8px; }
 .video-template-heading h3 { margin: 0; color: var(--text-primary); font-size: 20px; font-weight: 700; line-height: 28px; }
 .video-template-heading p { margin: 0; color: var(--text-secondary); font-size: 12px; font-weight: 400; line-height: 16px; }
-.video-template-features { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 16px 0 16px 21px; color: var(--text-primary); font-size: 14px; line-height: 20px; list-style: disc; }
+.video-template-configuration { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
 .video-template-uploads { display: flex; flex: 1; flex-direction: column; gap: 16px; padding-block: 8px; }
 .video-template-image-field { display: flex; flex-shrink: 0; flex-direction: column; gap: 8px; min-width: 0; }
 .video-template-image-field h4 { margin: 0; padding-inline: 4px; font-size: 14px; font-weight: 400; line-height: 20px; }

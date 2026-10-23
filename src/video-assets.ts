@@ -1,9 +1,19 @@
 const videoAssetBase = `${import.meta.env.BASE_URL}assets/video-workspace/`;
 const entryAssetBase = `${import.meta.env.BASE_URL}assets/video-entry-20261023/`;
 const materialAssetBase = `${import.meta.env.BASE_URL}assets/video-material-20261022/`;
+const contextAssetBase = `${import.meta.env.BASE_URL}assets/video-context-20261023/`;
 
 // Original artwork from Figma file 1dBgOC793NRsKgbNIaLZMK, node 64:2057.
 export const videoAssets = {
+  // Original slots in the completed page's blank-canvas menu, 151:26421.
+  contextQuick: `${contextAssetBase}quick.svg`,
+  contextStoryboardImage: `${contextAssetBase}storyboard-image.svg`,
+  contextMultiView: `${contextAssetBase}multi-view.svg`,
+  contextFashionVideo: `${contextAssetBase}fashion-video.svg`,
+  contextProFashionVideo: `${contextAssetBase}pro-fashion-video.svg`,
+  contextStoryboardVideo: `${contextAssetBase}storyboard-video.svg`,
+  contextUpload: `${contextAssetBase}upload.svg`,
+  contextPaste: `${contextAssetBase}paste.svg`,
   // Figma 64:2059, updated 2026-10-23; original entry and upload-slot exports.
   entryTemplates: `${entryAssetBase}templates.svg`,
   entryQuickImage: `${entryAssetBase}quick-image.svg`,
@@ -31,11 +41,12 @@ export const videoAssets = {
   downloadVideo: `${materialAssetBase}download.svg`,
   playVideo: `${materialAssetBase}play.svg`,
   upload: `${videoAssetBase}upload.svg`,
-  // Pure VIDEO-fill layers 76:5023 / 76:5591, exported without player controls.
-  portraitPoster: `${videoAssetBase}portraitPoster.png`,
+  // Commerce uses the first frame of the replacement clip supplied on 2026-10-23.
+  portraitPoster: `${videoAssetBase}ecommerce-poster-20261021-213138.png`,
+  // Original Figma VIDEO-fill layer 76:5591, without player controls.
   landscapePoster: `${videoAssetBase}landscapePoster.png`,
   // Original MP4s supplied by the user, matched to the template orientation.
-  portraitVideo: `${videoAssetBase}ecommerce.mp4`,
+  portraitVideo: `${videoAssetBase}ecommerce.mp4?v=20261021-213138`,
   landscapeVideo: `${videoAssetBase}brand-story.mp4`,
   // EmptyIcon / 暂无数据 (6:317), used by StateMessage 64:4668.
   empty: `${videoAssetBase}empty.png`,

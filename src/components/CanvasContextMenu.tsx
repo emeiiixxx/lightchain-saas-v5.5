@@ -1,8 +1,13 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Locale } from '../i18n';
 import { usePresence } from '../usePresence';
 import { Icon } from './ui';
+
+export type CanvasMenuGroup = {
+  label: string;
+  items: { id: string; label: string; icon: ReactNode; onSelect: () => void }[];
+};
 
 type Props = {
   point: { x: number; y: number; kind?: 'image' } | null;
@@ -10,6 +15,9 @@ type Props = {
   locale: Locale;
   uploadLabel?: string;
   itemMenuLabel?: string;
+  groups?: CanvasMenuGroup[];
+  uploadIcon?: ReactNode;
+  pasteIcon?: ReactNode;
   onClose: () => void;
   onUpload: () => void;
   onPaste?: () => void;
@@ -19,7 +27,7 @@ type Props = {
   onDelete?: () => void;
 };
 
-export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMenuLabel, onClose, onUpload, onPaste, onDownload, onCopy, onDuplicate, onDelete }: Props) {
+export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMenuLabel, groups, uploadIcon, pasteIcon, onClose, onUpload, onPaste, onDownload, onCopy, onDuplicate, onDelete }: Props) {
   const shown = usePresence(point);
   const ref = useRef<HTMLDivElement>(null);
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -54,7 +62,7 @@ export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMe
     };
   }, [point, onClose]);
   if (!shown.value) return null;
-  return createPortal(<div ref={ref} popover="manual" data-canvas-context-menu data-image-menu={imageMenu || undefined} data-overlay role="menu" aria-label={imageMenu ? itemMenuLabel ?? imageLabels[0] : labels[0]}
+  return createPortal(<div ref={ref} popover="manual" lang={locale} data-canvas-context-menu data-image-menu={imageMenu || undefined} data-grouped-menu={!imageMenu && Boolean(groups?.length) || undefined} data-overlay role="menu" aria-label={imageMenu ? itemMenuLabel ?? imageLabels[0] : labels[0]}
     className="lc-select-popup canvas-context-menu" data-phase={shown.phase} inert={shown.phase === 'exit'}
     onContextMenu={event => event.preventDefault()}
     onKeyDown={event => {
@@ -77,9 +85,17 @@ export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMe
       <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts={isMac ? 'Meta+C' : 'Control+C'} onClick={onCopy}><Icon name="contextCopy" size={20} /><span className="canvas-context-label">{imageLabels[2]}</span><span className="canvas-context-shortcut">Ctrl/⌘ + C</span></button>
       <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts={isMac ? 'Meta+D' : 'Control+D'} onClick={onDuplicate}><Icon name="contextCopy" size={20} /><span className="canvas-context-label">{imageLabels[3]}</span><span className="canvas-context-shortcut">Ctrl/⌘ + D</span></button>
       <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts="Backspace Delete" onClick={onDelete}><Icon name="contextTrash" size={20} /><span className="canvas-context-label">{imageLabels[4]}</span><span className="canvas-context-shortcut">←/del</span></button>
-    </> : <><button type="button" role="menuitem" className="lc-select-option" onClick={onUpload}><Icon name="canvasUpload" size={20} /><span className="canvas-context-label">{uploadLabel ?? labels[1]}</span></button>
+    </> : <>{groups?.map(group => <Fragment key={group.label}>
+      <div className="canvas-context-group" role="group" aria-label={group.label}>
+        <div className="canvas-context-heading" role="presentation">{group.label}</div>
+        {group.items.map(item => <button key={item.id} type="button" role="menuitem" className="lc-select-option" onClick={() => { onClose(); item.onSelect(); }}>
+          {item.icon}<span className="canvas-context-label">{item.label}</span>
+        </button>)}
+      </div><div className="canvas-context-divider" role="separator" />
+    </Fragment>)}
+    <button type="button" role="menuitem" className="lc-select-option" onClick={onUpload}>{uploadIcon ?? <Icon name="canvasUpload" size={20} />}<span className="canvas-context-label">{uploadLabel ?? labels[1]}</span></button>
     <button type="button" role="menuitem" className="lc-select-option" disabled={!canPaste} aria-keyshortcuts={isMac ? 'Meta+V' : 'Control+V'} onClick={onPaste}>
-      <Icon name="canvasPaste" size={20} /><span className="canvas-context-label">{labels[2]}</span><span className="canvas-context-shortcut">{isMac ? '⌘+V' : 'Ctrl+V'}</span>
+      {pasteIcon ?? <Icon name="canvasPaste" size={20} />}<span className="canvas-context-label">{labels[2]}</span><span className="canvas-context-shortcut">{groups?.length ? (isMac ? '⌘ + V' : 'Ctrl + V') : (isMac ? '⌘+V' : 'Ctrl+V')}</span>
     </button></>}
   </div>, document.body);
 }

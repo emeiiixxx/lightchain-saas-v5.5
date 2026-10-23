@@ -1,8 +1,11 @@
 import type { VideoCanvasMedia } from './video-canvas-media';
 import { videoWorkflowSize, videoWorkflowSourceIds, type VideoWorkflow } from './video-workflow';
+import { materialWorkflowSize, materialWorkflowSourceIds, type MaterialWorkflow } from './material-workflow';
+import { videoUpscaleWorkflowSize, videoUpscaleWorkflowSourceIds, type VideoUpscaleWorkflow } from './video-upscale-workflow';
 
 type Position = { x: number; y: number };
-type LayoutGroup = { media: VideoCanvasMedia[]; workflows: VideoWorkflow[]; mediaWidth: number; mediaHeight: number; workflowHeight: number; width: number; height: number };
+type LayoutEditor = { id: string; width: number; height: number; sourceIds: string[] };
+type LayoutGroup = { media: VideoCanvasMedia[]; workflows: LayoutEditor[]; mediaWidth: number; mediaHeight: number; workflowHeight: number; width: number; height: number };
 
 const STACK_GAP = 40;
 const EDITOR_GAP = 80;
@@ -11,10 +14,15 @@ const GROUPS_PER_ROW = 5;
 
 // Connected components keep a shared editor in one group even when several
 // media inputs feed it, or one material is reused by more than one editor.
-export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows: VideoWorkflow[]): Map<string, Position> {
+export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], videoWorkflows: VideoWorkflow[], materialWorkflows: MaterialWorkflow[] = [], upscaleWorkflows: VideoUpscaleWorkflow[] = []): Map<string, Position> {
+  const workflows: LayoutEditor[] = [
+    ...videoWorkflows.map(node => ({ id: node.id, ...videoWorkflowSize(node.mode), sourceIds: videoWorkflowSourceIds(node) })),
+    ...materialWorkflows.map(node => ({ id: node.id, ...materialWorkflowSize(node), sourceIds: materialWorkflowSourceIds(node) })),
+    ...upscaleWorkflows.map(node => ({ id: node.id, ...videoUpscaleWorkflowSize(), sourceIds: videoUpscaleWorkflowSourceIds(node) })),
+  ];
   const mediaById = new Map(images.map(image => [image.id, image]));
   const workflowById = new Map(workflows.map(node => [node.id, node]));
-  const sourcesByWorkflow = new Map(workflows.map(node => [node.id, videoWorkflowSourceIds(node).filter(id => mediaById.has(id))]));
+  const sourcesByWorkflow = new Map(workflows.map(node => [node.id, node.sourceIds.filter(id => mediaById.has(id))]));
   const workflowsByMedia = new Map<string, string[]>();
   for (const node of workflows) {
     for (const sourceId of sourcesByWorkflow.get(node.id)!) {
@@ -50,9 +58,8 @@ export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows:
     const nodes = workflows.filter(node => workflowIds.has(node.id));
     const mediaWidth = Math.max(0, ...media.map(image => image.width));
     const mediaHeight = media.reduce((height, image) => height + image.height, 0) + Math.max(0, media.length - 1) * STACK_GAP;
-    const nodeSizes = nodes.map(node => videoWorkflowSize(node.mode));
-    const workflowWidth = Math.max(0, ...nodeSizes.map(size => size.width));
-    const workflowHeight = nodeSizes.reduce((height, size) => height + size.height, 0) + Math.max(0, nodes.length - 1) * STACK_GAP;
+    const workflowWidth = Math.max(0, ...nodes.map(node => node.width));
+    const workflowHeight = nodes.reduce((height, node) => height + node.height, 0) + Math.max(0, nodes.length - 1) * STACK_GAP;
     groups.push({ media, workflows: nodes, mediaWidth, mediaHeight, workflowHeight,
       width: mediaWidth + workflowWidth + (media.length && nodes.length ? EDITOR_GAP : 0), height: Math.max(mediaHeight, workflowHeight) });
   }
@@ -77,7 +84,7 @@ export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows:
       let workflowY = y + (group.height - group.workflowHeight) / 2;
       for (const node of group.workflows) {
         positions.set(node.id, { x: x + (group.media.length ? group.mediaWidth + EDITOR_GAP : 0), y: workflowY });
-        workflowY += videoWorkflowSize(node.mode).height + STACK_GAP;
+        workflowY += node.height + STACK_GAP;
       }
       x += group.width + GROUP_GAP;
     }
