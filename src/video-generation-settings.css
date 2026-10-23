@@ -1,4 +1,4 @@
-/* Figma 113:8633 / 113:8634: 324×380 menus, original Beta controls and tokens. */
+/* Figma 113:8633 / 113:8634: 333×380 video menus, original Beta controls and tokens. */
 .video-generation-settings-ratio-icon {
   flex: 0 0 16px;
   width: 16px;
@@ -24,6 +24,23 @@
   box-shadow: inset 0 0 0 1px var(--border-weak), var(--shadow-l);
 }
 .video-generation-settings::backdrop { pointer-events: none; }
+.video-generation-settings:not(.material-generation-settings) { width: 333px; }
+.video-generation-settings:not(.material-generation-settings) .video-parameter-segments--ratios { min-width: 309px; }
+.video-resolution-heading { display: flex; align-items: center; gap: var(--spacing-xs); }
+.video-resolution-help {
+  display: inline-flex;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-tertiary);
+}
+.video-resolution-help:hover { color: var(--text-primary); }
 .video-generation-settings section {
   display: flex;
   flex-direction: column;

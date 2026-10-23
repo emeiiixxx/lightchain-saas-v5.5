@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Locale } from '../i18n';
-import { canGenerateMaterialWorkflow, materialReferenceLimit, materialWorkflowSize, materialWorkflowTitle, type MaterialWorkflow } from '../material-workflow';
+import { canGenerateMaterialWorkflow, materialReferenceLimit, materialWorkflowHasBackView, materialWorkflowSize, materialWorkflowTitle, materialWorkflowViews, type MaterialView, type MaterialWorkflow } from '../material-workflow';
 import { videoNodeAssetSets } from '../video-node-assets';
 import { materialGenerationAssets } from '../material-generation-settings-assets';
 import type { VideoReference, VideoWorkflow } from '../video-workflow';
@@ -16,7 +16,7 @@ import '../video-workflow-node.css';
 import '../material-workflow.css';
 
 const promptLimit = 2000;
-const views: MaterialWorkflow['view'][] = ['front', 'left45', 'left', 'right45', 'right', 'back'];
+const views: MaterialView[] = ['front', 'left45', 'left', 'right45', 'right', 'back'];
 const copy = {
   'zh-CN': {
     quickTip: '上传参考图，输入描述快速生成素材', tip: '功能介绍描述', references: '参考图',
@@ -63,7 +63,7 @@ function NodeIcon({ src, size = 16, className = '' }: { src: string; size?: numb
   return <span className={`icon video-node-icon ${className}`} aria-hidden="true" style={{ width: size, height: size, '--icon-url': `url("${src}")` } as CSSProperties} />;
 }
 
-function navigateChoices(event: KeyboardEvent<HTMLDivElement>) {
+function navigateChoices(event: KeyboardEvent<HTMLDivElement>, selectOnFocus = true) {
   if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
   const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
   const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
@@ -72,7 +72,7 @@ function navigateChoices(event: KeyboardEvent<HTMLDivElement>) {
   const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
     : (index + (event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1) + buttons.length) % buttons.length;
   buttons[next]?.focus();
-  buttons[next]?.click();
+  if (selectOnFocus) buttons[next]?.click();
 }
 
 export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPreview, onGenerate }: Props) {
@@ -85,6 +85,8 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
   const requiresReferences = node.kind !== 'quick';
   const hasPrompt = node.kind === 'quick' || node.kind === 'storyboard';
   const hasSettings = node.kind === 'quick' || node.kind === 'multiView';
+  const selectedViews = materialWorkflowViews(node);
+  const hasBackView = materialWorkflowHasBackView(node);
   const canGenerate = canGenerateMaterialWorkflow(node);
   const assets = references.length ? videoNodeAssetSets.referencesFilled : videoNodeAssetSets.referencesEmpty;
   const title = materialWorkflowTitle(node.kind, locale);
@@ -104,7 +106,7 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
     onChange({ references: [...ordered, ...byId.values()] });
   });
   const designId = node.kind === 'quick' ? references.length ? '141:24359' : '141:24357'
-    : node.kind === 'multiView' ? node.view === 'back' ? '141:25509' : '141:25185'
+    : node.kind === 'multiView' ? hasBackView ? '141:25509' : '141:25185'
     : node.kind === 'storyboard' ? '141:25380' : '141:25857';
 
   useEffect(() => {
@@ -117,6 +119,10 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
   }, []);
 
   function updatePrompt(value: string) { onChange({ prompt: value.slice(0, promptLimit) }); }
+  function toggleView(view: MaterialView) {
+    const next = selectedViews.includes(view) ? selectedViews.filter(item => item !== view) : [...selectedViews, view];
+    onChange({ view: views.filter(item => next.includes(item)) });
+  }
   function generate() {
     if (!canGenerate) return;
     onGenerate();
@@ -160,7 +166,7 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
       <div className="fusion-field material-reference-field">
         <div className="material-reference-heading" id={`${id}-references`}>
           <span className="fusion-label">{t.references}{requiresReferences && <span className="fusion-required">*</span>}</span>
-          {!single && <><Button className="material-reference-info nodrag nopan" aria-label={t.referenceTip} title={t.referenceTip}><NodeIcon src={assets.info} /></Button>
+          {!single && node.kind !== 'multiView' && <><Button className="material-reference-info nodrag nopan" aria-label={t.referenceTip} title={t.referenceTip}><NodeIcon src={assets.info} /></Button>
             <span className="video-reference-label-divider" aria-hidden="true" />
             <span className="material-reference-count">{t.uploaded}<span>{references.length}</span>/{materialReferenceLimit(node.kind)}</span></>}
         </div>
@@ -176,10 +182,10 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
       </div>
       {node.kind === 'multiView' && <div className="fusion-field material-view-field">
         <div className="fusion-label" id={`${id}-view`}>{t.view}<span className="fusion-required">*</span></div>
-        <div className="material-choice-group material-view-choices" role="group" aria-labelledby={`${id}-view`} onKeyDown={navigateChoices}>
-          {views.map(view => <ChoiceChip key={view} selected={node.view === view} onClick={() => onChange({ view })}>{t[view]}</ChoiceChip>)}
+        <div className="material-choice-group material-view-choices" role="group" aria-labelledby={`${id}-view`} onKeyDown={event => navigateChoices(event, false)}>
+          {views.map(view => <ChoiceChip key={view} selected={selectedViews.includes(view)} onClick={() => toggleView(view)}>{t[view]}</ChoiceChip>)}
         </div>
-        {node.view === 'back' && <div className="fusion-field material-back-field">
+        {hasBackView && <div className="fusion-field material-back-field">
           <div className="fusion-label">{t.backReference}<span className="fusion-required">*</span></div>
           <div className="material-back-reference">
             {node.back ? thumbnail(node.back, 'back') : <button type="button" className="fusion-reference video-workflow-reference-add nodrag nopan" aria-label={t.addBack}

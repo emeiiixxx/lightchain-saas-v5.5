@@ -3,6 +3,7 @@ import type { Locale } from './i18n';
 import type { VideoReference } from './video-workflow';
 
 export type MaterialWorkflowKind = 'quick' | 'multiView' | 'storyboard' | 'gridSplit';
+export type MaterialView = 'front' | 'left45' | 'left' | 'right45' | 'right' | 'back';
 export type MaterialWorkflow = {
   id: string;
   x: number;
@@ -10,7 +11,8 @@ export type MaterialWorkflow = {
   kind: MaterialWorkflowKind;
   references: VideoReference[];
   back?: VideoReference;
-  view: 'front' | 'left45' | 'left' | 'right45' | 'right' | 'back';
+  // Keep legacy single selections readable in existing nodes and undo history.
+  view: MaterialView[] | MaterialView;
   grid: 4 | 9;
   prompt: string;
   smartExpand: boolean;
@@ -26,12 +28,20 @@ const titles = {
 };
 
 export const materialWorkflowTitle = (kind: MaterialWorkflowKind, locale: Locale) => titles[locale][kind];
-export const materialReferenceLimit = (kind: MaterialWorkflowKind) => kind === 'gridSplit' ? 1 : 9;
+export const materialReferenceLimit = (kind: MaterialWorkflowKind) => kind === 'gridSplit' || kind === 'multiView' ? 1 : 9;
+
+export function materialWorkflowViews(node: Pick<MaterialWorkflow, 'view'>): MaterialView[] {
+  return Array.isArray(node.view) ? node.view : [node.view];
+}
+
+export function materialWorkflowHasBackView(node: Pick<MaterialWorkflow, 'kind' | 'view'>): boolean {
+  return node.kind === 'multiView' && materialWorkflowViews(node).includes('back');
+}
 
 // These are editor sizes, not the surrounding Figma demonstration frames.
 // Geometry is shared by React Flow, connections, fit, minimap and arrangement.
 export function materialWorkflowSize(node: Pick<MaterialWorkflow, 'kind' | 'view'>) {
-  const height = node.kind === 'multiView' ? (node.view === 'back' ? 541 : 441)
+  const height = node.kind === 'multiView' ? (materialWorkflowHasBackView(node) ? 541 : 441)
     : node.kind === 'gridSplit' ? 329 : 533;
   return { width: 320, height };
 }
@@ -40,18 +50,19 @@ export function canGenerateMaterialWorkflow(node: MaterialWorkflow): boolean {
   const requiresReferences = node.kind !== 'quick';
   const hasPrompt = node.kind === 'quick' || node.kind === 'storyboard';
   return (!requiresReferences || node.references.length > 0)
-    && (node.kind !== 'multiView' || node.view !== 'back' || Boolean(node.back))
+    && (node.kind !== 'multiView' || materialWorkflowViews(node).length > 0)
+    && (!materialWorkflowHasBackView(node) || Boolean(node.back))
     && (!hasPrompt || Boolean(node.prompt.trim()));
 }
 
 export function createMaterialWorkflow(x: number, y: number, kind: MaterialWorkflowKind, source?: CanvasImage): MaterialWorkflow {
-  return { id: crypto.randomUUID(), x, y, kind, view: 'front', grid: 4, prompt: '', smartExpand: false,
+  return { id: crypto.randomUUID(), x, y, kind, view: ['front'], grid: 4, prompt: '', smartExpand: false,
     ratio: 'auto', resolution: '2K', count: 1,
     references: source ? [{ id: crypto.randomUUID(), sourceImageId: source.id, name: source.name, url: source.url, kind: 'image' }] : [] };
 }
 
 export function materialWorkflowSourceIds(node: MaterialWorkflow): string[] {
-  const references = [...node.references, ...(node.kind === 'multiView' && node.view === 'back' && node.back ? [node.back] : [])];
+  const references = [...node.references, ...(materialWorkflowHasBackView(node) && node.back ? [node.back] : [])];
   return [...new Set(references.flatMap(reference => reference.sourceImageId ? [reference.sourceImageId] : []))];
 }
 

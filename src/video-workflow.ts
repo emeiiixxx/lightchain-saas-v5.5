@@ -23,7 +23,7 @@ export type VideoWorkflow = {
 // Figma configuration menus: fast 113:8633, professional 113:8634.
 export const videoGenerationConfig = {
   fast: { nodeId: '113:8633', resolutions: ['768p', '2K'], defaultResolution: '768p', audioOptions: ['auto'], maxDuration: 15 },
-  professional: { nodeId: '113:8634', resolutions: ['480p', '720p', '1080p'], defaultResolution: '1080p', audioOptions: ['auto', 'mute'], maxDuration: 30 },
+  professional: { nodeId: '113:8634', resolutions: ['480p', '720p', '1080p'], defaultResolution: '480p', audioOptions: ['auto', 'mute'], maxDuration: 30 },
 } as const;
 
 export function videoWorkflowSize(mode: VideoWorkflow['mode']) {
@@ -58,8 +58,10 @@ export const videoReferenceLimits = { image: 9, video: 3 } as const;
 export function videoWorkflowReferences(node: VideoWorkflow): VideoReference[] {
   const seen = new Set<string>();
   const references = [...(node.main ? [{ ...node.main, kind: 'image' as const }] : []), ...node.references].filter(reference => {
-    if (seen.has(reference.url)) return false;
-    seen.add(reference.url); return true;
+    // Images with the same URL can be independent picker-created canvas inputs.
+    const identity = reference.kind === 'image' ? `image:${reference.sourceImageId ?? reference.id}` : `video:${reference.url}`;
+    if (seen.has(identity)) return false;
+    seen.add(identity); return true;
   });
   const byId = new Map(references.map(reference => [reference.id, reference]));
   const ordered: VideoReference[] = [];

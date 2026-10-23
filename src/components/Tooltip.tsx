@@ -53,6 +53,9 @@ export function TooltipHost() {
     if (!shown.value || !ref.current) return;
     const { anchor } = shown.value;
     const tip = ref.current;
+    // Optional per-trigger width for multiline guidance; other tooltips still hug content.
+    const width = Number(anchor.dataset.tooltipWidth);
+    tip.style.width = Number.isFinite(width) && width > 0 ? `${width}px` : 'max-content';
     // Top layer avoids clipping by canvas transforms, toolbar overflow and dialogs.
     if (!tip.matches(':popover-open')) tip.showPopover();
     let frame = 0;

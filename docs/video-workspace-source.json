@@ -544,7 +544,7 @@
         "duration"
       ],
       "summaryIcon": "Both short and professional fashion video use the original 16px Icon/Editor edit-parameters SVG.",
-      "source": "Latest Figma 113:8633 (inner 113:8302) and 113:8634 (inner 113:8635). Both add a generation-mode group above ratio and move the duration input to the title row. Reuse original Beta controls and ratio artwork.",
+      "source": "Live Figma 113:8633 / 113:8634 on 2026-10-23: 333×380 panels, 自适应 ratio label, 样片模式 label for 480p, and professional-only resolution info icon with right-side Tooltip 173:31728 (user override; fast mode has no info icon). Reuse original Beta controls and semantic theme tokens.",
       "component": "src/components/VideoGenerationSettings.tsx",
       "assetDirectory": "public/assets/video-settings",
       "wideRatioIcon": {
@@ -553,7 +553,7 @@
         "file": "parameter-21-9.svg",
         "source": "Original SVG exported from the visible 21:9 option in Figma 113:8302."
       },
-      "panelWidth": 324,
+      "panelWidth": 333,
       "ratios": [
         "auto",
         "21:9",
@@ -576,10 +576,10 @@
       },
       "defaultResolutionByMode": {
         "fast": "768p",
-        "professional": "1080p"
+        "professional": "480p"
       },
-      "modeChange": "Normalize against the target mode. Unsupported resolution falls back to 1080p for professional or 768p for fast. Fast mode forces audio to auto and clamps durations to 5–15 seconds. Professional supports 5–30 seconds. Commit mode and normalized settings in one undo action. Preserve valid existing values, ratio, prompt and media.",
-      "interaction": "Mode, ratio, resolution and audio selections apply without closing. Both menus include mode selection; the short-video trigger summarizes mode | ratio | resolution | duration, and the professional-fashion node retains its separate mode selector plus ratio | resolution | duration. Audio remains outside the summary. Preserve per-node state, undo, keyboard, outside-click/Escape dismissal, dark/light themes and 200ms exit motion.",
+      "modeChange": "Normalize against the target mode. Unsupported resolution falls back to 480p for professional or 768p for fast. Fast mode forces audio to auto and clamps durations to 5–15 seconds. Professional supports 5–30 seconds. Commit mode and normalized settings in one undo action. Preserve valid existing values, ratio, prompt and media.",
+      "interaction": "Mode, ratio, resolution and audio apply without closing. Both editors use one trigger summarizing mode | ratio | resolution | duration. Audio remains outside the summary. Preserve per-node state, undo, keyboard, outside-click/Escape dismissal, dark/light themes and 200ms exit motion.",
       "durationSlider": {
         "library": "Lightchain SaaS v5.1 libraries Beta",
         "source": {
@@ -599,7 +599,7 @@
         "geometry": {
           "rowPaddingHorizontal": 4,
           "control": {
-            "width": 292,
+            "width": 301,
             "height": 18
           },
           "minimumLabel": {
@@ -609,7 +609,7 @@
             "gapAfter": 8
           },
           "slider": {
-            "width": 255,
+            "width": 264,
             "height": 18,
             "verticalAlign": "center"
           },
@@ -654,7 +654,7 @@
           }
         },
         "rowHeight": 18,
-        "sliderWidth": 255,
+        "sliderWidth": 264,
         "gap": 8,
         "input": {
           "width": 64,
@@ -676,7 +676,7 @@
       },
       "panelHeight": 380,
       "panel": {
-        "geometrySource": "Latest six-node design update: both configuration panels are 324×380px with five groups.",
+        "geometrySource": "Latest Figma 113:8633 / 113:8634: both panels are 333×380px, with 309px content width and five groups.",
         "background": "Surface/default",
         "padding": 12,
         "radius": 16,
@@ -711,11 +711,12 @@
           "selectedBackground": "State/selected"
         }
       },
-      "ratioAutoLabel": "Auto, including Chinese locale.",
+      "ratioAutoLabel": "自适应 in Chinese, Auto in English, 自動 in Japanese; stored value remains auto. Menu and trigger summary use the same localized label.",
       "ratioControl": {
         "itemHeight": 42,
         "wrapperPadding": 4,
-        "height": 50
+        "height": 50,
+        "width": 309
       },
       "resolutionControlHeight": 32,
       "audio": {
@@ -736,7 +737,7 @@
         "controlHeight": 32,
         "behavior": "Fast mode has the fixed auto option; professional mode can select auto or mute, defaulting to auto. Switching back to fast resets audio to auto. Audio generation service is not connected."
       },
-      "finalDesignValues": "New short editors default to fast / auto / 768p / 5s; professional fashion editors retain professional / auto / 1080p / 30s. Existing valid settings are preserved. Filled-node sample text, sample images and the menu screenshot durations are not prefilled into user nodes.",
+      "finalDesignValues": "New short editors default to fast / auto / 768p / 5s; professional fashion editors retain professional / auto / 480p / 30s. Existing valid settings are preserved. Filled-node sample text, sample images and the menu screenshot durations are not prefilled into user nodes.",
       "updated": "2026-10-23",
       "summaryOrderByEditor": {
         "frames": [
@@ -753,7 +754,7 @@
         ]
       },
       "resolutionLabelsZh": {
-        "480p": "样片480p",
+        "480p": "样片模式",
         "720p": "720p",
         "1080p": "1080p",
         "768p": "768p",
@@ -763,10 +764,28 @@
         "fast": "快捷模式",
         "professional": "专业模式"
       },
-      "triggerSource": "Figma 119:11243 generation-settings field: one 296x32px selector, mode | ratio | resolution | duration, existing Beta Select tokens. Applies to both video editors by user request."
+      "triggerSource": "Figma 119:11243 generation-settings field: one 296x32px selector, mode | ratio | resolution | duration, existing Beta Select tokens. Applies to both video editors by user request.",
+      "resolutionHelp": {
+        "icon": "public/assets/video-settings/resolution-info.svg",
+        "sourceNodes": [
+          "I113:8302;891:4593;173:31735",
+          "I113:8635;891:4593;173:31723"
+        ],
+        "assetUrl": "https://www.figma.com/api/mcp/asset/8b4f0923-fe45-4930-8869-c1f609646c92.svg",
+        "iconSize": 16,
+        "headingGap": 4,
+        "tooltipNode": "173:31728",
+        "tooltipWidth": 200,
+        "placement": "Right, with existing shared Tooltip viewport fallback.",
+        "textZh": "480P低成本快速出片，满意后选中视频进行高清放大",
+        "interaction": "Only professional mode renders the info icon beside the resolution heading and its hover/keyboard-focus tooltip. Fast mode has neither icon nor tooltip, since it has no 480p option. Reuse TooltipHost without changing settings.",
+        "visibleInModes": [
+          "professional"
+        ]
+      }
     },
     "costLabel": "999",
-    "interaction": "Short-video editors retain separate main and optional endFrame fields. Long-video editors show separate image and video reference rows, with independent uploads and counts: up to 9 images including inherited main, and 3 videos. Reorder and renumber within the same media type only; preserve each source binding and inherited main identity. Deduplicate references by URL. Every editor input has a canvas media source and a fixed automatic business association. Non-interactive editor space remains draggable.",
+    "interaction": "Short-video editors retain separate main and optional endFrame fields. Long-video editors show separate image and video reference rows, with independent uploads and counts: up to 9 images including inherited main, and 3 videos. Reorder and renumber within the same media type only; preserve each source binding and inherited main identity. Each node image-picker confirmation creates a fresh UUID canvas image; the same URL may be selected again in later confirmations and counts separately. Deduplicate images by URL only within one confirmation batch. Videos retain URL deduplication and existing canvas-source reuse. Every editor input has a canvas media source and a fixed automatic business association. Non-interactive editor space remains draggable.",
     "generation": "Disable the native generation button until required inputs are complete: short video needs a main image and non-whitespace prompt, with an optional end frame; professional video needs at least one image or video and a non-whitespace prompt. Video-only references are valid. The callback uses the same readiness predicate and returns when incomplete without opening a picker or focusing an empty field. Ready video editors append a fixed local demo video bound to the generating editor. Real AI generation and smart expansion services are not connected. Smart expansion only saves configuration; it never rewrites content, creates tasks or charges.",
     "geometryByMode": {
       "frames": {
@@ -817,7 +836,7 @@
       "entry": "Initial videoGeneration creates the empty short-video editor. The image toolbar short-video action inherits the actual selected image.",
       "connections": {
         "maximumImages": 2,
-        "binding": "Both main and endFrame retain their canvas source association. Editor uploads create or reuse canvas media and establish the automatic business line in one undo transaction. Repeated use of the same canvas source draws only one line to the editor. No ports, free edges or manual reconnect interactions."
+        "binding": "Both main and endFrame retain their canvas source association. Each image selected inside the editor creates a fresh UUID canvas image and automatic business line in one undo transaction, including the same image selected separately for main and end frame. Place each image 80 units left of the editor with collision avoidance. The image-toolbar entry keeps the inherited original image ID. Draw one line per source ID/editor pair; distinct IDs sharing a URL remain distinct lines. No ports, free edges or manual reconnect interactions."
       }
     },
     "multipleReferenceLayout": {
@@ -833,10 +852,10 @@
       "imageLimit": 9,
       "videoLimit": 3,
       "mainCountsTowardImageLimit": true,
-      "upload": "Separate image and video upload actions with separate current/maximum counts. Decode local videos before applying; errors preserve existing content. Every accepted image or video also creates or reuses a canvas media source and binds to this editor atomically.",
+      "upload": "Separate image and video upload actions with separate current/maximum counts. Decode local videos before applying; errors preserve existing content. Every accepted image creates a fresh UUID canvas image 80 units left of the editor with collision avoidance, even if its URL already exists on the canvas or in the node. Bind each new image to this editor atomically with the batch. Videos retain existing media-kind/URL reuse and deduplication.",
       "ordering": "Reorder only within the same media type. The dragged tile follows the pointer directly; adjacent tiles shift to make room with 200ms ease-out motion. Release immediately applies final positions and numbering, cancels unfinished position animations and adds no settling animation. Alt+Left/Right reorder retains 200ms ease-out position animation; reduced motion switches immediately. Dragging previews order only; drop commits once as one undo action, while cancellation immediately restores the original order without adding history. Preserve canvas media IDs, every source binding, inherited main identity and automatic links; never rebind by position.",
       "media": "Preview and top-right hover delete for every thumbnail. Delete clears only that reference, retaining the canvas source and editor configuration; remove its automatic line only when no other input uses that source. Canvas videos retain the original video and poster for playback and download.",
-      "deduplication": "Use URL across inherited main and references; enforce in picker exclusions and local image/video confirmation.",
+      "deduplication": "Images: deduplicate by URL only within a single confirmed batch; do not exclude inherited-main or existing-reference URLs from the image picker. Later confirmations may add the same URL again, each with a new canvas ID, independent capacity count and line. Reference identity uses sourceImageId, falling back to reference.id for legacy inputs. Videos: retain URL deduplication across current references in picker exclusions and local confirmation.",
       "generationRequirement": "At least one image or video plus a non-empty prompt; video-only references are valid."
     },
     "sharedGenerationControls": {
@@ -850,7 +869,7 @@
       ],
       "defaultsByEditor": {
         "frames": "fast, auto, 768p, 5s, audio auto",
-        "references": "professional, auto, 1080p, 30s, audio auto"
+        "references": "professional, auto, 480p (样片模式), 30s, audio auto"
       },
       "existingValues": "Retain valid existing per-node choices; only newly created short-video nodes and unsupported fast-mode resolution fallback use 768p. Use shared menus and Beta Slider.",
       "footer": "One full-width generation button with unchanged cost 999.",
@@ -880,7 +899,7 @@
         "audio": "auto"
       },
       "references": {
-        "resolution": "1080p",
+        "resolution": "480p",
         "duration": "30s",
         "ratio": "auto",
         "generationMode": "professional",
@@ -993,16 +1012,16 @@
   "userOverrides": {
     "fixedBusinessAssociations": {
       "mode": "Use the same fixed business association model as the fusion canvas. Retain normal video editors, editor uploads, reference videos and canvas media interactions.",
-      "creation": "Image toolbar video-generation actions create a short-video or long-video editor and bind the selected image in one undo transaction. Every main, end-frame, image-reference or video-reference upload inside an editor also creates or reuses its canvas media and automatic association in one transaction. The initial entry creates an empty short editor; long editors have no hidden main-image requirement.",
+      "creation": "Image toolbar video-generation actions create a short-video or long-video editor and inherit the selected canvas image ID in one undo transaction. Every main, end-frame and image-reference selection inside an editor creates a fresh UUID canvas image and automatic association, even for an already present URL; commit each confirmation batch and its bindings together. Video-reference uploads retain existing canvas-video reuse and URL deduplication. The initial entry creates an empty short editor; long editors have no hidden main-image requirement.",
       "interaction": "Do not show connection ports or provide free dragging, reconnection, selectable-edge deletion or port plus menus. Automatic lines do not intercept pointer input.",
       "geometry": "Automatic business lines use the fusion canvas geometry and follow the actual relative left/right positions of media and editor.",
       "selection": "Selecting either endpoint shows a brand-color marching line over a dark underlay at layer 4. Otherwise show a gray solid line at layer -1. Do not highlight unrelated branches through group association.",
       "motion": "Marching line uses an 800ms linear loop; color transitions retain 200ms ease-out. Reduced motion disables marching.",
       "clipboard": "Copy selected image and video media only. Do not copy editors, free relationships or connections back to original nodes.",
-      "canvasMedia": "Reuse an existing canvas source with the same media kind and URL without moving it or creating a duplicate. New media uses the shared landscape-height/portrait-width limit of 360px and 360px square rule, is placed left of the editor and avoids existing content. Videos retain their original file and poster.",
-      "edgeIdentity": "Draw one automatic business line per distinct source/editor pair, including every main, end frame and image/video reference. Keep the line while any input in that editor still uses its source.",
+      "canvasMedia": "Each image confirmed through any video-workspace node picker creates a fresh UUID canvas image instead of reusing an existing URL. This covers material references, grid-split input, back image, short-video main/end frame and professional-video image references. New images use the shared landscape-height/portrait-width limit of 360px and 360px square rule, sit 80 units left of the editor and avoid existing content and earlier images in the batch. Separate confirmations may repeat a URL and count independently; only the current multi-select batch deduplicates by URL. Toolbar-created nodes retain the selected original canvas image identity. Videos continue to reuse an existing same-kind/same-URL canvas source without moving or duplicating it, retaining the original file and poster.",
+      "edgeIdentity": "Draw one automatic business line per distinct canvas source ID/editor pair, including every main, end frame and image/video reference. Different image IDs sharing a URL keep independent lines. Keep a line while any input in that editor still uses its source ID.",
       "removal": "Removing an editor slot/reference detaches only that input and retains canvas media. Deleting canvas media clears all bound slots/references across editors while retaining editors, prompts, settings and unrelated inputs. Deleting an editor retains canvas media. Undo restores media, inputs and derived lines together.",
-      "arrangement": "Group all connected input media and editors for video-canvas arrangement. Position each shared media source and editor only once, retain reference order and business associations, then fit all content."
+      "arrangement": "Group all connected input media and editors for video-canvas arrangement. Position each canvas source ID and editor only once; do not collapse separate images sharing a URL. Retain reference order and business associations, then fit all content."
     },
     "workflowMainImageRemoval": "Every frame and reference thumbnail supports preview and top-right hover delete. Removing a slot clears only that input, retains canvas media and editor configuration, and removes the line only if no other input uses that source. End frame stays independent and is not promoted. Deleting canvas media clears all of its bindings across editors. All changes support coherent undo.",
     "desktopDialogHeight": 720,
@@ -1010,7 +1029,24 @@
     "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",
     "referenceImageHover": "Clip the image and hover overlay inside rounded containers.",
     "referenceDeleteOverlay": "Place the 24px circular Tonal delete action across the thumbnail top-right corner, offset -8px on both axes. Use BackgroundBlur/S via --background-blur-s with the existing dark media overlay and white icon. Clip only the inner preview, and reserve scroll-container space so the action remains visible and clickable.",
-    "workflowBlankAreaDrag": "Non-interactive editor space, including blank areas beside frame/reference thumbnails, drags the node. Reference ordering, upload, preview, delete and form controls retain their own interactions."
+    "workflowBlankAreaDrag": "Non-interactive editor space, including blank areas beside frame/reference thumbnails, drags the node. Reference ordering, upload, preview, delete and form controls retain their own interactions.",
+    "nodeImagePickerIdentity": {
+      "updated": "2026-10-23",
+      "source": "User requested a newly added canvas image even when the node picker selects the same image again.",
+      "scope": [
+        "material references",
+        "grid split input",
+        "back reference",
+        "short-video main frame",
+        "short-video end frame",
+        "professional-video image references"
+      ],
+      "identity": "Fresh UUID and sourceImageId binding for every accepted image selection, including repeated URLs across confirmations.",
+      "deduplication": "URL deduplication only within one confirmed image batch; independent later selections count separately toward capacity.",
+      "placement": "80 units left of the current editor, avoiding existing and newly added content.",
+      "history": "Commit the entire new image batch and current-node bindings as one undo action; removing references preserves their canvas images.",
+      "preserved": "Image-toolbar node creation inherits the selected original image ID. Video-file URL reuse and deduplication remain unchanged."
+    }
   },
   "deferred": [
     "multiple image visual design",
@@ -1344,6 +1380,7 @@
       "visual": "Reuse the v5.3 three-color generating SVGs and 3s linear animation, theme tokens and reduced-motion handling. One placeholder per expected output with the same generator edge and final canvas ID.",
       "interaction": "Move, arrange, select and delete. No preview, download, copying or downstream editor actions until completed. Completed demo files use contain in the reserved frame without cropping or changing source media.",
       "history": "Submission is one undo step; completion replaces slots without an additional undo step. Restoring historical slots resolves the task outcome instead of restoring a permanent spinner."
-    }
+    },
+    "canvasImageFit": "Canvas still images use cover, scaling uniformly and clipping overflow at the center to fill their existing frames without letterboxing. This applies immediately to existing image nodes as well as new results. Video posters keep contain; node geometry, source files, full-image preview and download are unchanged."
   }
 }
