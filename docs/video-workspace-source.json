@@ -32,7 +32,8 @@
     "blankCanvasMenu": "151:26421",
     "videoAssetToolbar": "151:26425",
     "videoUpscale": "141:26153",
-    "videoUpscaleEditor": "141:26204"
+    "videoUpscaleEditor": "141:26204",
+    "templateReferenceRail": "171:30350"
   },
   "assets": {
     "directory": "public/assets/video-workspace",
@@ -222,6 +223,15 @@
           ],
           "template": "brand",
           "usage": "Original model thumbnail and full hover image"
+        },
+        "thumbnail-next.svg": {
+          "nodeId": "I171:30376;176:1929",
+          "component": "121:15558",
+          "displaySize": [
+            16,
+            16
+          ],
+          "usage": "Right arrow in the 20px Tonal thumbnail rail button"
         }
       },
       "source": "Original Figma image exports; static template references are separate from user replacement uploads."
@@ -1027,21 +1037,46 @@
     "nodeId": "76:5477",
     "heading": "Selected template title and description",
     "referenceCards": {
+      "nodeId": "171:30350",
       "size": [
         90,
         120
       ],
       "gap": 8,
       "radius": 8,
-      "labels": [
-        "商品-{实际图片数量}张",
-        "模特"
-      ],
-      "badgeHeight": 20,
-      "badgeInset": 4
+      "labels": [],
+      "items": "Each real references.subjects image, followed by the model image; no duplicate placeholders.",
+      "layout": "One horizontal scroll row, no wrap, hidden scrollbar, width follows the existing detail container.",
+      "scroll": {
+        "reference": "SaaS v5.2 FeaturedCases.tsx: scrollLeft and scrollWidth/clientWidth bounds with 1px tolerance, ResizeObserver and onScroll updates.",
+        "step": "max(98px, clientWidth * 0.72)",
+        "motion": "Native smooth scrolling; reduced motion uses auto.",
+        "reset": "Scroll to the start when the template changes."
+      },
+      "arrows": {
+        "component": "Button / Tonal / XS",
+        "size": [
+          20,
+          20
+        ],
+        "iconSize": [
+          16,
+          16
+        ],
+        "edgeInset": 4,
+        "radius": "max",
+        "backgroundToken": "Surface/media-overlay maps the design media overlay rgba(0,0,0,0.6).",
+        "visibility": "Start: right only; middle: both; end: left only; no overflow: neither. Available arrows remain visible without hover."
+      },
+      "arrowIcon": "Both directions use the opaque thumbnail-next.svg from I171:30376;176:1929; rotate 180deg for left. The legacy subject-previous.svg contains 30% disabled opacity and is not used by the scrolling arrows.",
+      "tooltips": {
+        "component": "Shared Button title and TooltipHost",
+        "right": "向右查看更多参考图",
+        "left": "向左查看更多参考图",
+        "interaction": "Show on pointer hover or keyboard focus for available scroll arrows; localized in Chinese, English and Japanese."
+      }
     },
     "configuration": {
-      "shots": 4,
       "resolution": "2K",
       "durationSeconds": 10,
       "ratioByTemplate": {
@@ -1063,79 +1098,8 @@
       "wrap": true
     },
     "hoverPreviews": {
-      "subjectNode": "141:24346",
-      "modelNode": "141:24242",
-      "padding": 4,
-      "border": 1,
-      "radius": 8,
-      "imageRadius": 4,
-      "imageGap": 4,
-      "tokens": [
-        "Surface/floating",
-        "Border/weak",
-        "Shadow/M"
-      ],
-      "modelDescription": {
-        "fontSize": 12,
-        "lineHeight": 16,
-        "padding": [
-          24,
-          12,
-          12
-        ],
-        "gradient": "transparent to black 75%"
-      },
-      "interaction": "Hover or keyboard focus opens, touch click also opens; anchor and popover share hover retention. Escape and outside interaction close. Portalled into the modal dialog with native popover top-layer positioning and viewport avoidance. Category changes, upload picker opening and modal exit dismiss the preview. Shared 200ms ease-out and reduced-motion support. Delayed dismissal rechecks joint pointer and keyboard focus containment; carousel clicks cancel dismissal. Preserve the current frame while the next image loads. Boundary arrows retain focus via aria-disabled and clamped index updates instead of native disabled.",
-      "placement": "Always 8px below the hovered reference card and aligned with its left edge. Outer height remains 256px; only constrain width at the right viewport edge with an 8px inset. Do not flip above or left over the video. Bridge the vertical hover gap.",
-      "figmaSubjectSize": [
-        193.8016357421875,
-        250
-      ],
-      "figmaModelSize": [
-        193.801651,
-        250
-      ],
-      "imageSizing": {
-        "popoverHeight": 256,
-        "imageHeight": 246,
-        "width": "intrinsic aspect ratio, constrained only by available viewport width",
-        "aspectRatio": "All orientations use the same fixed outer height, including smaller originals. Contain the full image without cropping."
-      },
-      "subjectDisplay": "Single active image from references.subjects. Fixed 256px outer height across slide changes, width adapts to each image aspect ratio.",
-      "subjectSwitcher": {
-        "nodeId": "141:25137",
-        "placement": "Bottom center inside the preview; 10px from outer bottom edge.",
-        "surfaceToken": "Surface/secondary",
-        "textToken": "Text/secondary",
-        "padding": 2,
-        "gap": 8,
-        "radius": "max",
-        "height": 20,
-        "button": {
-          "component": "Button / Ghost / 2XS",
-          "size": [
-            16,
-            16
-          ],
-          "disabledOpacity": 0.65,
-          "iconSize": [
-            16,
-            16
-          ],
-          "sourceInstances": [
-            "141:25142",
-            "141:25138"
-          ]
-        },
-        "counter": {
-          "format": "current/total",
-          "fontSize": 12,
-          "lineHeight": 16
-        },
-        "interaction": "No wraparound; disable previous on the first image and next on the last. Hide controls for one image. Reset to the first image on reopening. Support click, left/right arrows and Home/End without closing the popover. Image fade is 200ms ease-out and respects reduced motion.",
-        "itemsSource": "src/video-template-reference-assets.ts::videoTemplateReferenceSets[templateId].subjects",
-        "countLabel": "Subject thumbnail count and switcher total both derive from the image list."
-      }
+      "enabled": false,
+      "reason": "Removed at user request. Thumbnails are static images without hover, focus or click enlargement."
     },
     "components": [
       "Dialog",
@@ -1146,8 +1110,7 @@
       "TagChip",
       "VideoTemplateReferences",
       "ProgressiveImage",
-      "usePresence",
-      "useHoverDismiss"
+      "usePresence"
     ],
     "verification": "Edited locally without browser, test or build execution as requested; not published.",
     "referencesByTemplate": {
@@ -1161,11 +1124,18 @@
       },
       "brand": {
         "subjects": [
-          "brand-subject.png"
+          "brand-subject.png",
+          "subject-front.jpg",
+          "subject-back.png",
+          "assets/try-on/history/regular-1.png",
+          "assets/try-on/history/regular-2.png",
+          "assets/try-on/history/regular-3.png",
+          "assets/try-on/history/regular-4.png"
         ],
         "model": "brand-model.png",
         "modelDescription": null,
-        "note": "One subject image is available in the current design. Display the real count and hide the single-image switcher; do not reuse commerce imagery or model copy."
+        "note": "User requested eight references for the horizontal scrolling demo: seven subject/demo images plus the original brand model. Reuses existing local assets. Thumbnails have no enlarged hover preview.",
+        "totalReferenceCount": 8
       }
     },
     "designComparison": {
@@ -1225,6 +1195,19 @@
       "picker": "Keep the shared single-image AssetPicker and immediate local upload application; retain drop, replace, delete and file validation.",
       "content": "Keep the existing user-provided video, native player, real template references and current template title/ratio. Figma sample user uploads are not prefilled.",
       "responsive": "Retain the existing 760px stacked-layout and 460px compact thumbnail rules; new text wraps naturally and the existing detail body scrolls when needed."
+    },
+    "latestReferenceRail": {
+      "date": "2026-10-23",
+      "sessionId": "50b698d6-0f2e-4eb7-923a-a2d56486faea",
+      "nodeId": "171:30350",
+      "changes": [
+        "Remove thumbnail labels and shot count.",
+        "Show each actual reference as a separate thumbnail in a horizontally scrollable row.",
+        "Brand story shows eight images for the scrolling demo.",
+        "Remove thumbnail enlarged previews and related hover/focus/click actions.",
+        "Use the same opaque arrow artwork in both directions and show localized directional tooltips."
+      ],
+      "verification": "Implementation from live Figma context and existing source. No browser, tests, build or publication per user instruction."
     }
   },
   "completedPageImplementation": {
@@ -1233,7 +1216,7 @@
     "coverage": [
       "initial canvas",
       "template dialog and upload states",
-      "subject and model hover previews",
+      "horizontally scrollable template reference thumbnails",
       "image and video toolbars",
       "blank-canvas cascading menu",
       "short and professional video editors",
@@ -1317,6 +1300,13 @@
       "width": 1792,
       "height": 2400
     },
+    "textOnlyAutoImage": {
+      "condition": "Quick image generation with zero reference images and ratio auto.",
+      "file": "public/assets/try-on/history/regular-5.png",
+      "width": 2048,
+      "height": 2048,
+      "display": "Use the original square image in the 320x320 placeholder without side bars. Canvas, task thumbnail, preview and download share the same square source."
+    },
     "video": {
       "file": "public/assets/video-workspace/ecommerce.mp4",
       "poster": "public/assets/video-workspace/ecommerce-poster-20261021-213138.png",
@@ -1337,7 +1327,7 @@
     "scope": "Fixed local demo media only; no AI, actual upscaling/cropping, prompt-driven result, backend task or charge. Original file ratio and duration remain unchanged regardless of settings.",
     "taskList": {
       "component": "CanvasChrome.tasks -> CanvasTaskList; Figma 165:30270 reuses v5.3 controls, dimensions, tokens and generating animation.",
-      "disclosure": "Hover opens without a background change; leaving the entire widget closes after 120ms. Width, height, header geometry and chevron animate with shared 200ms ease-out, respecting reduced motion. Keyboard focus retains the list; touch/keyboard clicks toggle and Escape closes.",
+      "disclosure": "Click toggles expansion for mouse, touch and keyboard without a background change. Hover, pointer leave and focus changes do not open or close the list. Clicking a result retains expansion; Escape closes. Width, height, header geometry and chevron animate with shared 200ms ease-out, respecting reduced motion.",
       "durationMs": 3000,
       "lifecycle": "Each valid click records an independent running task and immediately adds its connected placeholders using the submitted ratio. After 3 seconds, replace surviving placeholders in place and mark the task completed with the first surviving result thumbnail or video poster. Preserve drag/arrangement positions, dimensions and IDs.",
       "history": "Keep completed records for the mounted workspace session; running count includes only running tasks. The task list remains expandable after all tasks complete.",

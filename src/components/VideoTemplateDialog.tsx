@@ -185,9 +185,8 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
           <div className="video-template-detail-body">
             <header className="video-template-heading" data-node-id="141:24213">
               <div className="video-template-title"><h3>{template.label[locale]}</h3><p>{template.description?.[locale]}</p></div>
-              {template.references && <VideoTemplateReferences key={selected} locale={locale} references={template.references} active={phase === 'enter' && !shownPicker.value} />}
+              {template.references && <VideoTemplateReferences key={selected} locale={locale} references={template.references} />}
               {template.configuration && <div className="video-template-configuration" data-node-id="141:24226">
-                <TagChip>{t.shotCount}{template.configuration.shots}</TagChip>
                 <TagChip>{t.maintenanceInfo}</TagChip>
                 <TagChip>{template.configuration.ratio} ｜ {template.configuration.resolution} ｜ {template.configuration.duration}s</TagChip>
               </div>}

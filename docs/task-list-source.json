@@ -78,7 +78,7 @@
     "radius": 12,
     "rowSurface": "Surface/secondary",
     "thumbnailFit": "contain",
-    "triggerInteraction": "Pointer hover opens immediately; leaving the whole widget closes after the shared 120ms intent buffer. Moving within the list, clicking a result or retaining keyboard focus keeps it open. Touch and keyboard clicks toggle; Escape closes. Container and trigger backgrounds remain unchanged.",
+    "triggerInteraction": "Click toggles expansion consistently for mouse, touch and keyboard. Hover, pointer leave and focus changes do not change expansion. Clicking a result keeps the list open; Escape closes. Container and trigger backgrounds remain unchanged.",
     "disclosureMotion": "Shell width/height, header geometry and chevron rotation use shared 200ms ease-out transitions, including interrupted direction changes. Retain closing content through its exit and disable its interaction immediately. Reduced motion switches directly."
   },
   "verification": "Implementation only. Current Figma context and motion were read. No browser, automated checks, tests, build or deployment, per user instruction. Baseline validation is historical and does not verify these changes."

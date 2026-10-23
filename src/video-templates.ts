@@ -11,7 +11,6 @@ export type VideoTemplate = {
   description?: LocalizedText;
   references?: VideoTemplateReferenceSet;
   configuration?: {
-    shots: number;
     appearanceLocked: boolean;
     ratio: '9:16' | '16:9';
     resolution: string;
@@ -26,7 +25,7 @@ export const videoTemplates: readonly VideoTemplate[] = [
     label: { 'zh-CN': '电商视频', en: 'E-commerce', ja: 'EC動画' },
     preview: 'portrait',
     references: videoTemplateReferenceSets.commerce,
-    configuration: { shots: 4, appearanceLocked: true, ratio: '9:16', resolution: '2K', duration: 10 },
+    configuration: { appearanceLocked: true, ratio: '9:16', resolution: '2K', duration: 10 },
     description: {
       'zh-CN': '让消费者快速看清衣服的款式、版型、穿着效果和购买理由',
       en: 'Help shoppers quickly understand the style, fit, look and reasons to buy.',
@@ -40,7 +39,7 @@ export const videoTemplates: readonly VideoTemplate[] = [
     label: { 'zh-CN': '品牌故事', en: 'Brand story', ja: 'ブランドストーリー' },
     preview: 'landscape',
     references: videoTemplateReferenceSets.brand,
-    configuration: { shots: 4, appearanceLocked: true, ratio: '16:9', resolution: '2K', duration: 10 },
+    configuration: { appearanceLocked: true, ratio: '16:9', resolution: '2K', duration: 10 },
     description: {
       'zh-CN': '通过人物、场景和细节，让观众理解品牌为何做这件衣服',
       en: 'Use people, settings and details to tell the story behind the garment.',
@@ -57,7 +56,7 @@ export const videoTemplateMessages = {
   'zh-CN': {
     title: '热门视频模版', categories: '模版分类', close: '关闭',
     maintenanceInfo: '维护信息',
-    shotCount: '分镜数量：', appearanceLock: '形象锁定：', yes: '是', no: '否',
+    appearanceLock: '形象锁定：', yes: '是', no: '否',
     uploadTitle: '上传对应素材，替换模版中的商品或人物',
     uploadRequirement: '使用模版生成时，服装图/模特图2选1，必填',
     garment: '上传服装图', model: '上传模特图',
@@ -75,7 +74,7 @@ export const videoTemplateMessages = {
   en: {
     title: 'Popular video templates', categories: 'Template categories', close: 'Close',
     maintenanceInfo: 'Maintenance information',
-    shotCount: 'Shots: ', appearanceLock: 'Appearance locked: ', yes: 'Yes', no: 'No',
+    appearanceLock: 'Appearance locked: ', yes: 'Yes', no: 'No',
     uploadTitle: 'Upload matching images to replace the template’s product or model',
     uploadRequirement: 'A garment image or model image is required to generate from this template.',
     garment: 'Upload garment image', model: 'Upload model image',
@@ -93,7 +92,7 @@ export const videoTemplateMessages = {
   ja: {
     title: '人気動画テンプレート', categories: 'テンプレートの分類', close: '閉じる',
     maintenanceInfo: '管理情報',
-    shotCount: 'カット数：', appearanceLock: '外見固定：', yes: 'あり', no: 'なし',
+    appearanceLock: '外見固定：', yes: 'あり', no: 'なし',
     uploadTitle: '素材をアップロードして、テンプレートの商品や人物を差し替え',
     uploadRequirement: 'テンプレートで生成するには、服装画像またはモデル画像が必要です。',
     garment: '服装画像をアップロード', model: 'モデル画像をアップロード',

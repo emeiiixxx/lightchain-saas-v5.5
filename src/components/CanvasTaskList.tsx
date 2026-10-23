@@ -1,8 +1,7 @@
 import { ProgressiveImage } from './ProgressiveImage';
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { Icon } from './ui';
 import { usePresence } from '../usePresence';
-import { useHoverDismiss } from '../useHoverDismiss';
 import { messages, type Locale } from '../i18n';
 
 export type CanvasTask = { id: string; status: 'running' | 'completed' | 'failed'; createdAt: string; thumbnailUrl?: string; resultIds?: string[] };
@@ -24,16 +23,9 @@ type Props = {
 export function CanvasTaskList({ tasks = emptyTasks, locale, onSelectTask, canSelectTask, nodeId = '103:4291' }: Props) {
   const [expanded, setExpanded] = useState(false);
   const root = useRef<HTMLDivElement>(null);
-  const pointerType = useRef('mouse');
   const hasTasks = tasks.length > 0;
   const open = expanded && hasTasks;
   const shown = usePresence(open ? tasks : null);
-  const dismissIfOutside = useCallback(() => {
-    const focused = document.activeElement;
-    if (root.current?.matches(':hover') || focused instanceof HTMLElement && focused.matches(':focus-visible') && root.current?.contains(focused)) return;
-    setExpanded(false);
-  }, []);
-  const hover = useHoverDismiss(open, dismissIfOutside);
   const id = useId();
   const t = copy[locale];
   useEffect(() => { if (!hasTasks) setExpanded(false); }, [hasTasks]);
@@ -46,28 +38,14 @@ export function CanvasTaskList({ tasks = emptyTasks, locale, onSelectTask, canSe
   const expandedHeight = 2 + 32 + 24 + count * 64 + Math.max(0, count - 1) * 8;
   return <div ref={root} className={`canvas-task-widget ${open ? 'is-expanded' : ''}`} data-node-id={nodeId}
     style={{ '--task-expanded-height': `${expandedHeight}px` } as CSSProperties}
-    onPointerEnter={event => {
-      if (event.pointerType === 'touch') return;
-      hover.cancel();
-      if (hasTasks) setExpanded(true);
-    }}
-    onPointerDown={event => { pointerType.current = event.pointerType; hover.cancel(); }}
-    onPointerLeave={event => { if (event.pointerType !== 'touch') hover.schedule(); }}
-    onFocusCapture={hover.cancel}
-    onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) hover.schedule(); }}
     onKeyDown={event => {
       if (event.key !== 'Escape' || !open) return;
-      event.preventDefault(); event.stopPropagation(); hover.cancel();
+      event.preventDefault(); event.stopPropagation();
       root.current?.querySelector<HTMLButtonElement>('.canvas-task-trigger')?.focus({ preventScroll: true });
       setExpanded(false);
     }}>
     <button type="button" className="canvas-task-trigger" aria-label={messages[locale].taskList} aria-expanded={open} aria-controls={id} disabled={!hasTasks}
-      onClick={event => {
-        hover.cancel();
-        // A mouse click follows hover-open; do not immediately collapse it.
-        if (event.detail !== 0 && pointerType.current !== 'touch') setExpanded(true);
-        else setExpanded(value => !value);
-      }}>
+      onClick={() => setExpanded(value => !value)}>
       <Icon name="taskIcon" size={20} /><span className="canvas-task-label">{messages[locale].tasks}</span>
       <span className="canvas-task-count">{running} {t.count}</span><Icon name="imgChevron" size={16} className="canvas-task-chevron" />
     </button>

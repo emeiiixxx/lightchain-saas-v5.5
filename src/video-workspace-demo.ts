@@ -48,7 +48,8 @@ export function demoPlaceholderSize(ratio: string, source?: VideoCanvasMedia) {
   return aspect > 1 ? { width: 320 * aspect, height: 320 } : { width: 320, height: 320 / aspect };
 }
 
-const imageUrl = `${import.meta.env.BASE_URL}assets/workflow-examples/fusion-loungewear-result.png`;
+const portraitImage = { url: `${import.meta.env.BASE_URL}assets/workflow-examples/fusion-loungewear-result.png`, width: 1792, height: 2400 };
+const squareImage = { url: `${import.meta.env.BASE_URL}assets/try-on/history/regular-5.png`, width: 2048, height: 2048 };
 const copy = {
   'zh-CN': { image: '演示结果', video: '视频演示结果' },
   en: { image: 'Demo result', video: 'Video demo result' },
@@ -60,14 +61,16 @@ const copy = {
 export function createMaterialDemoResults(node: MaterialWorkflow, locale: Locale): DemoResult[] {
   const count = node.kind === 'storyboard' ? 1 : node.kind === 'gridSplit' ? node.grid
     : Math.max(1, Math.min(4, Number.isFinite(node.count) ? Math.trunc(node.count) : 1));
+  // Text-only Auto reserves a square frame; use a genuinely square source so
+  // the canvas, task thumbnail, preview and download all share the same ratio.
+  const image = node.kind === 'quick' && node.references.length === 0 && node.ratio === 'auto'
+    ? squareImage : portraitImage;
   return Array.from({ length: count }, (_, index) => sizeVideoCanvasMedia({
     id: crypto.randomUUID(),
     name: `${materialWorkflowTitle(node.kind, locale)} · ${copy[locale].image}${count > 1 ? ` ${index + 1}` : ''}.png`,
-    url: imageUrl,
-    width: 1792,
-    height: 2400,
-    naturalWidth: 1792,
-    naturalHeight: 2400,
+    ...image,
+    naturalWidth: image.width,
+    naturalHeight: image.height,
     generatedByEditorId: node.id,
   }));
 }
