@@ -3,6 +3,7 @@
   "route": "#/video-workspace",
   "nodes": {
     "initial": "64:2057",
+    "initialContent": "64:2059",
     "initialEntries": "64:2061",
     "singleImageCanvas": "76:5683",
     "uploadedVideoCanvas": "97:6649",
@@ -28,43 +29,48 @@
   "assets": {
     "directory": "public/assets/video-workspace",
     "imageToolbar": {
-      "updated": "2026-10-22",
-      "directory": "public/assets/video-image-toolbar",
-      "fileCount": 15,
+      "updated": "2026-10-23",
+      "directory": "public/assets/video-image-toolbar-20261023",
+      "fileCount": 16,
       "sourceNodes": [
         "113:8878",
         "113:9464",
         "113:9502"
       ],
-      "source": "Original SVGs exported from the toolbar and its material/video generation menu slots.",
+      "source": "Original SVGs from the current toolbar and standalone menus; standalone menu nodes override older embedded menu instances.",
       "displaySize": 20,
       "upscaleDisplaySize": 16
     },
     "initialIcons": "64:2057",
     "initialEntryIcons": {
-      "updated": "2026-10-22",
-      "directory": "public/assets/video-entry-20261022",
+      "updated": "2026-10-23",
+      "directory": "public/assets/video-entry-20261023",
       "slotSize": 24,
       "rootSize": 24,
       "templates": {
         "slot": "I64:2062;1782:24376",
         "file": "templates.svg"
       },
-      "materialGeneration": {
+      "quickImage": {
         "slot": "I64:2063;1782:24376",
-        "file": "material-generation.svg"
+        "file": "quick-image.svg"
       },
-      "videoGeneration": {
+      "storyboardImage": {
         "slot": "I64:2064;1782:24376",
-        "file": "video-generation.svg"
+        "file": "storyboard-image.svg"
       },
-      "videoRemake": {
-        "slot": "I64:2065;1782:24376",
-        "file": "video-remake.svg"
-      },
-      "videoEdit": {
+      "fashionVideo": {
         "slot": "I64:2204;1782:24376",
-        "file": "video-edit.svg"
+        "file": "fashion-video.svg"
+      },
+      "proFashionVideo": {
+        "slot": "I64:2065;1782:24376",
+        "file": "pro-fashion-video.svg"
+      },
+      "upload": {
+        "slot": "I64:2068;781:7536",
+        "file": "upload.svg",
+        "size": 32
       }
     },
     "uploadedVideoIcons": {
@@ -155,22 +161,49 @@
   },
   "initialEntries": {
     "nodeId": "64:2061",
+    "updated": "2026-10-23",
+    "sectionNodeId": "64:2059",
+    "headline": "从一个视频想法开始",
+    "intro": "从下方选择一个功能查看示例或点击添加素材，开启您的创作",
     "labels": [
       "视频模版",
-      "素材生成",
-      "视频生成",
-      "视频复刻",
-      "视频编辑"
+      "快捷生图",
+      "分镜图",
+      "服装短视频",
+      "专业服装视频"
+    ],
+    "entryNodeIds": [
+      "64:2062",
+      "64:2063",
+      "64:2064",
+      "64:2204",
+      "64:2065"
     ],
     "button": {
       "variant": "Outline L",
-      "width": 144,
+      "width": "max-content",
+      "horizontalPadding": 24,
+      "chineseDesignWidths": [144, 144, 128, 160, 176],
+      "stroke": "1px inset, excluded from layout",
       "height": 48,
       "radius": 12,
       "iconSize": 24,
       "contentGap": 8
     },
     "gap": 16,
+    "chineseDesignWidth": 816,
+    "sectionGap": 32,
+    "headlineGap": 4,
+    "upload": {
+      "nodeId": "64:2068",
+      "width": 640,
+      "height": 360,
+      "radius": 16,
+      "maxWidth": "100%",
+      "align": "center",
+      "iconSize": 32
+    },
+    "responsive": "Retain wrapping and scrolling on small viewports; buttons follow content width and the upload area stays within its container. Existing padding rules at 850px width or 760px height remain; at 680px width the upload height remains 280px.",
     "badge": {
       "label": "NEW",
       "nodeId": "64:2066",
@@ -178,7 +211,7 @@
       "top": -8,
       "height": 20
     },
-    "interaction": "Templates opens the existing modal; video generation creates an empty fashion-video node; the other entries show the existing service-not-connected feedback."
+    "interaction": "Templates opens the existing modal; fashion short video creates an empty frames node, and professional fashion video creates an empty references/long-video node, using the same creation functions as the image toolbar. Quick image and storyboard image show explicit service-not-connected feedback. Upload behavior is unchanged."
   },
   "singleImageCanvas": {
     "designSize": {
@@ -196,9 +229,9 @@
     "toolbar": {
       "nodeId": "113:8878",
       "instanceId": "113:8879",
-      "updated": "2026-10-22",
+      "updated": "2026-10-23",
       "width": "max-content",
-      "chineseDesignWidth": 607,
+      "chineseDesignWidth": 699,
       "textButtonWidth": "auto",
       "textButtonPaddingInline": 8,
       "height": 40,
@@ -212,6 +245,7 @@
           "separator"
         ],
         [
+          "storyboard",
           "videoRemake",
           "separator",
           "cutout",
@@ -231,7 +265,8 @@
         "videoRemake": 88,
         "cutout": 64,
         "upscale": 84,
-        "iconOnly": 32
+        "iconOnly": 32,
+        "storyboard": 88
       },
       "localization": "Chinese, English and Japanese; text controls and toolbar size to their contents.",
       "scope": "Video-workspace image selection only. Preserve fusion-canvas and uploaded-video toolbars."
@@ -240,34 +275,36 @@
       "materialGeneration": {
         "nodeId": "113:9464",
         "labelsZh": [
-          "快捷编辑",
+          "快捷生图",
           "多视角",
-          "分镜图"
+          "分镜图",
+          "宫格图切分"
         ],
         "actions": [
           "quickEdit",
           "multiView",
-          "storyboardImage"
+          "storyboardImage",
+          "gridSplit"
         ],
-        "behavior": "Each action gives the existing not-connected notice; do not create output, tasks or charges."
+        "behavior": "Each action gives the existing not-connected notice; do not create output, tasks or charges.",
+        "height": 160
       },
       "videoGeneration": {
         "nodeId": "113:9502",
         "labelsZh": [
           "服装短视频",
-          "服装长视频",
-          "分镜成片"
+          "专业服装视频"
         ],
         "actions": [
           "fashionVideo",
-          "multiReference",
-          "storyboard"
+          "multiReference"
         ],
-        "behavior": "Fashion short video creates a frames editor; fashion long video creates a references editor. Both carry the actual selected image as the inherited main image and add an automatic business line. Editor creation, mode and association are one undo transaction. Storyboard video remains not connected."
+        "behavior": "Fashion short video creates a frames editor. Professional fashion video creates the existing references editor, retaining its long-video title and product logic. Both inherit the selected image and automatic business line in one undo transaction.",
+        "height": 80
       },
       "panel": {
         "width": 160,
-        "height": 120,
+        "height": "Content-sized: material generation 160px; video generation 80px.",
         "padding": 4,
         "gap": 8,
         "rowHeight": 32,
@@ -280,7 +317,8 @@
       },
       "reuse": "Reuse v5.4 useHoverDismiss and ElementSendMenu's combined hover area, adapting the current DownloadFormatMenu top-layer positioning and keyboard behavior with usePresence.",
       "interaction": "Open on trigger hover; keep open across the combined trigger/menu hit area with a 120ms pointer-intent dismissal delay and 200ms ease-out visual motion. Also support click and keyboard. Menus are mutually exclusive; Escape, outside interaction or changing the selected image closes them. Follow the toolbar as the canvas moves and avoid viewport edges. Support dark/light themes and Chinese/English/Japanese.",
-      "otherActions": "Reuse real cutout editing and the click-open PNG/JPG/AVIF download menu. Video remake, upscale, save to assets and send remain not connected."
+      "otherActions": "Storyboard video is a direct toolbar action between video generation and video remake. Reuse real cutout editing and click-open PNG/JPG/AVIF downloads. Storyboard video, video remake, upscale, save to assets and send remain not connected.",
+      "sourceRule": "Use standalone nodes 113:9464 and 113:9502 as authoritative over the older embedded three-item menu."
     },
     "initialAlignment": "Center image and toolbar together inside the canvas below the 48px topbar; keep toolbar at UI scale.",
     "sideToolbar": {
@@ -550,12 +588,12 @@
     },
     "costLabel": "999",
     "interaction": "Short-video editors retain separate main and optional endFrame fields. Long-video editors show separate image and video reference rows, with independent uploads and counts: up to 9 images including inherited main, and 3 videos. Reorder and renumber within the same media type only; preserve each source binding and inherited main identity. Deduplicate references by URL. Every editor input has a canvas media source and a fixed automatic business association. Non-interactive editor space remains draggable.",
-    "generation": "Short video keeps click validation: missing main opens its image picker and missing prompt focuses the input. Long video requires at least one image or video and a non-empty prompt; video-only references are valid. Video generation and prompt generation services are not connected; report this honestly without tasks, charges or fabricated prompt content.",
+    "generation": "Short video validates main image and prompt; long video requires at least one image or video and a non-empty prompt. Video-only references are valid. Video generation and smart expansion services are not connected. Smart expansion only saves configuration; it never rewrites content, creates tasks or charges.",
     "geometryByMode": {
       "frames": {
         "emptyNodeId": "84:6110",
         "filledNodeId": "119:11242",
-        "updated": "2026-10-22",
+        "updated": "2026-10-23",
         "title": "视频生成-服装短视频",
         "width": 320,
         "height": 629,
@@ -567,7 +605,7 @@
       "references": {
         "emptyNodeId": "121:17924",
         "filledNodeId": "121:18150",
-        "updated": "2026-10-22",
+        "updated": "2026-10-23",
         "title": "视频生成-服装长视频",
         "width": 320,
         "height": 653,
@@ -615,7 +653,7 @@
       "videoLimit": 3,
       "mainCountsTowardImageLimit": true,
       "upload": "Separate image and video upload actions with separate current/maximum counts. Decode local videos before applying; errors preserve existing content. Every accepted image or video also creates or reuses a canvas media source and binds to this editor atomically.",
-      "ordering": "Reorder only within the same media type. The dragged tile follows the pointer directly; adjacent tiles shift to make room with 200ms ease-out motion, and release settles the tile into its new position and updates numbering. Alt+Left/Right reorder uses the same position animation; reduced motion switches immediately. Dragging previews order only; drop commits once as one undo action, while cancellation restores the original order without adding history. Preserve canvas media IDs, every source binding, inherited main identity and automatic links; never rebind by position.",
+      "ordering": "Reorder only within the same media type. The dragged tile follows the pointer directly; adjacent tiles shift to make room with 200ms ease-out motion. Release immediately applies final positions and numbering, cancels unfinished position animations and adds no settling animation. Alt+Left/Right reorder retains 200ms ease-out position animation; reduced motion switches immediately. Dragging previews order only; drop commits once as one undo action, while cancellation immediately restores the original order without adding history. Preserve canvas media IDs, every source binding, inherited main identity and automatic links; never rebind by position.",
       "media": "Preview and top-right hover delete for every thumbnail. Delete clears only that reference, retaining the canvas source and editor configuration; remove its automatic line only when no other input uses that source. Canvas videos retain the original video and poster for playback and download.",
       "deduplication": "Use URL across inherited main and references; enforce in picker exclusions and local image/video confirmation.",
       "generationRequirement": "At least one image or video plus a non-empty prompt; video-only references are valid."
@@ -639,7 +677,7 @@
       "existingValues": "Retain existing per-node choices. Reuse the existing settings menus and BetaSlider without adopting incompatible static screenshot values.",
       "footer": "One full-width generation button with unchanged cost 999."
     },
-    "editorSelection": "Separate short-video and long-video editors are created from the image toolbar. No in-node frame/reference mode tabs; the initial video-generation entry creates an empty short-video editor.",
+    "editorSelection": "Image-toolbar fashion short video creates the frames editor; professional fashion video creates the existing long-video references editor without changing its title or product rules. No mode tabs; initial video generation creates an empty short-video editor.",
     "defaultSettingsByMode": {
       "frames": {
         "resolution": "2K",
@@ -665,30 +703,82 @@
         "prompt library",
         "nested library return"
       ],
-      "generationLabel": "提示词生成",
-      "expansionLabel": "提示词扩写",
-      "assistLabelRule": "Use generationLabel when the current prompt is blank after trimming; otherwise use expansionLabel. Update immediately in both inline and expanded editors.",
-      "expandedAssistPlacement": "Before the character counter, preserving save, prompt library and clear controls.",
-      "generationService": "Generation and expansion are not connected; show an explicit notice without changing existing content.",
-      "assistCounterGap": 4,
-      "generationButtonRadius": 6,
-      "generationButtonTooltip": false,
-      "effect": {
-        "component": "PromptAssistButton wrapping a local shimmer branch in user-supplied React Bits GradientText, reusing shared dimensions and animation lifecycle",
-        "variant": "shimmer",
-        "angle": 90,
-        "animationSpeed": 2,
-        "pauseDuration": 0.5,
-        "cycleDuration": 2.5,
-        "glow": 0,
-        "yoyo": false,
-        "timing": "A single soft highlight enters from the icon's left edge and exits beyond the text's right edge over 2 seconds, followed by a 500ms pause with pure Text/link. Repeat every 2.5 seconds without reversing direction or outer glow.",
-        "coordinates": "The original SVG icon and text share one sweep coordinate space sized to the complete icon-and-text content; the text does not restart the highlight. Automatically resynchronize dimensions when the label or language changes.",
-        "baseColor": "var(--text-link)",
-        "dark": "Text/link #0BC1B8",
-        "light": "Text/link #069B96",
-        "highlight": "color-mix(in srgb, var(--text-link) 40%, white), clipped inside the icon and text glyphs",
-        "lifecycle": "Pause offscreen and in background; use pure Text/link without shimmer with reduced motion; clean up on unmount.",
+      "inlineFooter": [
+        "expand editor",
+        "save prompt",
+        "prompt library",
+        "character counter"
+      ],
+      "expandedFooter": [
+        "save prompt",
+        "prompt library",
+        "character counter",
+        "clear"
+      ],
+      "smartExpand": {
+        "labelZh": "智能扩写",
+        "field": "VideoWorkflow.smartExpand",
+        "type": "optional boolean",
+        "default": false,
+        "placement": "Right of the inline video-description title; synchronized in the expanded header through PromptTools.expandedHeaderAction.",
+        "state": "Per node, with missing values treated as false. Share one state between inline and expanded controls. Existing configuration commit and undo/redo apply. Typing, clearing and applying prompts do not change the setting.",
+        "service": "Configuration only; no automatic text rewrite or AI request.",
+        "component": "src/components/Switch.tsx and src/components/switch.css",
+        "size": {
+          "width": 32,
+          "height": 18,
+          "thumb": 14,
+          "inset": 2,
+          "checkedTranslateX": 14,
+          "radius": 999
+        },
+        "labelRow": {
+          "height": 20,
+          "gap": 4,
+          "paddingInline": 4,
+          "fontSize": 12,
+          "lineHeight": 20,
+          "fontWeight": 500,
+          "textToken": "Text/tertiary"
+        },
+        "tokens": {
+          "offBackground": "Border/medium",
+          "offInsetBorder": "1px Border/weak",
+          "onBackground": "Brand/primary",
+          "onHoverBackground": "Brand/primary-hover",
+          "onBorder": "none",
+          "thumb": "Control/fill/white",
+          "thumbShadow": "0 6px 14px -2px Overlay/weak",
+          "disabledOpacity": 0.4
+        },
+        "motion": "200ms ease-out for thumb and colors; immediate with reduced motion.",
+        "accessibility": "Focusable switch with aria-checked; keyboard activation and disabled state; interaction does not drag the node.",
+        "source": {
+          "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+          "readDate": "2026-10-23",
+          "pageId": "64:1901",
+          "componentSetId": "136:23746",
+          "offDefault": {
+            "nodeId": "136:23747",
+            "key": "34442ab65c1b9282e09ed9d8fcc95d4c9a373967"
+          },
+          "onDefault": {
+            "nodeId": "137:18",
+            "key": "57a228db4ed8b50d9622cdbdb705e4c99e6209dd"
+          },
+          "offHover": "137:2",
+          "onHover": "137:20",
+          "offDisabled": "137:4",
+          "onDisabled": "137:22"
+        },
+        "handoff": "docs/video-smart-expand-handoff.md"
+      },
+      "archivedEffect": {
+        "status": "Reusable components retained; not rendered in current video nodes or their expanded editor.",
+        "components": [
+          "PromptAssistButton",
+          "GradientText"
+        ],
         "handoff": "docs/video-prompt-assist-handoff.md"
       }
     }
@@ -728,9 +818,10 @@
   },
   "deferred": [
     "multiple image visual design",
-    "quick image editing",
+    "quick image generation",
     "multiple image views",
     "storyboard image generation",
+    "grid image splitting",
     "video remake",
     "storyboard workflow",
     "template editing workflow",
@@ -739,13 +830,13 @@
     "upscale",
     "save to assets",
     "send image",
-    "AI prompt generation",
+    "AI smart prompt expansion",
     "image to prompt"
   ],
   "verification": {
     "browser": "not run, per user instruction",
     "localBuildAndTests": "not run for the final video-node update, per user instruction",
-    "deployment": "existing GitHub Pages workflow",
+    "deployment": "Local changes only; commit, push and publish only after explicit user request.",
     "localChecks": "not run for the final video-node update, per user instruction"
   }
 }

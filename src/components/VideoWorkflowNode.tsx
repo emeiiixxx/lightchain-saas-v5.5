@@ -10,8 +10,7 @@ import { VideoGenerationSettings } from './VideoGenerationSettings';
 import { SettingSelect } from './SettingSelect';
 import { VideoIcon } from './VideoIcon';
 import { useVideoReferenceSort } from './useVideoReferenceSort';
-import { PromptAssistButton } from './PromptAssistButton';
-import { notify } from './Toast';
+import { Switch } from './Switch';
 import '../video-workflow-node.css';
 
 const promptLimit = 5000;
@@ -25,7 +24,7 @@ const copy = {
     addImage: '添加图片', addVideo: '添加视频', remove: '删除', preview: '预览', reorder: '按住 Alt 和左右方向键调整顺序',
     prompt: '视频描述', placeholder: '举例:持久定格模特正面,女模特表情自信冷静,发丝与裙摆同步飘动,同时背景中的直升机起飞,随后模特转身,动作丝滑,画面流畅切换到模特上半身特写',
     expand: '展开编辑', save: '保存指令', library: '提示词库', clear: '清空', close: '关闭', count: '字数',
-    promptGenerate: '提示词生成', promptExpand: '提示词扩写', unavailable: '功能暂未接入',
+    smartExpand: '智能扩写',
     settings: '生成设置', generate: '开始 AI 生成', required: '请输入视频描述',
     generationMode: '生成模式', fast: '快速', professional: '专业',
   },
@@ -38,7 +37,7 @@ const copy = {
     addImage: 'Add image', addVideo: 'Add video', remove: 'Delete', preview: 'Preview', reorder: 'Hold Alt and use left or right arrow to reorder',
     prompt: 'Video description', placeholder: 'Example: Hold a front view of the model with a confident, calm expression. Her hair and skirt move in the breeze as a helicopter takes off behind her. She turns smoothly, then the shot transitions to a close-up of her upper body.',
     expand: 'Expand editor', save: 'Save prompt', library: 'Prompt library', clear: 'Clear', close: 'Close', count: 'Characters',
-    promptGenerate: 'Generate prompt', promptExpand: 'Expand prompt', unavailable: 'is not connected yet',
+    smartExpand: 'Smart expansion',
     settings: 'Generation settings', generate: 'Start AI generation', required: 'Enter a video description',
     generationMode: 'Generation mode', fast: 'Fast', professional: 'Pro',
   },
@@ -51,7 +50,7 @@ const copy = {
     addImage: '画像を追加', addVideo: '動画を追加', remove: '削除', preview: 'プレビュー', reorder: 'Alt と左右矢印キーで順序を変更',
     prompt: '動画の説明', placeholder: '例：自信に満ちた落ち着いた表情のモデルを正面から捉えます。髪とスカートが風になびき、背景のヘリコプターが離陸します。モデルが滑らかに振り返り、上半身のクローズアップに切り替わります。',
     expand: '拡大編集', save: '指示を保存', library: 'プロンプト集', clear: 'クリア', close: '閉じる', count: '文字数',
-    promptGenerate: 'プロンプト生成', promptExpand: 'プロンプト拡張', unavailable: 'は未接続です',
+    smartExpand: 'スマート拡張',
     settings: '生成設定', generate: 'AI 生成を開始', required: '動画の説明を入力してください',
     generationMode: '生成モード', fast: '高速', professional: '高品質',
   },
@@ -80,8 +79,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
   const frameAssets = node.main ? videoNodeAssetSets.framesFilled : videoNodeAssetSets.framesEmpty;
   const referenceAssets = references.length ? videoNodeAssetSets.referencesFilled : videoNodeAssetSets.referencesEmpty;
   const assets = frames ? frameAssets : referenceAssets;
-  const promptActionLabel = node.prompt.trim() ? t.promptExpand : t.promptGenerate;
-  const promptAction = <PromptAssistButton value={node.prompt} icon={<NodeIcon src={assets.promptGenerate} />} generateLabel={t.promptGenerate} expandLabel={t.promptExpand} onAction={() => notify(locale === 'zh-CN' ? promptActionLabel + t.unavailable : promptActionLabel + ' ' + t.unavailable)} />;
+  const expansionControl = <label className="video-prompt-expansion nodrag nopan"><span>{t.smartExpand}</span><Switch checked={node.smartExpand ?? false} aria-label={t.smartExpand} onCheckedChange={smartExpand => onChange({ smartExpand })} /></label>;
   const designId = frames ? (node.main ? '119:11242' : '84:6110') : (references.length ? '121:18150' : '121:17924');
   const root = useRef<HTMLElement>(null);
   const prompt = useRef<HTMLTextAreaElement>(null);
@@ -177,13 +175,12 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
         <span className="sr-only" id={id + '-reorder'}>{t.reorder}</span>
       </div>}
       <div className="fusion-field video-workflow-prompt">
-        <label className="fusion-label" htmlFor={promptId}>{t.prompt}<span className="fusion-required">*</span></label>
+        <div className="video-workflow-prompt-heading"><label className="fusion-label" htmlFor={promptId}>{t.prompt}<span className="fusion-required">*</span></label>{expansionControl}</div>
         <div className={'fusion-textarea' + (error ? ' has-error' : '')}>
           <textarea ref={prompt} id={promptId} value={node.prompt} placeholder={t.placeholder} required maxLength={promptLimit} aria-invalid={error} aria-describedby={error ? promptId + '-error' : undefined} onChange={event => updatePrompt(event.target.value)} />
           <div className="fusion-textarea-footer">
-            <div className="fusion-prompt-actions"><PromptTools value={node.prompt} onChange={updatePrompt} labels={t} maxLength={promptLimit} expandedAction={promptAction} inlineIcons={{ expand: <NodeIcon src={assets.promptExpand} />, save: <NodeIcon src={assets.promptSave} />, library: <NodeIcon src={assets.promptLibrary} /> }} /></div>
+            <div className="fusion-prompt-actions"><PromptTools value={node.prompt} onChange={updatePrompt} labels={t} maxLength={promptLimit} expandedHeaderAction={expansionControl} inlineIcons={{ expand: <NodeIcon src={assets.promptExpand} />, save: <NodeIcon src={assets.promptSave} />, library: <NodeIcon src={assets.promptLibrary} /> }} /></div>
             <div className="video-prompt-assist">
-              {promptAction}
               <span className="fusion-counter" aria-label={t.count}>{node.prompt.length}/{promptLimit}</span>
             </div>
           </div>

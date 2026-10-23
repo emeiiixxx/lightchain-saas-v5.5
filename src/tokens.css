@@ -92,6 +92,9 @@
 
 /* Primitive palette from the user-supplied design swatches. */
 :root { --primitive-brand-500: #0bc1b8; --primitive-purple-400: #a78bfa; }
+/* Live 5.1 Beta Primitive Colors / Brand/200, VariableID:30:5. */
+:root { --primitive-brand-200: #a7fcf0; }
+[data-theme] { --prompt-assist-highlight: color-mix(in srgb, var(--primitive-brand-200) 50%, currentColor); }
 
 /* Asset picker: live 5.1 Beta bindings, docs/asset-picker-source.json. */
 [data-theme="dark"] {

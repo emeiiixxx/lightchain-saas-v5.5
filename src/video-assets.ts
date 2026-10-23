@@ -1,15 +1,16 @@
 const videoAssetBase = `${import.meta.env.BASE_URL}assets/video-workspace/`;
-const entryAssetBase = `${import.meta.env.BASE_URL}assets/video-entry-20261022/`;
+const entryAssetBase = `${import.meta.env.BASE_URL}assets/video-entry-20261023/`;
 const materialAssetBase = `${import.meta.env.BASE_URL}assets/video-material-20261022/`;
 
 // Original artwork from Figma file 1dBgOC793NRsKgbNIaLZMK, node 64:2057.
 export const videoAssets = {
-  // Figma 64:2061, updated 2026-10-22; original 24×24 entry-slot exports.
+  // Figma 64:2059, updated 2026-10-23; original entry and upload-slot exports.
   entryTemplates: `${entryAssetBase}templates.svg`,
-  entryMaterialGeneration: `${entryAssetBase}material-generation.svg`,
-  entryVideoGeneration: `${entryAssetBase}video-generation.svg`,
-  entryVideoRemake: `${entryAssetBase}video-remake.svg`,
-  entryVideoEdit: `${entryAssetBase}video-edit.svg`,
+  entryQuickImage: `${entryAssetBase}quick-image.svg`,
+  entryStoryboardImage: `${entryAssetBase}storyboard-image.svg`,
+  entryFashionVideo: `${entryAssetBase}fashion-video.svg`,
+  entryProFashionVideo: `${entryAssetBase}pro-fashion-video.svg`,
+  entryUpload: `${entryAssetBase}upload.svg`,
   workspacePlate: `${videoAssetBase}workspacePlate.png`,
   workspaceIcon: `${videoAssetBase}workspaceIcon.svg`,
   templates: `${videoAssetBase}templates.svg`,

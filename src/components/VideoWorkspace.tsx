@@ -32,21 +32,21 @@ import { Button, Dialog, Icon } from './ui';
 import '../video-workspace.css';
 
 const copy = {
-  'zh-CN': { title: '视频工作台', headline: '从一个视频想法开始', intro: '从下方选择一个功能查看示例或点击添加图片，开启您的创作', templates: '热门模版', videoTemplates: '视频模版', materialGeneration: '素材生成', videoGeneration: '视频生成', videoRemake: '视频复刻', videoEdit: '视频编辑', pending: '此功能暂未接入，现可添加图片或使用热门模版。', help: '拖动图片移动位置；Shift + 点击或拖动空白处多选。按住空格拖动可平移，滚轮平移画布，按住 Ctrl / ⌘ / Alt 滚轮缩放。Delete 删除选中图片，Ctrl / ⌘ + Z 撤销，Ctrl / ⌘ + Shift + Z 重做，0 适应屏幕。', back: '返回融合画布' },
-  en: { title: 'Video workspace', headline: 'Start with a video idea', intro: 'Choose a feature to explore an example, or add images to start creating', templates: 'Templates', videoTemplates: 'Video templates', materialGeneration: 'Asset creation', videoGeneration: 'Video creation', videoRemake: 'Video remake', videoEdit: 'Edit video', pending: 'This feature is not connected yet. Add images or explore the templates.', help: 'Drag images to move them. Shift-click or drag the background to select multiple images. Hold Space and drag to pan; scroll to pan, or hold Ctrl / ⌘ / Alt and scroll to zoom. Delete removes selected images. Ctrl / ⌘ + Z undoes, Ctrl / ⌘ + Shift + Z redoes, and 0 fits the canvas.', back: 'Back to outfit canvas' },
-  ja: { title: '動画ワークスペース', headline: '動画のアイデアから始めよう', intro: '下の機能でサンプルを見るか、画像を追加して制作を始めましょう', templates: '人気テンプレート', videoTemplates: '動画テンプレート', materialGeneration: '素材生成', videoGeneration: '動画生成', videoRemake: '動画再現', videoEdit: '動画編集', pending: 'この機能はまだ接続されていません。画像の追加とテンプレートをお試しいただけます。', help: '画像をドラッグして移動。Shift + クリックまたは背景のドラッグで複数選択。Space を押しながらドラッグして移動、スクロールで移動、Ctrl / ⌘ / Alt + スクロールで拡大・縮小。Delete で削除、Ctrl / ⌘ + Z で取り消し、Ctrl / ⌘ + Shift + Z でやり直し、0 で全体を表示します。', back: 'コーディネート画面に戻る' },
+  'zh-CN': { title: '视频工作台', headline: '从一个视频想法开始', intro: '从下方选择一个功能查看示例或点击添加素材，开启您的创作', templates: '热门模版', videoTemplates: '视频模版', quickImage: '快捷生图', storyboardImage: '分镜图', fashionVideo: '服装短视频', proFashionVideo: '专业服装视频', pending: '此功能暂未接入，现可添加图片或使用热门模版。', help: '拖动图片移动位置；Shift + 点击或拖动空白处多选。按住空格拖动可平移，滚轮平移画布，按住 Ctrl / ⌘ / Alt 滚轮缩放。Delete 删除选中图片，Ctrl / ⌘ + Z 撤销，Ctrl / ⌘ + Shift + Z 重做，0 适应屏幕。', back: '返回融合画布' },
+  en: { title: 'Video workspace', headline: 'Start with a video idea', intro: 'Choose a feature to explore an example, or add assets to start creating', templates: 'Templates', videoTemplates: 'Video templates', quickImage: 'Quick image', storyboardImage: 'Storyboard image', fashionVideo: 'Fashion video', proFashionVideo: 'Pro fashion video', pending: 'This feature is not connected yet. Add images or explore the templates.', help: 'Drag images to move them. Shift-click or drag the background to select multiple images. Hold Space and drag to pan; scroll to pan, or hold Ctrl / ⌘ / Alt and scroll to zoom. Delete removes selected images. Ctrl / ⌘ + Z undoes, Ctrl / ⌘ + Shift + Z redoes, and 0 fits the canvas.', back: 'Back to outfit canvas' },
+  ja: { title: '動画ワークスペース', headline: '動画のアイデアから始めよう', intro: '下の機能でサンプルを見るか、素材を追加して制作を始めましょう', templates: '人気テンプレート', videoTemplates: '動画テンプレート', quickImage: 'クイック画像生成', storyboardImage: '絵コンテ', fashionVideo: 'ファッション動画', proFashionVideo: 'プロ向けファッション動画', pending: 'この機能はまだ接続されていません。画像の追加とテンプレートをお試しいただけます。', help: '画像をドラッグして移動。Shift + クリックまたは背景のドラッグで複数選択。Space を押しながらドラッグして移動、スクロールで移動、Ctrl / ⌘ / Alt + スクロールで拡大・縮小。Delete で削除、Ctrl / ⌘ + Z で取り消し、Ctrl / ⌘ + Shift + Z でやり直し、0 で全体を表示します。', back: 'コーディネート画面に戻る' },
 };
 const entries = [
   { id: 'templates', label: 'videoTemplates', icon: 'entryTemplates', nodeId: '64:2062' },
-  { id: 'materialGeneration', label: 'materialGeneration', icon: 'entryMaterialGeneration', nodeId: '64:2063' },
-  { id: 'videoGeneration', label: 'videoGeneration', icon: 'entryVideoGeneration', nodeId: '64:2064' },
-  { id: 'videoRemake', label: 'videoRemake', icon: 'entryVideoRemake', nodeId: '64:2065' },
-  { id: 'videoEdit', label: 'videoEdit', icon: 'entryVideoEdit', nodeId: '64:2204' },
+  { id: 'quickImage', label: 'quickImage', icon: 'entryQuickImage', nodeId: '64:2063' },
+  { id: 'storyboardImage', label: 'storyboardImage', icon: 'entryStoryboardImage', nodeId: '64:2064' },
+  { id: 'fashionVideo', label: 'fashionVideo', icon: 'entryFashionVideo', nodeId: '64:2204' },
+  { id: 'proFashionVideo', label: 'proFashionVideo', icon: 'entryProFashionVideo', nodeId: '64:2065' },
 ] as const;
 const mediaCopy = {
-  'zh-CN': { add: '点击或拖拽到此处添加图片或视频', drop: '将图片或视频拖放到这里', upload: '上传素材', video: '视频', play: '播放', materials: '素材', limit: '每次最多添加20个素材。' },
-  en: { add: 'Click or drop images or videos here', drop: 'Drop images or videos here', upload: 'Upload assets', video: 'Video', play: 'Play', materials: 'Assets', limit: 'Add up to 20 assets at a time.' },
-  ja: { add: 'クリック、または画像・動画をドロップして追加', drop: 'ここに画像・動画をドロップ', upload: '素材をアップロード', video: '動画', play: '再生', materials: '素材', limit: '一度に追加できる素材は20点までです。' },
+  'zh-CN': { add: '点击或拖拽到此处添加素材', drop: '将图片或视频拖放到这里', upload: '上传素材', video: '视频', play: '播放', materials: '素材', limit: '每次最多添加20个素材。' },
+  en: { add: 'Click or drop assets here', drop: 'Drop images or videos here', upload: 'Upload assets', video: 'Video', play: 'Play', materials: 'Assets', limit: 'Add up to 20 assets at a time.' },
+  ja: { add: 'クリック、または素材をドロップして追加', drop: 'ここに画像・動画をドロップ', upload: '素材をアップロード', video: '動画', play: '再生', materials: '素材', limit: '一度に追加できる素材は20点までです。' },
 };
 type Snapshot = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; selected: string[] };
 type VideoClipboard = CanvasClipboard<VideoCanvasMedia>;
@@ -523,13 +523,18 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
           <div className="video-empty-headline" data-node-id="64:4159"><h1>{v.headline}</h1><p>{v.intro}</p></div>
           <div className="video-entry-tools" role="group" aria-label={v.title} data-node-id="64:2061">
             {entries.map(entry => <Button key={entry.id} variant="outline" size="l" className="video-entry-tool" disabled={reading} data-node-id={entry.nodeId}
-              onClick={() => entry.id === 'templates' ? setModal('templates') : entry.id === 'videoGeneration' ? addWorkflow() : notify(v.pending)}>
+              onClick={() => {
+                if (entry.id === 'templates') setModal('templates');
+                else if (entry.id === 'fashionVideo') addWorkflow();
+                else if (entry.id === 'proFashionVideo') addWorkflow(undefined, 'references');
+                else notify(v.pending);
+              }}>
               <VideoIcon name={entry.icon} size={24} /><span>{v[entry.label]}</span>{entry.id === 'templates' && <span className="entry-tool-badge video-entry-badge" data-node-id="64:2066">NEW</span>}
             </Button>)}
           </div>
           <button type="button" className={`asset-upload video-upload${dropActive ? ' is-over' : ''}`} disabled={reading} aria-label={m.add} onClick={openAssets} data-node-id="64:2068"
             onDragOver={event => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.stopPropagation(); setDropActive(true); } }} onDrop={drop}>
-            <VideoIcon name="upload" size={32} />
+            <VideoIcon name="entryUpload" size={32} />
             <span className="asset-upload-title">{reading ? t.reading : dropActive ? m.drop : m.add}</span>
             <span className="asset-upload-hint">{dropActive && !reading ? t.releaseToUpload : videoReferenceUploadMessages[locale].hint}</span>
           </button>

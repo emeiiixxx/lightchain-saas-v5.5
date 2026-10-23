@@ -44,6 +44,10 @@
 .video-reference-video-mark { position: absolute; right: 4px; bottom: 4px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; background: var(--surface-media-overlay); color: #fff; pointer-events: none; }
 .video-workflow-reference-add { padding: 0; }
 .video-workflow-prompt { height: 188px; }
+.video-workflow-prompt-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 20px; }
+.video-workflow-prompt-heading > .fusion-label { min-width: 0; }
+.video-prompt-expansion { display: inline-flex; flex-shrink: 0; align-items: center; gap: 4px; height: 20px; padding: 0 4px; color: var(--text-tertiary); font-size: 12px; line-height: 20px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.video-prompt-expansion > span { cursor: pointer; }
 .video-workflow-prompt .fusion-textarea { flex-shrink: 0; border: 0; box-shadow: inset 0 0 0 1px var(--border-weak); }
 .video-workflow-prompt .fusion-textarea:hover { box-shadow: inset 0 0 0 1px var(--border-strong); }
 .video-workflow-prompt .fusion-textarea:focus-within { box-shadow: inset 0 0 0 1px var(--brand-primary); }

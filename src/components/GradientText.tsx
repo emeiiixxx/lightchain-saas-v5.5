@@ -83,7 +83,7 @@ export default function GradientText({ children, colors = ['#5227FF', '#FF9FFC',
         } else {
           // The entire band starts and finishes outside the content. Resting
           // frames therefore stay at the base color, with no reset flash.
-          const halfBand = 18;
+          const halfBand = 30;
           const center = -halfBand + (100 + 2 * halfBand) * elapsed / s.speed;
           image = `linear-gradient(${s.angle}deg, ${base} ${(center - halfBand).toFixed(2)}%, ${highlight} ${center.toFixed(2)}%, ${base} ${(center + halfBand).toFixed(2)}%)`;
         }

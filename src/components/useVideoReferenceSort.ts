@@ -65,7 +65,11 @@ export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Par
   function end() {
     stopScroll();
     if (!drag.current) return;
-    capture();
+    // Release commits the final slots immediately; only drag-over previews
+    // animate. Clear pending FLIP work and any in-flight neighbor movement.
+    before.current = null;
+    for (const animation of animations.current.values()) animation.cancel();
+    animations.current.clear();
     drag.current = null;
     setPreview(null);
   }
@@ -150,11 +154,8 @@ export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Par
     if (active.kind !== kind) { end(); return; }
     event.preventDefault();
     const targetId = targetAt(event.currentTarget, kind, event.clientX);
-    capture();
+    end();
     if (targetId && active.id !== targetId) current.current.onChange({ referenceOrder: reorderVideoReferences(current.current.node, kind, active.id, targetId) });
-    stopScroll();
-    drag.current = null;
-    setPreview(null);
   }
 
   function move(kind: Kind, sourceId: string, targetId: string) {
