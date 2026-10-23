@@ -11,10 +11,12 @@ import { VideoIcon } from './VideoIcon';
 import '../video-upscale-workflow.css';
 
 const copy = {
-  'zh-CN': { tip: '功能介绍描述', video: '视频素材', add: '添加视频', preview: '播放', remove: '删除', resolution: '清晰度配置', generate: '开始 AI 生成' },
-  en: { tip: 'Feature description', video: 'Video asset', add: 'Add video', preview: 'Play', remove: 'Delete', resolution: 'Resolution', generate: 'Start AI generation' },
-  ja: { tip: '機能の説明', video: '動画素材', add: '動画を追加', preview: '再生', remove: '削除', resolution: '解像度設定', generate: 'AI 生成を開始' },
+  'zh-CN': { tip: '功能介绍描述', video: '视频素材', add: '上传视频', preview: '播放', remove: '删除', resolution: '清晰度配置', generate: '开始 AI 生成' },
+  en: { tip: 'Feature description', video: 'Video asset', add: 'Upload video', preview: 'Play', remove: 'Delete', resolution: 'Resolution', generate: 'Start AI generation' },
+  ja: { tip: '機能の説明', video: '動画素材', add: '動画をアップロード', preview: '再生', remove: '削除', resolution: '解像度設定', generate: 'AI 生成を開始' },
 };
+
+const uploadIcon = `${import.meta.env.BASE_URL}assets/video-upscale/add.svg`;
 
 type Props = {
   node: VideoUpscaleWorkflow;
@@ -46,14 +48,14 @@ export function VideoUpscaleWorkflowNode({ node, locale, onChange, onUpload, onP
   const canGenerate = canGenerateVideoUpscaleWorkflow(node);
 
   return <section className="fusion-node video-upscale-workflow-node" lang={locale} style={videoUpscaleWorkflowSize()}
-    data-overlay data-source-image={node.id} data-node-id="141:26204" aria-label={title}>
+    data-overlay data-source-image={node.id} data-node-id="175:33379" aria-label={title}>
     <header className="fusion-header video-upscale-workflow-header">
       <h2>{title}</h2>
       <div className="fusion-tip"><img src={assets.tip} alt="" width={20} height={20} /><span>{t.tip}</span></div>
     </header>
     <div className="fusion-content video-upscale-workflow-content">
       <div className="fusion-field video-upscale-source-field">
-        <div className="fusion-label" id={`${id}-video`}>{t.video}</div>
+        <div className="fusion-label" id={`${id}-video`}>{t.video}<span className="fusion-required">*</span></div>
         <div className="video-upscale-source" aria-labelledby={`${id}-video`}>
           {node.video ? <>
             <button type="button" className="video-upscale-preview nodrag nopan" aria-label={`${t.preview} ${node.video.name}`}
@@ -64,7 +66,7 @@ export function VideoUpscaleWorkflowNode({ node, locale, onChange, onUpload, onP
             <Button variant="tonal" className="video-upscale-remove nodrag nopan" title={t.remove} aria-label={`${t.remove} ${node.video.name}`}
               onClick={() => onChange({ video: undefined })}><Icon name="close" size={12} /></Button>
           </> : <button type="button" className="video-upscale-empty nodrag nopan" onClick={onUpload}>
-            <VideoIcon name="upload" size={24} /><span>{t.add}</span>
+            <span className="icon video-upscale-upload-icon" aria-hidden="true" style={{ width: 24, height: 24, '--icon-url': `url("${uploadIcon}")` } as CSSProperties} /><span>{t.add}</span>
           </button>}
         </div>
       </div>

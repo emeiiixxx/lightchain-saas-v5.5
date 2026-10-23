@@ -117,7 +117,8 @@
       "compatibility": "Read legacy single-view values as a one-item selection. Preserve compatibility with earlier undo snapshots; undo and redo restore the full selected set, conditional back-reference field, editor height and automatic edges.",
       "demoOutputCount": "Keep the current generation count setting of 1–4 images; do not multiply by the number of selected views."
     },
-    "multiViewReferenceHeading": "Show only 参考图 and the required marker. No info icon, divider, limit text or uploaded count. Maximum one reference; use the single-select picker and hide Add once filled."
+    "multiViewReferenceHeading": "Show only 参考图 and the required marker. No info icon, divider, limit text or uploaded count. Maximum one reference; use the single-select picker and hide Add once filled.",
+    "singleReferenceInteraction": "Fields with capacity one have no ordinal, drag sorting, keyboard sorting or reorder hint. Includes multi-view references, grid crop and back references. Multi-image fields retain ordering based on capacity, not current uploaded count."
   },
   "reuse": [
     "AssetPicker",

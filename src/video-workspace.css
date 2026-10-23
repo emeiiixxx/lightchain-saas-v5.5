@@ -24,6 +24,11 @@
 .media-toolbar--video > .divider { flex-shrink: 0; }
 .media-toolbar--video-asset { background: var(--surface-floating); }
 .media-toolbar--video-image { background: var(--surface-floating); }
+.media-toolbar--video-multi { background: var(--surface-floating); }
+.video-multi-toolbar-group { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; }
+.video-multi-toolbar-group > .lc-button { height: 32px; min-width: 32px; padding: 0 8px; border: 0; gap: 4px; font-size: 12px; line-height: 20px; font-weight: 500; white-space: nowrap; }
+.video-multi-toolbar-group > .divider { flex: 0 0 1px; height: 32px; }
+.video-multi-toolbar-group .icon { flex-shrink: 0; }
 .video-image-toolbar-group, .video-asset-toolbar-group { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; }
 .video-image-toolbar-group > .lc-button, .video-asset-toolbar-group > .lc-button { padding: 0 8px; border: 0; }
 .video-image-toolbar-group > .canvas-icon-button, .video-asset-toolbar-group > .canvas-icon-button { padding: 0; }

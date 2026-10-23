@@ -5,7 +5,7 @@ type Kind = VideoReference['kind'];
 type Drag = { id: string; kind: Kind; targetId: string };
 type Position = { x: number; y: number };
 
-/** Native drag keeps its source mounted; only the flex order changes until drop. */
+/** Native drag keeps its source mounted; only the grid order changes until drop. */
 export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Partial<VideoWorkflow>) => void) {
   const [preview, setPreview] = useState<Drag | null>(null);
   const drag = useRef<Drag | null>(null);
@@ -74,7 +74,7 @@ export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Par
     setPreview(null);
   }
 
-  function targetAt(row: HTMLElement, kind: Kind, clientX: number) {
+  function targetAt(row: HTMLElement, kind: Kind, clientX: number, clientY: number) {
     const items = videoWorkflowReferences(current.current.node).filter(item => item.kind === kind);
     const bounds = row.getBoundingClientRect();
     const scale = bounds.width / row.offsetWidth || 1;
@@ -83,14 +83,19 @@ export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Par
     const width = (first ? tiles.current.get(first.id)?.offsetWidth : undefined) ?? 64;
     const gap = Number.parseFloat(style.columnGap) || 0;
     const localX = (clientX - bounds.left) / scale + row.scrollLeft - (Number.parseFloat(style.paddingLeft) || 0);
+    const localY = (clientY - bounds.top) / scale + row.scrollTop - (Number.parseFloat(style.paddingTop) || 0);
+    const height = (first ? tiles.current.get(first.id)?.offsetHeight : undefined) ?? 64;
+    const rowGap = Number.parseFloat(style.rowGap) || 0;
+    const column = Math.max(0, Math.min(3, Math.round((localX - width / 2) / (width + gap))));
+    const rowIndex = Math.max(0, Math.round((localY - height / 2) / (height + rowGap)));
     // Fixed slots, rather than animated elements, prevent hover oscillation.
-    const index = Math.max(0, Math.min(items.length - 1, Math.round((localX - width / 2) / (width + gap))));
+    const index = Math.min(items.length - 1, rowIndex * 4 + column);
     return items[index]?.id;
   }
 
-  function previewAt(row: HTMLElement, kind: Kind, clientX: number) {
+  function previewAt(row: HTMLElement, kind: Kind, clientX: number, clientY: number) {
     const active = drag.current;
-    const targetId = targetAt(row, kind, clientX);
+    const targetId = targetAt(row, kind, clientX, clientY);
     if (!active || active.kind !== kind || !targetId || targetId === active.targetId) return;
     capture();
     drag.current = { ...active, targetId };
@@ -115,7 +120,7 @@ export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Par
       last = now;
       if (velocity) {
         row.scrollLeft += velocity * delta * .45;
-        previewAt(row, point.kind, point.x);
+        previewAt(row, point.kind, point.x, point.y);
       }
       scrollFrame.current = requestAnimationFrame(tick);
     };
@@ -138,8 +143,8 @@ export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Par
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     pointer.current = { kind, x: event.clientX, y: event.clientY };
-    previewAt(event.currentTarget, kind, event.clientX);
-    startScroll();
+    previewAt(event.currentTarget, kind, event.clientX, event.clientY);
+    if (event.currentTarget.scrollWidth > event.currentTarget.clientWidth) startScroll();
   }
 
   function leave(event: DragEvent<HTMLDivElement>) {
@@ -153,7 +158,7 @@ export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Par
     event.stopPropagation();
     if (active.kind !== kind) { end(); return; }
     event.preventDefault();
-    const targetId = targetAt(event.currentTarget, kind, event.clientX);
+    const targetId = targetAt(event.currentTarget, kind, event.clientX, event.clientY);
     end();
     if (targetId && active.id !== targetId) current.current.onChange({ referenceOrder: reorderVideoReferences(current.current.node, kind, active.id, targetId) });
   }

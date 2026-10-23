@@ -26,9 +26,16 @@ export const videoGenerationConfig = {
   professional: { nodeId: '113:8634', resolutions: ['480p', '720p', '1080p'], defaultResolution: '480p', audioOptions: ['auto', 'mute'], maxDuration: 30 },
 } as const;
 
-export function videoWorkflowSize(mode: VideoWorkflow['mode']) {
-  const sizes = { frames: { width: 320, height: 641 }, references: { width: 320, height: 661 } };
-  return sizes[mode];
+export function videoWorkflowSize(value: VideoWorkflow['mode'] | VideoWorkflow) {
+  const mode = typeof value === 'string' ? value : value.mode;
+  if (mode === 'frames') return { width: 320, height: 641 };
+  const references = typeof value === 'string' ? [] : videoWorkflowReferences(value);
+  const extraRows = (['image', 'video'] as const).reduce((total, kind) => {
+    const count = references.filter(reference => reference.kind === kind).length;
+    const slots = count + (count < videoReferenceLimits[kind] ? 1 : 0);
+    return total + Math.max(0, Math.ceil(slots / 4) - 1);
+  }, 0);
+  return { width: 320, height: 661 + extraRows * 72 };
 }
 
 export function videoDurationLimit(mode: VideoWorkflow['generationMode']) {
@@ -58,8 +65,9 @@ export const videoReferenceLimits = { image: 9, video: 3 } as const;
 export function videoWorkflowReferences(node: VideoWorkflow): VideoReference[] {
   const seen = new Set<string>();
   const references = [...(node.main ? [{ ...node.main, kind: 'image' as const }] : []), ...node.references].filter(reference => {
-    // Images with the same URL can be independent picker-created canvas inputs.
-    const identity = reference.kind === 'image' ? `image:${reference.sourceImageId ?? reference.id}` : `video:${reference.url}`;
+    // Multi-selection binds each canvas instance, even when files share a URL.
+    // Picker uploads still enforce their own URL reuse before creating references.
+    const identity = `${reference.kind}:${reference.sourceImageId ?? (reference.kind === 'image' ? reference.id : reference.url)}`;
     if (seen.has(identity)) return false;
     seen.add(identity); return true;
   });
@@ -120,6 +128,6 @@ export function createVideoWorkflow(x: number, y: number, source?: CanvasImage, 
 
 // Canvas navigation and React Flow share the same geometry for images and nodes.
 export function videoWorkflowBox(node: VideoWorkflow): CanvasImage {
-  return { id: node.id, x: node.x, y: node.y, ...videoWorkflowSize(node.mode),
+  return { id: node.id, x: node.x, y: node.y, ...videoWorkflowSize(node),
     name: node.mode === 'frames' ? '服装短视频' : '专业服装视频', url: node.main?.url ?? videoWorkflowReferences(node).find(reference => reference.kind === 'image')?.url ?? '' };
 }

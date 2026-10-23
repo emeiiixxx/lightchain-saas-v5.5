@@ -16,7 +16,7 @@ export type VideoUpscaleWorkflow = {
 const titles = { 'zh-CN': '视频高清放大', en: 'Video upscaling', ja: '動画の高画質化' };
 export const videoUpscaleWorkflowTitle = (locale: Locale) => titles[locale];
 
-// Figma 141:26204: 80px header, 368px content, 57px action with divider.
+// Figma 175:33379: 80px header, 368px content, 57px action with divider.
 // Canvas layout, connections and selection use the same editor dimensions.
 export function videoUpscaleWorkflowSize() {
   return { width: 320, height: 505 };

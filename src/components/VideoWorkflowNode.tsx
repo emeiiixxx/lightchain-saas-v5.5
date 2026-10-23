@@ -1,18 +1,18 @@
 import { useEffect, useId, useRef, type CSSProperties } from 'react';
 import type { Locale } from '../i18n';
-import { canGenerateVideoWorkflow, videoReferenceLimits, videoWorkflowReferences, type VideoReference, type VideoWorkflow } from '../video-workflow';
+import { canGenerateVideoWorkflow, videoReferenceLimits, videoWorkflowReferences, videoWorkflowSize, type VideoReference, type VideoWorkflow } from '../video-workflow';
 import { videoNodeAssetSets, videoSettingsIcon } from '../video-node-assets';
 import { Button, Icon } from './ui';
 import { GenerateTaskButton } from './GenerateTaskButton';
 import { ProgressiveImage } from './ProgressiveImage';
 import { PromptTools } from './PromptTools';
 import { VideoGenerationSettings } from './VideoGenerationSettings';
-import { VideoIcon } from './VideoIcon';
 import { useVideoReferenceSort } from './useVideoReferenceSort';
 import { Switch } from './Switch';
 import '../video-workflow-node.css';
 
 const promptLimit = 5000;
+const referenceVideoIcon = `${import.meta.env.BASE_URL}assets/video-node-final/reference-video-element.svg`;
 const copy = {
   'zh-CN': {
     title: '服装短视频', referenceTitle: '专业服装视频',
@@ -122,7 +122,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
           const target = items[items.findIndex(item => item.id === reference.id) + (event.key === 'ArrowLeft' ? -1 : 1)];
           if (target) sorting.move(reference.kind, reference.id, target.id);
         }}>
-        {reference.kind === 'video' ? <><video src={reference.url} muted playsInline preload="metadata" draggable={false} /><span className="video-reference-video-mark"><VideoIcon name="videoGeneration" size={16} /></span></> : <ProgressiveImage src={reference.url} alt={reference.name} width={reorder ? 64 : 48} height={reorder ? 64 : 48} />}
+        {reference.kind === 'video' ? <><video src={reference.url} muted playsInline preload="metadata" draggable={false} /><span className="video-reference-video-mark" aria-hidden="true"><NodeIcon src={referenceVideoIcon} size={12} /></span></> : <ProgressiveImage src={reference.url} alt={reference.name} width={reorder ? 64 : 48} height={reorder ? 64 : 48} />}
       </button>
       {reorder && <span className="video-reference-number" aria-hidden="true">{index + 1}</span>}
       <Button variant="tonal" className="video-reference-remove" title={t.remove} aria-label={t.remove + ' ' + reference.name} onClick={onRemove}><Icon name="close" size={12} /></Button>
@@ -134,20 +134,16 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
     const addLabel = kind === 'image' ? t.addImage : t.addVideo;
     return <div className="video-reference-section" key={kind}>
       <div className="video-reference-section-label" id={id + '-' + kind}><span>{t[kind]}</span><span className="video-reference-label-divider" aria-hidden="true" /><span>{kind === 'image' ? t.imageCount : t.videoCount}<span className="video-reference-count">{items.length}</span>/{videoReferenceLimits[kind]}</span></div>
-      <div ref={element => sorting.row(kind, element)} className="video-workflow-references nowheel" data-canvas-scroll="wheel" data-reference-sorting={Boolean(sorting.dragId)} aria-labelledby={id + '-' + kind}
+      <div ref={element => sorting.row(kind, element)} className="video-workflow-references video-reference-grid" data-reference-sorting={Boolean(sorting.dragId)} aria-labelledby={id + '-' + kind}
         onDragOver={event => sorting.over(event, kind)} onDragLeave={sorting.leave}
-        onDrop={event => { sorting.drop(event, kind); suppressPreviewUntil.current = Date.now() + 200; }}
-        onWheel={event => {
-          if (event.ctrlKey || event.metaKey || event.altKey) return;
-          event.stopPropagation(); if (!event.deltaX) event.currentTarget.scrollLeft += event.deltaY;
-        }}>
+        onDrop={event => { sorting.drop(event, kind); suppressPreviewUntil.current = Date.now() + 200; }}>
         {items.map(reference => thumbnail(reference, () => removeReference(reference), visualOrder.indexOf(reference.id)))}
         {items.length < videoReferenceLimits[kind] && <button type="button" className="fusion-reference video-workflow-reference-add" style={{ order: items.length }} aria-label={addLabel} data-tooltip={addLabel} onClick={() => onReference(kind)}><NodeIcon src={referenceAssets.addReference} size={20} /></button>}
       </div>
     </div>;
   }
 
-  return <section ref={root} className="fusion-node video-workflow-node" data-mode={node.mode} data-overlay data-node-id={designId} aria-label={title}>
+  return <section ref={root} className="fusion-node video-workflow-node" style={videoWorkflowSize(node)} data-mode={node.mode} data-overlay data-node-id={designId} aria-label={title}>
     <header className="fusion-header video-workflow-header"><h2>{title}</h2><div className="fusion-tip"><img src={assets.tip} alt="" draggable={false} /><span>{frames ? t.framesTip : t.longTip}</span></div></header>
     <div className="fusion-content video-workflow-content">
       {frames ? <>

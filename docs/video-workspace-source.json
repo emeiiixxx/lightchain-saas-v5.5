@@ -1301,8 +1301,9 @@
     "creation": "Create any of the six available editor kinds with the node top-left at the original right-click canvas coordinate. Do not avoid collisions or change the viewport for explicit context-menu placement. Shared CanvasContextMenu handles keyboard navigation and dismissal. Fusion and asset context menus are unchanged. Storyboard-to-video and video remake services are not connected."
   },
   "videoUpscaleWorkflow": {
-    "nodeId": "141:26153",
-    "instanceId": "141:26204",
+    "nodeId": "175:33378",
+    "instanceId": "175:33379",
+    "filledNodeId": "141:26153",
     "title": "视频高清放大",
     "width": 320,
     "height": 505,
@@ -1314,7 +1315,16 @@
       "width": 296,
       "height": 240,
       "radius": 16,
-      "fit": "contain"
+      "fit": "contain",
+      "required": true,
+      "emptyLabel": "上传视频",
+      "emptyLabelToken": "Text/tertiary",
+      "emptyIcon": {
+        "file": "public/assets/video-upscale/add.svg",
+        "sourceNode": "I175:33379;2575:3889;175:33469",
+        "size": 24
+      },
+      "emptyGap": 8
     },
     "resolutions": [
       "540p",
@@ -1382,5 +1392,145 @@
       "history": "Submission is one undo step; completion replaces slots without an additional undo step. Restoring historical slots resolves the task outcome instead of restoring a permanent spinner."
     },
     "canvasImageFit": "Canvas still images use cover, scaling uniformly and clipping overflow at the center to fill their existing frames without letterboxing. This applies immediately to existing image nodes as well as new results. Video posters keep contain; node geometry, source files, full-image preview and download are unchanged."
+  },
+  "multiSelectionToolbar": {
+    "updated": "2026-10-23",
+    "designNodes": [
+      "173:30406",
+      "173:31990",
+      "173:32914",
+      "173:32318",
+      "173:32676"
+    ],
+    "toolbarNodes": {
+      "images": "173:30452",
+      "videos": "173:32567",
+      "downloadOnly": "173:32960"
+    },
+    "userOverride": "Mixed selections show professional fashion video and download only; hide both image-generation actions.",
+    "rules": [
+      {
+        "selection": "2-9 images, no videos",
+        "actions": [
+          "quick",
+          "storyboard",
+          "professional",
+          "download"
+        ]
+      },
+      {
+        "selection": "2-3 videos, no images",
+        "actions": [
+          "professional",
+          "download"
+        ]
+      },
+      {
+        "selection": "Mixed, images <=9 AND videos <=3",
+        "actions": [
+          "professional",
+          "download"
+        ]
+      },
+      {
+        "selection": "Images >9 OR videos >3",
+        "actions": [
+          "download"
+        ]
+      }
+    ],
+    "geometry": {
+      "height": 40,
+      "padding": 4,
+      "gap": 4,
+      "radius": 12,
+      "buttonHeight": 32,
+      "buttonPaddingHorizontal": 8,
+      "iconSize": 20,
+      "textSize": 12,
+      "textLineHeight": 20,
+      "distanceAboveSelection": 16
+    },
+    "tokens": [
+      "Surface/floating",
+      "Border/weak",
+      "Text/secondary",
+      "Shadow/L"
+    ],
+    "implementation": [
+      "src/video-multi-selection.ts",
+      "src/components/VideoMultiSelectionToolbar.tsx",
+      "src/components/VideoWorkspace.tsx"
+    ],
+    "creation": "Re-evaluate selected IDs and capacities on click. Create one editor 80px right of the selection, vertically centred with collision avoidance. Bind all selected media in selection order using existing canvas IDs. Do not duplicate media. One undo restores the operation. Distinct canvas instances sharing a URL retain independent references, including videos. Picker URL reuse stays unchanged.",
+    "eligibility": "At least two finished media nodes. Hide this toolbar if an editor or generation placeholder is selected. Single-media toolbars stay unchanged.",
+    "download": "Reuse ZIP utility with original image and video URLs, not posters. Prefix filenames with ordinal to prevent duplicate entries. Disable while pending and report errors.",
+    "validation": "Local implementation only. No browser, tests, build or publishing performed.",
+    "assets": {
+      "directory": "public/assets/video-multi-toolbar",
+      "quick": {
+        "file": "quick.svg",
+        "node": "I173:30452;1675:2978;173:31525;1782:23796"
+      },
+      "storyboard": {
+        "file": "storyboard.svg",
+        "node": "I173:30452;1675:2978;173:31588;1782:23796"
+      },
+      "professional": {
+        "file": "professional.svg",
+        "node": "I173:30452;1675:2981;173:30487;1782:23796"
+      },
+      "download": {
+        "file": "download.svg",
+        "node": "I173:30452;1675:2985;173:30479;180:1971"
+      }
+    }
+  },
+  "referenceMediaGrid": {
+    "scope": "Professional fashion video reference images and videos, in separate sections.",
+    "columns": 4,
+    "tileSize": 64,
+    "gap": 8,
+    "addButton": "Occupies one slot below the limit; hidden at capacity.",
+    "layout": "Wrap into new rows without horizontal scrolling. Base node height 661px plus 72px per additional row. Canvas geometry uses the same reference counts.",
+    "sorting": "Fixed two-dimensional slots for cross-row drag sorting; preserve 200ms neighbor animation and immediate drop commit.",
+    "validation": "Local source changes only; no browser, tests or build run per user instruction."
+  },
+  "referenceVideoMarker": {
+    "designNode": "121:18151",
+    "containerNode": "I121:18151;2575:3889;175:33612",
+    "iconNode": "I121:18151;2575:3889;175:33607",
+    "asset": "public/assets/video-node-final/reference-video-element.svg",
+    "containerSize": 16,
+    "iconSize": 12,
+    "padding": 2,
+    "radius": 4,
+    "right": 4,
+    "bottom": 4,
+    "background": "Surface/media-overlay maps the design media badge black 60%; app Surface/floating is a different panel token.",
+    "foreground": "Text/on-brand-white",
+    "scope": "Video reference thumbnail corner marker only; retains numbering, four-column layout and preview interaction."
+  },
+  "canvasArrangement": {
+    "scope": "Video workspace local demo; R02 adopted by user on 2026-10-23. Fusion release scope and Feishu unchanged.",
+    "ownership": "ID-based membership and cross-type insertion order stored per snapshot. Single-group inputs extend that group; cross-group inputs create a separate downstream group.",
+    "ordering": "Earliest input insertion order captured on group creation; later additions retain it. Inputs follow reference lists; dependency stages take priority.",
+    "geometry": {
+      "groupsPerRow": 5,
+      "columnGap": 80,
+      "multiInputOutputGap": 160,
+      "branchGap": 120,
+      "groupGap": 240,
+      "stageGap": 480,
+      "standaloneAreaGap": 480
+    },
+    "behavior": "Arrange every item once, retain selection, sizes and business links, fit all contents, one undo step. Standalone media and empty editors use a separate lower area.",
+    "persistence": "Session snapshot and undo/redo only. Legacy snapshots initialize membership from current relationships and array order; no project storage service.",
+    "implementation": [
+      "src/video-layout-groups.ts",
+      "src/video-workflow-layout.ts",
+      "src/components/VideoWorkspace.tsx"
+    ],
+    "validation": "No browser, tests or build run; local source edits only."
   }
 }

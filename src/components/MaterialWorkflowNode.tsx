@@ -82,6 +82,7 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
   const suppressPreviewUntil = useRef(0);
   const references = node.references;
   const single = node.kind === 'gridSplit';
+  const supportsReferenceSorting = materialReferenceLimit(node.kind) > 1;
   const requiresReferences = node.kind !== 'quick';
   const hasPrompt = node.kind === 'quick' || node.kind === 'storyboard';
   const hasSettings = node.kind === 'quick' || node.kind === 'multiView';
@@ -95,7 +96,7 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
     references, prompt: node.prompt, resolution: node.resolution, duration: '5s', ratio: node.ratio, audio: 'auto',
   };
   const sorting = useVideoReferenceSort(sortNode, patch => {
-    if (!patch.referenceOrder) return;
+    if (!supportsReferenceSorting || !patch.referenceOrder) return;
     const byId = new Map(references.map(reference => [reference.id, reference]));
     const ordered = patch.referenceOrder.flatMap(referenceId => {
       const reference = byId.get(referenceId);
@@ -129,7 +130,7 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
   }
   function finishDrag() { sorting.end(); suppressPreviewUntil.current = Date.now() + 200; }
   function thumbnail(reference: VideoReference, field: 'references' | 'back', index?: number) {
-    const reorder = field === 'references' && !single;
+    const reorder = field === 'references' && supportsReferenceSorting;
     return <div className="video-reference-tile nodrag nopan" key={reference.id} draggable={reorder}
       ref={reorder ? element => sorting.tile(reference.id, element) : undefined}
       style={reorder ? { order: index } : undefined} data-dragging={reorder && sorting.dragId === reference.id}
@@ -166,14 +167,14 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
       <div className="fusion-field material-reference-field">
         <div className="material-reference-heading" id={`${id}-references`}>
           <span className="fusion-label">{t.references}{requiresReferences && <span className="fusion-required">*</span>}</span>
-          {!single && node.kind !== 'multiView' && <><Button className="material-reference-info nodrag nopan" aria-label={t.referenceTip} title={t.referenceTip}><NodeIcon src={assets.info} /></Button>
+          {supportsReferenceSorting && <><Button className="material-reference-info nodrag nopan" aria-label={t.referenceTip} title={t.referenceTip}><NodeIcon src={assets.info} /></Button>
             <span className="video-reference-label-divider" aria-hidden="true" />
             <span className="material-reference-count">{t.uploaded}<span>{references.length}</span>/{materialReferenceLimit(node.kind)}</span></>}
         </div>
-        <div ref={element => sorting.row('image', element)} className="video-workflow-references material-reference-row nowheel" data-canvas-scroll="wheel"
+        <div ref={supportsReferenceSorting ? element => sorting.row('image', element) : undefined} className="video-workflow-references material-reference-row nowheel" data-canvas-scroll="wheel"
           data-reference-sorting={Boolean(sorting.dragId)} aria-labelledby={`${id}-references`}
-          onDragOver={event => sorting.over(event, 'image')} onDragLeave={sorting.leave}
-          onDrop={event => { sorting.drop(event, 'image'); suppressPreviewUntil.current = Date.now() + 200; }}
+          onDragOver={supportsReferenceSorting ? event => sorting.over(event, 'image') : undefined} onDragLeave={supportsReferenceSorting ? sorting.leave : undefined}
+          onDrop={supportsReferenceSorting ? event => { sorting.drop(event, 'image'); suppressPreviewUntil.current = Date.now() + 200; } : undefined}
           onWheel={event => { if (event.ctrlKey || event.metaKey || event.altKey) return; event.stopPropagation(); if (!event.deltaX) event.currentTarget.scrollLeft += event.deltaY; }}>
           {references.map(reference => thumbnail(reference, 'references', sorting.order.indexOf(reference.id)))}
           {references.length < materialReferenceLimit(node.kind) && <button type="button" className="fusion-reference video-workflow-reference-add nodrag nopan" style={{ order: references.length }}
@@ -221,6 +222,6 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
     <footer className="fusion-node-action material-workflow-action nodrag nopan">
       <GenerateTaskButton label={t.generate} cost="20" costIcon={<NodeIcon src={assets.generateStar} />} disabled={!canGenerate} onClick={generate} />
     </footer>
-    <span className="sr-only" id={`${id}-reorder`}>{t.reorder}</span>
+    {supportsReferenceSorting && <span className="sr-only" id={`${id}-reorder`}>{t.reorder}</span>}
   </section>;
 }
