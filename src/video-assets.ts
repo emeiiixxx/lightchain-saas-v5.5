@@ -1,17 +1,22 @@
 const videoAssetBase = `${import.meta.env.BASE_URL}assets/video-workspace/`;
 const entryAssetBase = `${import.meta.env.BASE_URL}assets/video-entry-20261023/`;
 const materialAssetBase = `${import.meta.env.BASE_URL}assets/video-material-20261022/`;
-const contextAssetBase = `${import.meta.env.BASE_URL}assets/video-context-20261023/`;
+const contextAssetBase = `${import.meta.env.BASE_URL}assets/video-context-submenus-20261023/`;
 
 // Original artwork from Figma file 1dBgOC793NRsKgbNIaLZMK, node 64:2057.
 export const videoAssets = {
-  // Original slots in the completed page's blank-canvas menu, 151:26421.
+  // Original slots in cascading canvas menus 159:27144 / 159:27378 / 159:27502.
+  contextMaterial: `${contextAssetBase}material.svg`,
+  contextVideo: `${contextAssetBase}video.svg`,
+  contextChevron: `${contextAssetBase}chevron.svg`,
   contextQuick: `${contextAssetBase}quick.svg`,
   contextStoryboardImage: `${contextAssetBase}storyboard-image.svg`,
   contextMultiView: `${contextAssetBase}multi-view.svg`,
+  contextGridSplit: `${contextAssetBase}grid-split.svg`,
   contextFashionVideo: `${contextAssetBase}fashion-video.svg`,
   contextProFashionVideo: `${contextAssetBase}pro-fashion-video.svg`,
   contextStoryboardVideo: `${contextAssetBase}storyboard-video.svg`,
+  contextRemake: `${contextAssetBase}remake.svg`,
   contextUpload: `${contextAssetBase}upload.svg`,
   contextPaste: `${contextAssetBase}paste.svg`,
   // Figma 64:2059, updated 2026-10-23; original entry and upload-slot exports.

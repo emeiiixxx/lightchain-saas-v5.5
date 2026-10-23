@@ -22,7 +22,7 @@ export type VideoWorkflow = {
 
 // Figma configuration menus: fast 113:8633, professional 113:8634.
 export const videoGenerationConfig = {
-  fast: { nodeId: '113:8633', resolutions: ['768p', '2K'], defaultResolution: '2K', audioOptions: ['auto'], maxDuration: 15 },
+  fast: { nodeId: '113:8633', resolutions: ['768p', '2K'], defaultResolution: '768p', audioOptions: ['auto'], maxDuration: 15 },
   professional: { nodeId: '113:8634', resolutions: ['480p', '720p', '1080p'], defaultResolution: '1080p', audioOptions: ['auto', 'mute'], maxDuration: 30 },
 } as const;
 
@@ -70,6 +70,12 @@ export function videoWorkflowReferences(node: VideoWorkflow): VideoReference[] {
   return [...ordered, ...byId.values()];
 }
 
+export function canGenerateVideoWorkflow(node: VideoWorkflow): boolean {
+  const hasSource = node.mode === 'frames' ? Boolean(node.main?.url)
+    : videoWorkflowReferences(node).some(reference => Boolean(reference.url));
+  return hasSource && node.prompt.trim().length > 0;
+}
+
 // sourceImageId is the shared reference field; in this workspace it identifies
 // either an image or a video on the canvas. Multiple slots can share one source.
 export function videoWorkflowSourceIds(node: VideoWorkflow): string[] {
@@ -107,7 +113,7 @@ export function createVideoWorkflow(x: number, y: number, source?: CanvasImage, 
   const longVideo = mode === 'references';
   return { id: crypto.randomUUID(), x, y, mode, generationMode: longVideo ? 'professional' : 'fast',
     main: source ? { id: source.id, sourceImageId: source.id, name: source.name, url: source.url } : undefined,
-    references: [], prompt: '', smartExpand: false, resolution: longVideo ? '1080p' : '2K', duration: longVideo ? '30s' : '5s', ratio: '9:16', audio: 'auto' };
+    references: [], prompt: '', smartExpand: false, resolution: videoGenerationConfig[longVideo ? 'professional' : 'fast'].defaultResolution, duration: longVideo ? '30s' : '5s', ratio: 'auto', audio: 'auto' };
 }
 
 // Canvas navigation and React Flow share the same geometry for images and nodes.

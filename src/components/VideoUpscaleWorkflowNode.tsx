@@ -2,7 +2,7 @@ import { useId, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Locale } from '../i18n';
 import type { UploadedVideo } from '../video-reference-upload';
 import { videoNodeAssetSets } from '../video-node-assets';
-import { videoUpscaleResolutions, videoUpscaleWorkflowSize, videoUpscaleWorkflowTitle, type VideoUpscaleWorkflow } from '../video-upscale-workflow';
+import { canGenerateVideoUpscaleWorkflow, videoUpscaleResolutions, videoUpscaleWorkflowSize, videoUpscaleWorkflowTitle, type VideoUpscaleWorkflow } from '../video-upscale-workflow';
 import { Button, Icon } from './ui';
 import { ChoiceChip } from './ChoiceChip';
 import { GenerateTaskButton } from './GenerateTaskButton';
@@ -43,6 +43,7 @@ export function VideoUpscaleWorkflowNode({ node, locale, onChange, onUpload, onP
   const id = useId();
   const title = videoUpscaleWorkflowTitle(locale);
   const assets = videoNodeAssetSets.framesEmpty;
+  const canGenerate = canGenerateVideoUpscaleWorkflow(node);
 
   return <section className="fusion-node video-upscale-workflow-node" lang={locale} style={videoUpscaleWorkflowSize()}
     data-overlay data-source-image={node.id} data-node-id="141:26204" aria-label={title}>
@@ -76,7 +77,7 @@ export function VideoUpscaleWorkflowNode({ node, locale, onChange, onUpload, onP
       </div>
     </div>
     <footer className="fusion-node-action video-upscale-workflow-action">
-      <GenerateTaskButton className="nodrag nopan" label={t.generate} cost="20" onClick={() => node.video ? onGenerate() : onUpload()}
+      <GenerateTaskButton className="nodrag nopan" label={t.generate} cost="20" disabled={!canGenerate} onClick={() => { if (canGenerate) onGenerate(); }}
         costIcon={<span className="icon" aria-hidden="true" style={{ width: 16, height: 16, '--icon-url': `url("${assets.generateStar}")` } as CSSProperties} />} />
     </footer>
   </section>;

@@ -36,12 +36,11 @@ export function VideoSelectionToolbar({ locale, onAction, onDownload, downloadin
         { label: v.fashionVideo, icon: <ToolbarIcon name="fashion-video" />, onSelect: () => onAction('fashionVideo') },
         { label: v.multiReference, icon: <ToolbarIcon name="multi-reference" />, onSelect: () => onAction('multiReference') },
         { label: v.storyboard, icon: <ToolbarIcon name="storyboard-video" />, onSelect: () => onAction('storyboard') },
+        { label: v.videoRemake, icon: <ToolbarIcon name="remake" />, onSelect: () => onAction('videoRemake') },
       ]} />
       <Divider vertical />
     </div>
     <div className="video-image-toolbar-group">
-      <Button onClick={() => onAction('videoRemake')}><ToolbarIcon name="remake" />{v.videoRemake}</Button>
-      <Divider vertical />
       <Button onClick={() => onAction('cutout')}><ToolbarIcon name="cutout" />{t.cutout}</Button>
       <Button onClick={() => onAction('upscale')}><ToolbarIcon name="upscale" />{v.upscale}</Button>
       <Divider vertical />

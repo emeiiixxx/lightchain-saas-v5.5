@@ -5,7 +5,9 @@
   "nodeReference": "141:24359",
   "component": "src/components/MaterialGenerationSettings.tsx",
   "geometry": {
-    "width": 476,
+    "width": "max-content",
+    "figmaWidth": 476,
+    "widthRule": "Size the menu to its content and the ratio row to its natural item widths. Do not stretch the ratio container to fill spare space. Keep 16px viewport insets and horizontal ratio scrolling when constrained.",
     "height": 242,
     "padding": 12,
     "radius": 16,

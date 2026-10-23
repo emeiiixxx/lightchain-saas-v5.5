@@ -1,13 +1,12 @@
-import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useRef, type CSSProperties } from 'react';
 import type { Locale } from '../i18n';
-import { videoReferenceLimits, videoWorkflowReferences, type VideoReference, type VideoWorkflow } from '../video-workflow';
-import { videoNodeAssetSets } from '../video-node-assets';
+import { canGenerateVideoWorkflow, videoReferenceLimits, videoWorkflowReferences, type VideoReference, type VideoWorkflow } from '../video-workflow';
+import { videoNodeAssetSets, videoSettingsIcon } from '../video-node-assets';
 import { Button, Icon } from './ui';
 import { GenerateTaskButton } from './GenerateTaskButton';
 import { ProgressiveImage } from './ProgressiveImage';
 import { PromptTools } from './PromptTools';
 import { VideoGenerationSettings } from './VideoGenerationSettings';
-import { SettingSelect } from './SettingSelect';
 import { VideoIcon } from './VideoIcon';
 import { useVideoReferenceSort } from './useVideoReferenceSort';
 import { Switch } from './Switch';
@@ -26,7 +25,6 @@ const copy = {
     expand: '展开编辑', save: '保存指令', library: '提示词库', clear: '清空', close: '关闭', count: '字数',
     smartExpand: '智能扩写',
     settings: '生成设置', generate: '开始 AI 生成', required: '请输入视频描述',
-    generationMode: '生成模式', fast: '快速', professional: '专业',
   },
   en: {
     title: 'Fashion short video', referenceTitle: 'Professional fashion video',
@@ -39,7 +37,6 @@ const copy = {
     expand: 'Expand editor', save: 'Save prompt', library: 'Prompt library', clear: 'Clear', close: 'Close', count: 'Characters',
     smartExpand: 'Smart expansion',
     settings: 'Generation settings', generate: 'Start AI generation', required: 'Enter a video description',
-    generationMode: 'Generation mode', fast: 'Fast', professional: 'Pro',
   },
   ja: {
     title: 'ファッション短編動画', referenceTitle: 'プロ向けファッション動画',
@@ -52,7 +49,6 @@ const copy = {
     expand: '拡大編集', save: '指示を保存', library: 'プロンプト集', clear: 'クリア', close: '閉じる', count: '文字数',
     smartExpand: 'スマート拡張',
     settings: '生成設定', generate: 'AI 生成を開始', required: '動画の説明を入力してください',
-    generationMode: '生成モード', fast: '高速', professional: '高品質',
   },
 };
 
@@ -74,18 +70,16 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
   const t = copy[locale];
   const frames = node.mode === 'frames';
   const title = frames ? t.title : t.referenceTitle;
-  const generationMode = node.generationMode ?? 'fast';
   const references = videoWorkflowReferences(node);
+  const canGenerate = canGenerateVideoWorkflow(node);
   const frameAssets = node.main ? videoNodeAssetSets.framesFilled : videoNodeAssetSets.framesEmpty;
   const referenceAssets = references.length ? videoNodeAssetSets.referencesFilled : videoNodeAssetSets.referencesEmpty;
   const assets = frames ? frameAssets : referenceAssets;
   const expansionControl = <label className="video-prompt-expansion nodrag nopan"><span>{t.smartExpand}</span><Switch checked={node.smartExpand ?? false} aria-label={t.smartExpand} onCheckedChange={smartExpand => onChange({ smartExpand })} /></label>;
   const designId = frames ? (node.main ? '119:11242' : '84:6110') : (references.length ? '121:18150' : '121:17924');
   const root = useRef<HTMLElement>(null);
-  const prompt = useRef<HTMLTextAreaElement>(null);
   const suppressPreviewUntil = useRef(0);
   const sorting = useVideoReferenceSort(node, onChange);
-  const [error, setError] = useState(false);
   const id = useId();
   const promptId = id + '-prompt';
 
@@ -98,11 +92,9 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
     return () => document.removeEventListener('pointerdown', blur, true);
   }, []);
 
-  function updatePrompt(value: string) { onChange({ prompt: value.slice(0, promptLimit) }); setError(false); }
+  function updatePrompt(value: string) { onChange({ prompt: value.slice(0, promptLimit) }); }
   function generate() {
-    if (frames && !node.main) { onMain(); return; }
-    if (!frames && !references.length) { onReference('image'); return; }
-    if (!node.prompt.trim()) { setError(true); prompt.current?.focus(); return; }
+    if (!canGenerate) return;
     onGenerate();
   }
   function removeReference(reference: VideoReference) {
@@ -176,8 +168,8 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
       </div>}
       <div className="fusion-field video-workflow-prompt">
         <div className="video-workflow-prompt-heading"><label className="fusion-label" htmlFor={promptId}>{t.prompt}<span className="fusion-required">*</span></label>{expansionControl}</div>
-        <div className={'fusion-textarea' + (error ? ' has-error' : '')}>
-          <textarea ref={prompt} id={promptId} value={node.prompt} placeholder={t.placeholder} required maxLength={promptLimit} aria-invalid={error} aria-describedby={error ? promptId + '-error' : undefined} onChange={event => updatePrompt(event.target.value)} />
+        <div className="fusion-textarea">
+          <textarea id={promptId} value={node.prompt} placeholder={t.placeholder} required maxLength={promptLimit} onChange={event => updatePrompt(event.target.value)} />
           <div className="fusion-textarea-footer">
             <div className="fusion-prompt-actions"><PromptTools value={node.prompt} onChange={updatePrompt} labels={t} maxLength={promptLimit} expandedHeaderAction={expansionControl} inlineIcons={{ expand: <NodeIcon src={assets.promptExpand} />, save: <NodeIcon src={assets.promptSave} />, library: <NodeIcon src={assets.promptLibrary} /> }} /></div>
             <div className="video-prompt-assist">
@@ -185,21 +177,17 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
             </div>
           </div>
         </div>
-        {error && <p className="sr-only" id={promptId + '-error'} role="alert">{t.required}</p>}
       </div>
-      <div className="fusion-field video-workflow-settings"><span className="fusion-label">{t.settings}</span>
+      <div className="fusion-field video-workflow-settings" data-node-id="I119:11243;2575:3889;165:29865"><span className="fusion-label">{t.settings}</span>
         <div className="fusion-settings">
-          <div className="video-generation-mode">
-            <SettingSelect label={t.generationMode} value={generationMode} chevron={<NodeIcon src={assets.chevron} className="lc-setting-select-chevron" />}
-              options={(['fast', 'professional'] as const).map(value => ({ value, label: t[value] }))}
-              onChange={value => onChange({ generationMode: value === 'professional' ? 'professional' : 'fast' })} />
-          </div>
-          <VideoGenerationSettings locale={locale} value={node} onChange={onChange} autoIcon={assets.auto} chevron={<NodeIcon src={assets.chevron} className="lc-setting-select-chevron" />} />
+          <VideoGenerationSettings locale={locale} value={node} onChange={onChange} autoIcon={assets.auto}
+            includeModeInSummary summaryIcon={videoSettingsIcon}
+            chevron={<NodeIcon src={assets.chevron} className="lc-setting-select-chevron" />} />
         </div>
       </div>
     </div>
     <footer className="fusion-node-action video-workflow-action">
-      <GenerateTaskButton label={t.generate} cost="999" costIcon={<NodeIcon src={videoNodeAssetSets.framesEmpty.generateStar} />} className="fusion-generate" disabled={!frames && (!references.length || !node.prompt.trim())} onClick={generate} />
+      <GenerateTaskButton label={t.generate} cost="999" costIcon={<NodeIcon src={videoNodeAssetSets.framesEmpty.generateStar} />} className="fusion-generate" disabled={!canGenerate} onClick={generate} />
     </footer>
   </section>;
 }

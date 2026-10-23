@@ -1,4 +1,4 @@
-/* Figma 113:8633 / 113:8634: 324×306 menus, original Beta controls and tokens. */
+/* Figma 113:8633 / 113:8634: 324×380 menus, original Beta controls and tokens. */
 .video-generation-settings-ratio-icon {
   flex: 0 0 16px;
   width: 16px;
@@ -80,6 +80,17 @@
   background: var(--state-selected-tab-sliding);
 }
 .video-parameter-segments button:focus-visible { outline-offset: -2px; }
+.video-generation-mode-setting .video-parameter-segments button[aria-checked='true'] {
+  color: var(--text-brand);
+  background: var(--state-selected);
+}
+/* Latest video-menu bindings; material settings retain their own Figma colors. */
+.video-generation-settings:not(.material-generation-settings) .video-parameter-segments {
+  background: var(--control-fill-hover);
+}
+.video-generation-settings:not(.material-generation-settings) .video-parameter-segments button[aria-checked='true'] {
+  background: var(--state-selected);
+}
 .video-parameter-segments-scroll:has(.video-parameter-segments--ratios) { border-radius: var(--radius-l); }
 .video-parameter-segments--ratios { display: flex; min-width: 300px; border-radius: var(--radius-l); }
 .video-parameter-segments--ratios button {
@@ -96,20 +107,36 @@
 .video-parameter-segments--ratios button[aria-checked='true'] { border-radius: var(--radius-base); }
 .video-parameter-segments--ratios .icon { flex-shrink: 0; }
 
+.video-duration-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+.video-duration-heading h3 { flex: 1; }
 .video-duration-control {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 24px;
+  height: 18px;
   padding: 0 var(--spacing-xs);
 }
-.video-duration-min {
+.video-duration-endpoint {
   flex: none;
   color: var(--text-tertiary);
   font-size: 12px;
   line-height: 16px;
 }
-.video-duration-range { flex: 1; min-width: 0; }
+.video-duration-slider { position: relative; flex: 1; min-width: 0; }
+.video-duration-range { width: 100%; }
+.video-duration-tooltip.lc-tooltip {
+  position: absolute;
+  top: -32px;
+  right: auto;
+  bottom: auto;
+  translate: -50% 0;
+  white-space: nowrap;
+}
 .video-duration-value {
   display: flex;
   align-items: center;

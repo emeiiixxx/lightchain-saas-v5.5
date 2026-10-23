@@ -9,6 +9,9 @@ import { CanvasTaskList, type CanvasTask } from './CanvasTaskList';
 
 type Props = { locale: Locale; mode: 'select' | 'hand'; onMode: (mode: 'select' | 'hand') => void; zoom: number;
   tasks?: CanvasTask[];
+  onSelectTask?: (task: CanvasTask) => void;
+  canSelectTask?: (task: CanvasTask) => boolean;
+  taskListNodeId?: string;
   showSmartSearch?: boolean;
   sideActions?: ReactNode;
   snapToGrid: boolean; onToggleSnap: () => void;
@@ -60,7 +63,7 @@ export function CanvasChrome(p: Props) {
       {p.sideActions ?? iconButton(t.platformAssets, 'platformIcon', p.onUpload)}
     </div>
     <div className="canvas-bottom-left" data-overlay>
-      <CanvasTaskList tasks={p.tasks} locale={p.locale} />
+      <CanvasTaskList tasks={p.tasks} locale={p.locale} onSelectTask={p.onSelectTask} canSelectTask={p.canSelectTask} nodeId={p.taskListNodeId} />
     </div>
     <div className="canvas-bottom-right" data-overlay data-node-id="89:3853">
       <div ref={zoomControl} className="canvas-zoom-control" data-node-id="89:3854">

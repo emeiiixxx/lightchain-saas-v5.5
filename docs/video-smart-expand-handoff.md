@@ -17,7 +17,7 @@
 | --- | --- |
 | 开关 | S，32×18px，圆角999px |
 | 圆钮 | 14×14px，内缩2px，开启后向右移动14px |
-| 标签行 | 高20px、图文间距4px、左右内边距4px；文字12/20px、字重500、Text/tertiary |
+| 标签行 | 高20px、图文间距4px、左右内边距4px；文字12/20px、字重500。节点内用Text/tertiary，放大输入框顶部用Text/on-brand-white，深浅主题一致 |
 | 关闭 | Border/medium 背景、1px Border/weak 内描边 |
 | 开启 | Brand/primary 背景，无描边；悬停用 Brand/primary-hover |
 | 圆钮颜色 | Control/fill/white；阴影为0 6px 14px -2px Overlay/weak |

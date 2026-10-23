@@ -1,6 +1,9 @@
 const base = `${import.meta.env.BASE_URL}assets/video-node-final/`;
 const legacyBase = `${import.meta.env.BASE_URL}assets/video-workflow/`;
 
+// Figma 84:6110 / 119:11242: the combined settings trigger uses Icon/Editor edit-parameters.
+export const videoSettingsIcon = `${base}settings-edit-parameters.svg`;
+
 // Original SVG source records live in docs/video-node-final-assets.json.
 // tip contains the design gradient: render with <img>, never a monochrome mask.
 function assetUrls<T extends Record<string, string>>(files: T) {

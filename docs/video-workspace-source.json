@@ -180,7 +180,7 @@
             196,
             261.3
           ],
-          "runtimeSizing": "Preserve source aspect ratio and cap longer side at 240px as explicitly requested."
+          "runtimeSizing": "Fixed 256px outer popover height, including 4px padding and 1px border on each side. Image frame height is 246px; width follows intrinsic aspect ratio for all orientations. Clamp width at the right viewport edge and use contain without cropping; do not shrink the outer height."
         },
         "subject-front.jpg": {
           "nodeId": "I141:24347;1157:8572",
@@ -189,7 +189,7 @@
             1400
           ],
           "mimeType": "image/jpeg",
-          "displaySizing": "Preserve source aspect ratio; longer side capped at 240px."
+          "displaySizing": "Fixed 256px outer popover height, including 4px padding and 1px border on each side. Image frame height is 246px; width follows intrinsic aspect ratio for all orientations. Clamp width at the right viewport edge and use contain without cropping; do not shrink the outer height."
         },
         "subject-previous.svg": {
           "nodeId": "I141:25142;334:2319",
@@ -358,8 +358,6 @@
           "separator"
         ],
         [
-          "videoRemake",
-          "separator",
           "cutout",
           "upscale",
           "separator"
@@ -374,7 +372,6 @@
       "chineseButtonWidths": {
         "materialGeneration": 112,
         "videoGeneration": 112,
-        "videoRemake": 88,
         "cutout": 64,
         "upscale": 84,
         "iconOnly": 32
@@ -405,19 +402,21 @@
         "labelsZh": [
           "服装短视频",
           "专业服装视频",
-          "分镜成片"
+          "分镜成片",
+          "视频复刻"
         ],
         "actions": [
           "fashionVideo",
           "multiReference",
-          "storyboard"
+          "storyboard",
+          "videoRemake"
         ],
-        "behavior": "Create the short-video or professional-fashion-video editor with matching title and preserve existing generation rules. Both inherit the selected image and automatic business line in one undo transaction. Storyboard video is not connected.",
-        "height": 120
+        "behavior": "Create the short-video or professional-fashion-video editor with matching title and preserve existing generation rules. Both inherit the selected image and automatic business line in one undo transaction. Storyboard video and video remake are not connected.",
+        "height": 160
       },
       "panel": {
         "width": 160,
-        "height": "Content-sized: material generation 160px; video generation 120px.",
+        "height": "Content-sized: material generation and video generation each have four rows, 160px.",
         "padding": 4,
         "gap": 8,
         "rowHeight": 32,
@@ -430,8 +429,8 @@
       },
       "reuse": "Reuse v5.4 useHoverDismiss and ElementSendMenu's combined hover area, adapting the current DownloadFormatMenu top-layer positioning and keyboard behavior with usePresence.",
       "interaction": "Open on trigger hover; keep open across the combined trigger/menu hit area with a 120ms pointer-intent dismissal delay and 200ms ease-out visual motion. Also support click and keyboard. Menus are mutually exclusive; Escape, outside interaction or changing the selected image closes them. Follow the toolbar as the canvas moves and avoid viewport edges. Support dark/light themes and Chinese/English/Japanese.",
-      "otherActions": "Storyboard video is the third video-generation menu item. Reuse real cutout editing and click-open PNG/JPG/AVIF downloads. Storyboard video, video remake, upscale, save to assets and send remain not connected.",
-      "sourceRule": "Use standalone nodes 113:9464 and 113:9502 for styling, with the latest user instruction moving storyboard video into the video-generation menu."
+      "otherActions": "Storyboard video and video remake are the third and fourth video-generation menu items. Reuse real cutout editing and click-open PNG/JPG/AVIF downloads. Storyboard video, video remake, upscale, save to assets and send remain not connected.",
+      "sourceRule": "Use standalone nodes 113:9464 and 113:9502 for styling, with the latest user instructions moving storyboard video and video remake into the image toolbar's video-generation menu."
     },
     "initialAlignment": "Center image and toolbar together inside the canvas below the 48px topbar; keep toolbar at UI scale.",
     "sideToolbar": {
@@ -529,12 +528,13 @@
     "promptLimit": 5000,
     "generationSettings": {
       "summaryOrder": [
+        "generationMode",
         "ratio",
         "resolution",
         "duration"
       ],
-      "summaryIcon": "Uses the same original SVG as the selected ratio option; auto icon only for auto.",
-      "source": "Figma 113:8633 (inner node 113:8302) for fast mode and 113:8634 for professional mode. Both share geometry, control components and original ratio SVGs; ratio icon component keys match in both designs.",
+      "summaryIcon": "Both short and professional fashion video use the original 16px Icon/Editor edit-parameters SVG.",
+      "source": "Latest Figma 113:8633 (inner 113:8302) and 113:8634 (inner 113:8635). Both add a generation-mode group above ratio and move the duration input to the title row. Reuse original Beta controls and ratio artwork.",
       "component": "src/components/VideoGenerationSettings.tsx",
       "assetDirectory": "public/assets/video-settings",
       "wideRatioIcon": {
@@ -565,18 +565,18 @@
         ]
       },
       "defaultResolutionByMode": {
-        "fast": "2K",
+        "fast": "768p",
         "professional": "1080p"
       },
-      "modeChange": "Normalize against the target mode. An unsupported resolution falls back to that mode's default: 1080p for professional, 2K for fast. Fast mode forces audio to auto and clamps durations above 15 seconds to 15. Commit mode and all normalized settings as one undo transaction; undo restores the complete previous configuration. Keep valid settings within the same mode, ratio, prompt and media. Do not add hidden per-mode configuration memory.",
-      "interaction": "Ratio, resolution and audio apply immediately without closing; duration uses the existing mode-dependent slider and numeric input. Keep the ratio | resolution | duration summary and selected-ratio icon; audio stays out of the summary. Both editor types reuse the same controls and retain existing per-node values with canvas undo/redo. Outside click or Escape closes; preserve keyboard operation, dark/light themes and shared 200ms exit motion.",
+      "modeChange": "Normalize against the target mode. Unsupported resolution falls back to 1080p for professional or 768p for fast. Fast mode forces audio to auto and clamps durations to 5–15 seconds. Professional supports 5–30 seconds. Commit mode and normalized settings in one undo action. Preserve valid existing values, ratio, prompt and media.",
+      "interaction": "Mode, ratio, resolution and audio selections apply without closing. Both menus include mode selection; the short-video trigger summarizes mode | ratio | resolution | duration, and the professional-fashion node retains its separate mode selector plus ratio | resolution | duration. Audio remains outside the summary. Preserve per-node state, undo, keyboard, outside-click/Escape dismissal, dark/light themes and 200ms exit motion.",
       "durationSlider": {
         "library": "Lightchain SaaS v5.1 libraries Beta",
         "source": {
           "sliderControlInstance": "I113:8302;891:4593;113:8485",
-          "professionalSliderControlInstance": "I113:8635;891:4593;113:8658",
+          "professionalSliderControlInstance": "I113:8635;891:4593;165:29912",
           "sharedAcrossGenerationModes": "Both SliderControl instances and nested Slider components use the same keys, geometry, states and tokens.",
-          "sliderControlMode": "Input",
+          "sliderControlMode": "Value (minimum and maximum labels); editable input separately placed in duration title row",
           "sliderControlComponentKey": "18344c81fe5ef50e786c256f7da43e56151c3f0f",
           "sliderComponentSetKey": "190e412c7435d6e268fa198927c59b00ff18279d",
           "sliderVariant": "Size=M, State=default, Value=50",
@@ -590,7 +590,7 @@
           "rowPaddingHorizontal": 4,
           "control": {
             "width": 292,
-            "height": 24
+            "height": 18
           },
           "minimumLabel": {
             "text": "5",
@@ -599,7 +599,7 @@
             "gapAfter": 8
           },
           "slider": {
-            "width": 205,
+            "width": 255,
             "height": 18,
             "verticalAlign": "center"
           },
@@ -610,7 +610,16 @@
             "align": "inside"
           },
           "radius": 999,
-          "shadow": "0 2px 4px Overlay/weak"
+          "shadow": "0 2px 4px Overlay/weak",
+          "maximumLabel": {
+            "textByMode": {
+              "fast": "15",
+              "professional": "30"
+            },
+            "width": 14,
+            "height": 16,
+            "gapBefore": 8
+          }
         },
         "tokens": {
           "track": "Border/strong (design instance override)",
@@ -634,33 +643,36 @@
             "max": 30
           }
         },
-        "rowHeight": 24,
-        "sliderWidth": 205,
+        "rowHeight": 18,
+        "sliderWidth": 255,
         "gap": 8,
         "input": {
           "width": 64,
           "height": 24,
           "editable": true,
-          "commit": "On Enter, blur or panel close, clamp to the current mode range and commit one history record."
+          "commit": "On Enter, blur or panel close, clamp to the current mode range and commit one history record.",
+          "position": "Duration title row, aligned to the right, 64×24px."
         },
         "modeChange": "Switching to fast clamps durations above 15 seconds to 15; commit mode, duration and any resolution/audio normalization together as one undo transaction.",
         "interaction": "Display the current duration immediately while dragging; commit one history record when the gesture finishes.",
-        "labels": "Show the leading minimum label 5 in both modes. No below-slider range labels or upper-right value; show seconds in the numeric input.",
-        "userOverride": "Minimum remains 5 seconds in both modes and is visible as the leading label. The professional design's 15-second value is an example and does not overwrite an existing duration."
+        "labels": "Minimum 5 and mode-specific maximum 15 or 30 flank the slider. The numeric seconds input is at the title row right.",
+        "userOverride": "Minimum remains 5 seconds in both modes and is visible as the leading label. The professional design's 15-second value is an example and does not overwrite an existing duration.",
+        "tooltip": "Professional mode hover, keyboard focus and dragging show the live duration above the slider thumb, reusing shared Tooltip styling, arrow and 200ms presence."
       },
       "nodeId": "113:8302",
       "nodeIdByGenerationMode": {
         "fast": "113:8633",
         "professional": "113:8634"
       },
-      "panelHeight": 306,
+      "panelHeight": 380,
       "panel": {
-        "geometrySource": "Figma 113:8633 (inner node 113:8302) and 113:8634 metadata; both are 324 x 306px and share appearance and geometry.",
+        "geometrySource": "Latest six-node design update: both configuration panels are 324×380px with five groups.",
         "background": "Surface/default",
         "padding": 12,
         "radius": 16,
         "border": "1px Border/weak overlay; does not consume layout space.",
         "groups": [
+          "generationMode",
           "ratio",
           "resolution",
           "duration",
@@ -671,7 +683,23 @@
         "labelLineHeight": 16,
         "labelColor": "Text/tertiary",
         "labelToControlGap": 8,
-        "overflow": "Scroll inside the panel when available viewport space is insufficient."
+        "overflow": "Scroll inside the panel when available viewport space is insufficient.",
+        "colorTokens": {
+          "source": "Latest color-token update in Figma 113:8633 and 113:8634, 2026-10-23.",
+          "segmentBackground": "Control/fill/hover",
+          "selectedBackground": "State/selected",
+          "defaultText": "Text/tertiary",
+          "selectedText": "Text/primary",
+          "selectedModeText": "Text/brand",
+          "scope": "Apply to generation mode, aspect ratio, resolution and audio in both video menus. Resolve existing semantic tokens in Dark and Light; material-generation menu colors remain independent."
+        },
+        "modeControl": {
+          "height": 32,
+          "selectedText": "Text/brand",
+          "itemRadius": 6,
+          "background": "Control/fill/hover",
+          "selectedBackground": "State/selected"
+        }
       },
       "ratioAutoLabel": "Auto, including Chinese locale.",
       "ratioControl": {
@@ -698,11 +726,38 @@
         "controlHeight": 32,
         "behavior": "Fast mode has the fixed auto option; professional mode can select auto or mute, defaulting to auto. Switching back to fast resets audio to auto. Audio generation service is not connected."
       },
-      "finalDesignValues": "Static fast / 1080p / Auto values in the final node screenshots do not override the existing fast/professional menus, legal parameters or BetaSlider behavior. New short editors use fast/2K/5s; new long editors use professional/1080p/30s. Preserve existing values."
+      "finalDesignValues": "New short editors default to fast / auto / 768p / 5s; professional fashion editors retain professional / auto / 1080p / 30s. Existing valid settings are preserved. Filled-node sample text, sample images and the menu screenshot durations are not prefilled into user nodes.",
+      "updated": "2026-10-23",
+      "summaryOrderByEditor": {
+        "frames": [
+          "generationMode",
+          "ratio",
+          "resolution",
+          "duration"
+        ],
+        "references": [
+          "generationMode",
+          "ratio",
+          "resolution",
+          "duration"
+        ]
+      },
+      "resolutionLabelsZh": {
+        "480p": "样片480p",
+        "720p": "720p",
+        "1080p": "1080p",
+        "768p": "768p",
+        "2K": "2K"
+      },
+      "modeLabelsZh": {
+        "fast": "快捷模式",
+        "professional": "专业模式"
+      },
+      "triggerSource": "Figma 119:11243 generation-settings field: one 296x32px selector, mode | ratio | resolution | duration, existing Beta Select tokens. Applies to both video editors by user request."
     },
     "costLabel": "999",
     "interaction": "Short-video editors retain separate main and optional endFrame fields. Long-video editors show separate image and video reference rows, with independent uploads and counts: up to 9 images including inherited main, and 3 videos. Reorder and renumber within the same media type only; preserve each source binding and inherited main identity. Deduplicate references by URL. Every editor input has a canvas media source and a fixed automatic business association. Non-interactive editor space remains draggable.",
-    "generation": "Short video validates main image and prompt; long video requires at least one image or video and a non-empty prompt. Video-only references are valid. Video generation and smart expansion services are not connected. Smart expansion only saves configuration; it never rewrites content, creates tasks or charges.",
+    "generation": "Disable the native generation button until required inputs are complete: short video needs a main image and non-whitespace prompt, with an optional end frame; professional video needs at least one image or video and a non-whitespace prompt. Video-only references are valid. The callback uses the same readiness predicate and returns when incomplete without opening a picker or focusing an empty field. Ready video editors append a fixed local demo video bound to the generating editor. Real AI generation and smart expansion services are not connected. Smart expansion only saves configuration; it never rewrites content, creates tasks or charges.",
     "geometryByMode": {
       "frames": {
         "emptyNodeId": "84:6110",
@@ -783,29 +838,41 @@
         "fast",
         "professional"
       ],
-      "modeControlWidth": 104,
-      "parameterControlWidth": 184,
-      "gap": 8,
       "defaultsByEditor": {
-        "frames": "fast, 9:16, 2K, 5s, audio auto",
-        "references": "professional, 9:16, 1080p, 30s, audio auto"
+        "frames": "fast, auto, 768p, 5s, audio auto",
+        "references": "professional, auto, 1080p, 30s, audio auto"
       },
-      "existingValues": "Retain existing per-node choices. Reuse the existing settings menus and BetaSlider without adopting incompatible static screenshot values.",
-      "footer": "One full-width generation button with unchanged cost 999."
+      "existingValues": "Retain valid existing per-node choices; only newly created short-video nodes and unsupported fast-mode resolution fallback use 768p. Use shared menus and Beta Slider.",
+      "footer": "One full-width generation button with unchanged cost 999.",
+      "layoutByEditor": {
+        "frames": {
+          "combinedControlWidth": 296,
+          "summary": "mode | ratio | resolution | duration",
+          "icon": "Icon/Editor edit-parameters"
+        },
+        "references": {
+          "combinedControlWidth": 296,
+          "summary": "mode | ratio | resolution | duration",
+          "icon": "Icon/Editor edit-parameters"
+        }
+      },
+      "combinedControlWidth": 296,
+      "controlHeight": 32,
+      "modeSelection": "Inside the existing expanded generation settings menu; retain selected values and new-editor Auto defaults."
     },
     "editorSelection": "Image-toolbar and blank-canvas menu create separate short or professional fashion video editors. Image-toolbar creation inherits the actual selected image; blank-canvas creation uses the right-click world position. No mode tabs or free connections.",
     "defaultSettingsByMode": {
       "frames": {
-        "resolution": "2K",
+        "resolution": "768p",
         "duration": "5s",
-        "ratio": "9:16",
+        "ratio": "auto",
         "generationMode": "fast",
         "audio": "auto"
       },
       "references": {
         "resolution": "1080p",
         "duration": "30s",
-        "ratio": "9:16",
+        "ratio": "auto",
         "generationMode": "professional",
         "audio": "auto"
       }
@@ -967,7 +1034,7 @@
       "gap": 8,
       "radius": 8,
       "labels": [
-        "主体-{实际图片数量}张",
+        "商品-{实际图片数量}张",
         "模特"
       ],
       "badgeHeight": 20,
@@ -975,18 +1042,18 @@
     },
     "configuration": {
       "shots": 4,
-      "appearanceLocked": true,
       "resolution": "2K",
       "durationSeconds": 10,
       "ratioByTemplate": {
         "commerce": "9:16",
         "brand": "16:9"
       },
-      "titleAndRatioDecision": "User confirmed that title and ratio follow the selected template, overriding the commerce title and portrait-ratio placeholders in the landscape design."
+      "titleAndRatioDecision": "User confirmed that title and ratio follow the selected template, overriding the commerce title and portrait-ratio placeholders in the landscape design.",
+      "informationLabel": "维护信息"
     },
     "chips": {
       "component": "TagChip / Filled / default / S",
-      "master": "141:24101",
+      "master": "165:28535",
       "height": 24,
       "radius": 6,
       "paddingInline": 4,
@@ -1018,8 +1085,8 @@
         ],
         "gradient": "transparent to black 75%"
       },
-      "interaction": "Hover or keyboard focus opens, touch click also opens; anchor and popover share hover retention. Escape and outside interaction close. Portalled into the modal dialog with native popover top-layer positioning and viewport avoidance. Category changes, upload picker opening and modal exit dismiss the preview. Shared 200ms ease-out and reduced-motion support.",
-      "placement": "Always 8px below the hovered reference card and aligned with its left edge. Scale artwork proportionally to fit remaining space below and to the right, preserving an 8px viewport inset; never flip above or left over the video. Bridge the vertical hover gap.",
+      "interaction": "Hover or keyboard focus opens, touch click also opens; anchor and popover share hover retention. Escape and outside interaction close. Portalled into the modal dialog with native popover top-layer positioning and viewport avoidance. Category changes, upload picker opening and modal exit dismiss the preview. Shared 200ms ease-out and reduced-motion support. Delayed dismissal rechecks joint pointer and keyboard focus containment; carousel clicks cancel dismissal. Preserve the current frame while the next image loads. Boundary arrows retain focus via aria-disabled and clamped index updates instead of native disabled.",
+      "placement": "Always 8px below the hovered reference card and aligned with its left edge. Outer height remains 256px; only constrain width at the right viewport edge with an 8px inset. Do not flip above or left over the video. Bridge the vertical hover gap.",
       "figmaSubjectSize": [
         193.8016357421875,
         250
@@ -1029,12 +1096,12 @@
         250
       ],
       "imageSizing": {
-        "portraitMaxHeight": 240,
-        "landscapeMaxWidth": 240,
-        "squareMaxSize": 240,
-        "aspectRatio": "Use each image intrinsic dimensions, including mixed-orientation subjects; do not crop or upscale smaller originals. Reduce further to fit available viewport space."
+        "popoverHeight": 256,
+        "imageHeight": 246,
+        "width": "intrinsic aspect ratio, constrained only by available viewport width",
+        "aspectRatio": "All orientations use the same fixed outer height, including smaller originals. Contain the full image without cropping."
       },
-      "subjectDisplay": "Single active image from the selected template references.subjects array, preserving intrinsic aspect ratio and the 240px longer-side limit.",
+      "subjectDisplay": "Single active image from references.subjects. Fixed 256px outer height across slide changes, width adapts to each image aspect ratio.",
       "subjectSwitcher": {
         "nodeId": "141:25137",
         "placement": "Bottom center inside the preview; 10px from outer bottom edge.",
@@ -1126,6 +1193,38 @@
         "Use each template original subject and model assets instead of reusing commerce references for brand story"
       ],
       "validation": "Figma screenshot and source comparison only. No browser, build, tests or publication."
+    },
+    "nodeIds": [
+      "76:5477",
+      "76:5003"
+    ],
+    "uploads": {
+      "title": "上传对应素材，替换模版中的商品或人物",
+      "requirement": "使用模版生成时，服装图/模特图2选1，必填",
+      "placeholders": [
+        "替换模版商品",
+        "替换模版人物"
+      ],
+      "layout": {
+        "headingGap": 4,
+        "titleFontSize": 14,
+        "titleLineHeight": 20,
+        "titleFontWeight": 500,
+        "descriptionFontSize": 12,
+        "descriptionLineHeight": 16,
+        "descriptionToken": "Text/tertiary",
+        "sectionGap": 8,
+        "cardGap": 8,
+        "cardHeight": 96,
+        "cardRadius": 16,
+        "thumbnailSize": 80,
+        "thumbnailRadius": 12
+      },
+      "labels": "Individual upload titles remain accessible but are visually hidden. Do not show optional text.",
+      "generation": "Require at least one successfully selected garment or model image for the currently selected template. Either or both are valid. Disable GenerateTaskButton when both are absent; the callback repeats the same guard. Removing the last image disables it immediately; switching templates uses that template's saved uploads. Static template previews do not satisfy the upload requirement.",
+      "picker": "Keep the shared single-image AssetPicker and immediate local upload application; retain drop, replace, delete and file validation.",
+      "content": "Keep the existing user-provided video, native player, real template references and current template title/ratio. Figma sample user uploads are not prefilled.",
+      "responsive": "Retain the existing 760px stacked-layout and 460px compact thumbnail rules; new text wraps naturally and the existing detail body scrolls when needed."
     }
   },
   "completedPageImplementation": {
@@ -1136,7 +1235,7 @@
       "template dialog and upload states",
       "subject and model hover previews",
       "image and video toolbars",
-      "blank-canvas grouped menu",
+      "blank-canvas cascading menu",
       "short and professional video editors",
       "material generation editors and settings",
       "video upscale editor"
@@ -1144,10 +1243,11 @@
     "validation": "Figma design context and source alignment only; no browser, tests, build, commit, push or deployment requested."
   },
   "blankCanvasMenu": {
-    "nodeId": "151:26421",
-    "instanceId": "141:26089",
+    "nodeId": "159:27144",
+    "instanceId": "159:27145",
+    "assetSource": "docs/video-context-submenu-assets.json",
     "width": 224,
-    "height": 402,
+    "height": 177,
     "japaneseWidth": 264,
     "padding": 8,
     "gap": 8,
@@ -1156,20 +1256,30 @@
     "groups": {
       "素材生成": [
         "快捷生图",
+        "多视角",
         "分镜图",
-        "多视角"
+        "宫格图切分"
       ],
       "视频生成": [
         "服装短视频",
         "专业服装视频",
-        "分镜成片"
+        "分镜成片",
+        "视频复刻"
       ]
     },
     "actions": [
       "上传图片/视频",
       "粘贴"
     ],
-    "creation": "Create with the node top-left at the original right-click canvas coordinate. Do not avoid collisions or change the viewport for explicit context-menu placement. Existing CanvasContextMenu handles popup positioning, keyboard navigation and dismissal. Fusion menu is unchanged. Storyboard-to-video service is not connected."
+    "submenus": {
+      "materialsNodeId": "159:27378",
+      "videosNodeId": "159:27502",
+      "width": 224,
+      "height": 168,
+      "behavior": "Hover or click to open one group; keep the trigger highlighted while interacting with its submenu. Reuse 120ms intent dismissal, a 4px gap from the trigger row edge with a matching pointer bridge, and 200ms ease-out presence. ArrowRight/Enter enters the submenu; ArrowLeft/Escape returns focus to its trigger. ArrowUp/ArrowDown navigate only the current menu. Outside interaction or a new context point closes the old group.",
+      "positioning": "Nested top-layer popovers escape parent clipping. Open 4px beyond the trigger row right edge when space permits, otherwise 4px beyond its left edge; clamp both axes within an 8px viewport inset. When neither side fits, keep the submenu within the viewport with necessary overlap. Constrained menus scroll internally. Japanese menus use 264px width."
+    },
+    "creation": "Create any of the six available editor kinds with the node top-left at the original right-click canvas coordinate. Do not avoid collisions or change the viewport for explicit context-menu placement. Shared CanvasContextMenu handles keyboard navigation and dismissal. Fusion and asset context menus are unchanged. Storyboard-to-video and video remake services are not connected."
   },
   "videoUpscaleWorkflow": {
     "nodeId": "141:26153",
@@ -1196,6 +1306,54 @@
     ],
     "defaultResolution": "1080p",
     "costLabel": "20",
-    "behavior": "Create from video toolbar with source binding. Uploading in an empty editor creates or reuses a canvas video in one undo action. Clearing input keeps the canvas asset. Deleting source clears the input. Shares automatic business connections, layout and full-screen playback. Backend is not connected."
+    "behavior": "Create from video toolbar with source binding. Uploading in an empty editor creates or reuses a canvas video in one undo action. Clearing input keeps the canvas asset. Deleting source clears the input. Require a video and valid resolution to enable generation; the button and callback share the same readiness predicate. Shares automatic business connections, layout and full-screen playback. Backend is not connected."
+  },
+  "localDemoGeneration": {
+    "authorized": "2026-10-23: user requested usable demo results and confirmed images for material generation, videos for video generation.",
+    "factory": "src/video-workspace-demo.ts",
+    "defaultRatio": "auto for newly created material/video editors; preserve existing selections.",
+    "image": {
+      "file": "public/assets/workflow-examples/fusion-loungewear-result.png",
+      "width": 1792,
+      "height": 2400
+    },
+    "video": {
+      "file": "public/assets/video-workspace/ecommerce.mp4",
+      "poster": "public/assets/video-workspace/ecommerce-poster-20261021-213138.png",
+      "width": 1176,
+      "height": 1756,
+      "durationSeconds": 10.04
+    },
+    "counts": {
+      "quickAndMultiView": "configured count, 1–4",
+      "storyboard": 1,
+      "gridSplit": "configured grid, 4 or 9",
+      "videoAndUpscale": 1
+    },
+    "validation": "Native button state and generation handler share the same required-field predicate. Incomplete editors produce no result.",
+    "placement": "On submission, append placeholders 80px to the editor right with collision avoidance, retaining existing scene positions. Select and fit inputs/editor/placeholders once. On completion, replace the same IDs at their current positions and dimensions without moving the camera again.",
+    "connections": "Each result has a new ID and generatedByEditorId, rendered with existing automatic business lines. Reuse as a downstream input, arrange by dependency layers, and commit each result batch in one undo operation.",
+    "deletion": "Delete editor: retain results, clear generator binding. Delete result: retain editor and clear any downstream input reference. Undo restores the full snapshot. Clipboard copies omit original generator bindings.",
+    "scope": "Fixed local demo media only; no AI, actual upscaling/cropping, prompt-driven result, backend task or charge. Original file ratio and duration remain unchanged regardless of settings.",
+    "taskList": {
+      "component": "CanvasChrome.tasks -> CanvasTaskList; Figma 165:30270 reuses v5.3 controls, dimensions, tokens and generating animation.",
+      "disclosure": "Hover opens without a background change; leaving the entire widget closes after 120ms. Width, height, header geometry and chevron animate with shared 200ms ease-out, respecting reduced motion. Keyboard focus retains the list; touch/keyboard clicks toggle and Escape closes.",
+      "durationMs": 3000,
+      "lifecycle": "Each valid click records an independent running task and immediately adds its connected placeholders using the submitted ratio. After 3 seconds, replace surviving placeholders in place and mark the task completed with the first surviving result thumbnail or video poster. Preserve drag/arrangement positions, dimensions and IDs.",
+      "history": "Keep completed records for the mounted workspace session; running count includes only running tasks. The task list remains expandable after all tasks complete.",
+      "removedEditor": "Deleting or undoing away the editor or every placeholder cancels its timer and marks the task failed. Surviving slots show a static failure state; restoring old snapshots does not restart generation. Deleted individual slots are not recreated on completion.",
+      "inactivePage": "Continue tasks across route changes without moving or focusing the hidden canvas. Clean up timers when the workspace unmounts.",
+      "undo": "Each submitted placeholder batch is one canvas undo step; completion adds no undo step. Task execution history is not rewound. Historical slots resolve to completed results or failure when restored.",
+      "examples": "On first activation per workspace session, append three completed examples: two image results and one video result, with a quick-image editor and a short-video editor connected through real IDs. Preserve existing nodes and selection; place examples beside the scene. Empty scenes fit the examples immediately. One undo removes the example scene; route changes do not recreate it.",
+      "resultNavigation": "Tasks store resultIds and output media store generatedTaskId. Resolve current positions by either stable binding, select and fit surviving results. Copies clear generatedTaskId. Deleted or undone results keep their history but cannot navigate until restored.",
+      "legacyNavigation": "Repair missing resultIds from generatedTaskId first. For older one-result demo records without either binding, migrate only complete equal-count groups sharing the exact thumbnail URL: newest submission maps to newest appended unclaimed generated output. Preserve existing bindings and skip ambiguous/deleted groups."
+    },
+    "placeholder": {
+      "component": "CanvasGenerationPlaceholder",
+      "sizing": "Snapshot the submitted ratio. Portrait width 320px; landscape height 320px; square 320x320px; the other side follows the ratio. Auto uses the first bound input intrinsic ratio, falling back to 1:1. Video upscaling uses its input video ratio.",
+      "visual": "Reuse the v5.3 three-color generating SVGs and 3s linear animation, theme tokens and reduced-motion handling. One placeholder per expected output with the same generator edge and final canvas ID.",
+      "interaction": "Move, arrange, select and delete. No preview, download, copying or downstream editor actions until completed. Completed demo files use contain in the reserved frame without cropping or changing source media.",
+      "history": "Submission is one undo step; completion replaces slots without an additional undo step. Restoring historical slots resolves the task outcome instead of restoring a permanent spinner."
+    }
   }
 }

@@ -11,23 +11,25 @@ import './video-template-references.css';
 type Kind = 'subject' | 'model';
 type Target = { kind: Kind; anchor: HTMLButtonElement; container: HTMLElement };
 type Props = { locale: Locale; references: VideoTemplateReferenceSet; active?: boolean };
+const previewHeight = 256;
+const previewFrameInset = 10; // Two 4px padding edges and two 1px borders.
 const copy = {
   'zh-CN': {
-    references: '模版参考素材', subject: (count: number) => `主体-${count}张`, model: '模特',
-    subjectPreview: '预览主体', modelPreview: '预览模特',
-    subjectImage: (index: number) => `主体图片 ${index}`, previous: '上一张', next: '下一张',
+    references: '模版参考素材', subject: (count: number) => `商品-${count}张`, model: '模特',
+    subjectPreview: '预览商品', modelPreview: '预览模特',
+    subjectImage: (index: number) => `商品图片 ${index}`, previous: '上一张', next: '下一张',
     description: '28–35 岁轻熟女性，深棕色短款蓬松自然卷发配碎刘海，长瘦脸型、五官立体轮廓清晰；暖调小麦色皮肤，清透淡妆搭配裸棕唇色，身材纤细高挑、肩颈四肢线条利落。',
   },
   en: {
-    references: 'Template references', subject: (count: number) => `Subject · ${count}`, model: 'Model',
-    subjectPreview: 'Preview subject', modelPreview: 'Preview model',
-    subjectImage: (index: number) => `Subject image ${index}`, previous: 'Previous image', next: 'Next image',
+    references: 'Template references', subject: (count: number) => `Product · ${count}`, model: 'Model',
+    subjectPreview: 'Preview product', modelPreview: 'Preview model',
+    subjectImage: (index: number) => `Product image ${index}`, previous: 'Previous image', next: 'Next image',
     description: 'A woman aged 28–35 with short, voluminous dark brown curls and wispy bangs; a long, slim face with defined features, warm tan skin, sheer makeup and nude brown lips. Tall and slender, with clean shoulder and limb lines.',
   },
   ja: {
-    references: 'テンプレートの参考素材', subject: (count: number) => `被写体・${count}枚`, model: 'モデル',
-    subjectPreview: '被写体をプレビュー', modelPreview: 'モデルをプレビュー',
-    subjectImage: (index: number) => `被写体の画像 ${index}`, previous: '前の画像', next: '次の画像',
+    references: 'テンプレートの参考素材', subject: (count: number) => `商品・${count}枚`, model: 'モデル',
+    subjectPreview: '商品をプレビュー', modelPreview: 'モデルをプレビュー',
+    subjectImage: (index: number) => `商品の画像 ${index}`, previous: '前の画像', next: '次の画像',
     description: '28〜35歳の大人の女性。ダークブラウンのふんわりした短い天然パーマに薄い前髪、細長い顔と立体的な目鼻立ち。暖かみのある小麦色の肌に薄化粧とヌードブラウンのリップ。すらりとした高身長で、肩や首、手足のラインが美しい。',
   },
 };
@@ -43,7 +45,16 @@ export function VideoTemplateReferences({ locale, references, active = true }: P
   const restoringFocus = useRef(false);
   const id = useId();
   const close = useCallback(() => setTarget(null), []);
-  const hover = useHoverDismiss(active && target !== null, close);
+  const dismissIfIdle = useCallback(() => {
+    const focused = document.activeElement;
+    const keyboardFocusInside = focused instanceof HTMLElement && focused.matches(':focus-visible')
+      && (root.current?.contains(focused) || panel.current?.contains(focused));
+    // A slide change can move the hit target or blur an arrow. Recheck the
+    // complete interactive surface before honoring a queued hover dismissal.
+    if (root.current?.matches(':hover') || panel.current?.matches(':hover') || keyboardFocusInside) return;
+    setTarget(null);
+  }, []);
+  const hover = useHoverDismiss(active && target !== null, dismissIfIdle);
   const contains = (node: EventTarget | null) => node instanceof Node && (root.current?.contains(node) || panel.current?.contains(node));
 
   function expand(kind: Kind, anchor: HTMLButtonElement) {
@@ -101,6 +112,7 @@ export function VideoTemplateReferences({ locale, references, active = true }: P
     // while escaping the dialog's scrolling and rounded content clipping.
     if (!popup.matches(':popover-open')) popup.showPopover();
     let frame = 0;
+    const pictureSizes = new WeakMap<HTMLElement, { width: number; height: number }>();
     const position = () => {
       const dialog = anchor.closest('dialog');
       if (!anchor.isConnected || anchor.closest('[inert]') || (dialog && !dialog.open)) { close(); return; }
@@ -110,30 +122,31 @@ export function VideoTemplateReferences({ locale, references, active = true }: P
       const pictures = Array.from(popup.querySelectorAll<HTMLElement>('.video-template-reference-preview-picture'));
       const sizes = pictures.map(picture => {
         const image = picture.querySelector<HTMLImageElement>('.progressive-image-full');
-        const naturalWidth = image?.naturalWidth || 180;
-        const naturalHeight = image?.naturalHeight || 240;
-        const scale = Math.min(1, 240 / Math.max(naturalWidth, naturalHeight));
-        return { width: naturalWidth * scale, height: naturalHeight * scale };
+        // Keep the current frame while the next image loads, so the carousel
+        // controls do not jump out from under the pointer between slides.
+        if (!image?.naturalWidth || !image.naturalHeight) return pictureSizes.get(picture) ?? { width: (previewHeight - previewFrameInset) * .75, height: previewHeight - previewFrameInset };
+        const { naturalWidth, naturalHeight } = image;
+        const scale = (previewHeight - previewFrameInset) / naturalHeight;
+        const size = { width: naturalWidth * scale, height: naturalHeight * scale };
+        pictureSizes.set(picture, size);
+        return size;
       });
-      const frameWidth = 10 + (pictures.length - 1) * 4;
-      // Align previews below their reference card and fit into the remaining
-      // viewport without flipping upward or across the video player.
+      const frameWidth = previewFrameInset + (pictures.length - 1) * 4;
+      // Keep a fixed-height preview below the card. Only constrain its width
+      // at the viewport edge; contain keeps the full image visible on narrow screens.
       const left = Math.max(8, rect.left);
       const top = rect.bottom + 8;
       const availableWidth = width - left - 8;
-      const availableHeight = height - top - 8;
-      if (availableWidth <= frameWidth || availableHeight <= 10) { close(); return; }
-      // The active image keeps its natural aspect ratio, with the longer side
-      // capped at 240 px before fitting into the available space.
+      if (availableWidth <= frameWidth) { close(); return; }
       const imagesWidth = sizes.reduce((total, size) => total + size.width, 0);
-      const imagesHeight = Math.max(...sizes.map(size => size.height));
-      const fitScale = Math.max(0, Math.min(1, (availableWidth - frameWidth) / imagesWidth, (availableHeight - 10) / imagesHeight));
+      const fitScale = Math.max(0, Math.min(1, (availableWidth - frameWidth) / imagesWidth));
       const popupWidth = imagesWidth * fitScale + frameWidth;
       pictures.forEach((picture, index) => {
         picture.style.width = `${sizes[index].width * fitScale}px`;
-        picture.style.height = `${sizes[index].height * fitScale}px`;
+        picture.style.height = `${previewHeight - previewFrameInset}px`;
       });
       popup.style.width = `${popupWidth}px`;
+      popup.style.height = `${previewHeight}px`;
       popup.style.left = `${left}px`;
       popup.style.top = `${top}px`;
       popup.style.visibility = 'visible';
@@ -148,6 +161,8 @@ export function VideoTemplateReferences({ locale, references, active = true }: P
 
   return <div ref={root} className="video-template-references" role="group" aria-label={t.references}
     onPointerEnter={hover.cancel}
+    onPointerDownCapture={hover.cancel}
+    onFocusCapture={hover.cancel}
     onPointerLeave={event => { if (!contains(event.relatedTarget)) hover.schedule(); }}
     onBlur={event => { if (!contains(event.relatedTarget)) hover.schedule(); }}>
     {(['subject', 'model'] as const).map(kind => <button type="button" key={kind}
@@ -176,11 +191,11 @@ export function VideoTemplateReferences({ locale, references, active = true }: P
           <ProgressiveImage key={subjectImages[subjectIndex]} src={subjectImages[subjectIndex]} alt={t.subjectImage(subjectIndex + 1)} className="video-template-subject-slide" fit="contain" eager />
         </div>
         {subjectImages.length > 1 && <div className="video-template-subject-switcher" data-node-id="141:25137">
-          <Button className="video-template-subject-arrow" aria-label={t.previous} disabled={subjectIndex === 0} onClick={() => selectSubject(subjectIndex - 1)}>
+          <Button className="video-template-subject-arrow" aria-label={t.previous} aria-disabled={subjectIndex === 0} tabIndex={subjectIndex === 0 ? -1 : 0} onClick={() => selectSubject(subjectIndex - 1)}>
             <span aria-hidden="true" className="icon" style={{ width: 16, height: 16, '--icon-url': `url("${assets.subjectPrevious}")` } as CSSProperties} />
           </Button>
           <span aria-live="polite" aria-atomic="true">{subjectIndex + 1}/{subjectImages.length}</span>
-          <Button className="video-template-subject-arrow" aria-label={t.next} disabled={subjectIndex === subjectImages.length - 1} onClick={() => selectSubject(subjectIndex + 1)}>
+          <Button className="video-template-subject-arrow" aria-label={t.next} aria-disabled={subjectIndex === subjectImages.length - 1} tabIndex={subjectIndex === subjectImages.length - 1 ? -1 : 0} onClick={() => selectSubject(subjectIndex + 1)}>
             <span aria-hidden="true" className="icon" style={{ width: 16, height: 16, '--icon-url': `url("${assets.subjectNext}")` } as CSSProperties} />
           </Button>
         </div>}

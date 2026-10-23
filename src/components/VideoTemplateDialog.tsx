@@ -77,7 +77,7 @@ function TemplateImageField({ locale, slot, value, onChange, onUpload, onChoose,
   }
 
   return <section className="video-template-image-field" aria-labelledby={`${id}-label`}>
-    <h4 id={`${id}-label`}>{label}</h4>
+    <h4 id={`${id}-label`} className="video-template-visually-hidden">{label}</h4>
     <span id={`${id}-formats`} className="video-template-visually-hidden">{t.formats}</span>
     <div className="video-template-upload" data-filled={!!value} data-dragging={dragging} aria-busy={busy}
       onDragEnter={dragEnter}
@@ -121,6 +121,7 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
   const media: { portraitVideo?: string; landscapeVideo?: string; portraitPoster: string; landscapePoster: string } = videoAssets;
   const videoSource = template.preview === 'portrait' ? media.portraitVideo : media.landscapeVideo;
   const poster = template.preview === 'portrait' ? media.portraitPoster : media.landscapePoster;
+  const canGenerate = phase === 'enter' && Boolean(template.preview && (uploads[selected]?.garment?.url || uploads[selected]?.model?.url));
 
   useEffect(() => {
     const player = video.current;
@@ -187,17 +188,23 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
               {template.references && <VideoTemplateReferences key={selected} locale={locale} references={template.references} active={phase === 'enter' && !shownPicker.value} />}
               {template.configuration && <div className="video-template-configuration" data-node-id="141:24226">
                 <TagChip>{t.shotCount}{template.configuration.shots}</TagChip>
-                <TagChip>{t.appearanceLock}{template.configuration.appearanceLocked ? t.yes : t.no}</TagChip>
+                <TagChip>{t.maintenanceInfo}</TagChip>
                 <TagChip>{template.configuration.ratio} ｜ {template.configuration.resolution} ｜ {template.configuration.duration}s</TagChip>
               </div>}
             </header>
             <Divider />
-            <div className="video-template-uploads" key={selected}>
-              <TemplateImageField locale={locale} slot="garment" value={uploads[selected]?.garment} active={phase === 'enter'} onChange={image => changeImage(selected, 'garment', image)} onUpload={onUpload} onChoose={() => chooseImage('garment')} />
-              <TemplateImageField locale={locale} slot="model" value={uploads[selected]?.model} active={phase === 'enter'} onChange={image => changeImage(selected, 'model', image)} onUpload={onUpload} onChoose={() => chooseImage('model')} />
-            </div>
+            <section className="video-template-uploads" key={selected} aria-labelledby={`${id}-upload-title`} aria-describedby={`${id}-upload-requirement`}>
+              <header className="video-template-upload-heading">
+                <h4 id={`${id}-upload-title`}>{t.uploadTitle}</h4>
+                <p id={`${id}-upload-requirement`}>{t.uploadRequirement}</p>
+              </header>
+              <div className="video-template-upload-fields">
+                <TemplateImageField locale={locale} slot="garment" value={uploads[selected]?.garment} active={phase === 'enter'} onChange={image => changeImage(selected, 'garment', image)} onUpload={onUpload} onChoose={() => chooseImage('garment')} />
+                <TemplateImageField locale={locale} slot="model" value={uploads[selected]?.model} active={phase === 'enter'} onChange={image => changeImage(selected, 'model', image)} onUpload={onUpload} onChoose={() => chooseImage('model')} />
+              </div>
+            </section>
           </div>
-          <footer className="video-template-actions"><Button variant="secondary" size="m" onClick={() => notify(t.editPending)}>{t.edit}</Button><GenerateTaskButton label={t.generate} cost="80" onClick={() => notify(t.generatePending)} /></footer>
+          <footer className="video-template-actions"><Button variant="secondary" size="m" onClick={() => notify(t.editPending)}>{t.edit}</Button><GenerateTaskButton label={t.generate} cost="80" disabled={!canGenerate} onClick={() => { if (canGenerate) notify(t.generatePending); }} /></footer>
         </div>
       </> : <>
         <div className="video-template-close"><Button aria-label={t.close} onClick={close}><Icon name="close" size={20} /></Button></div>

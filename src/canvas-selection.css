@@ -60,27 +60,29 @@
 .lc-toggle-button:hover:not(:disabled):not([aria-pressed='true']) { background: var(--state-hover); color: var(--text-primary); }
 .lc-toggle-button[aria-pressed='true']:not(:disabled) { background: var(--alpha-brand-20); color: var(--text-brand); }
 .lc-toggle-button:disabled { background: transparent; color: var(--text-disabled); opacity: .7; }
-.canvas-task-widget { width: 240px; height: 40px; border-radius: 12px; overflow: hidden; }
-.canvas-task-trigger { display: flex; align-items: center; width: 100%; height: 100%; gap: 8px; padding: 0 12px; background: transparent; border: 0; color: var(--text-secondary); text-align: left; }
-.canvas-task-trigger:hover:not(:disabled) { background: var(--state-hover); color: var(--text-primary); }
+.canvas-task-widget { display: flex; flex-direction: column; box-sizing: border-box; width: 240px; height: 40px; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-l); transition-property: width, height; }
+.canvas-task-trigger { display: flex; flex-shrink: 0; align-items: center; width: 100%; height: 38px; gap: 8px; padding: 0 12px; background: transparent; border: 0; color: var(--text-secondary); text-align: left; transition-property: height, padding, color; }
+.canvas-task-trigger:hover:not(:disabled) { color: var(--text-primary); }
 .canvas-task-trigger:disabled { color: var(--text-secondary); cursor: default; }
 .canvas-task-trigger > .icon:first-child { color: var(--text-primary); }
 .canvas-task-label { flex: 1; font-size: 14px; line-height: 20px; font-weight: 500; }
 .canvas-task-count { font-size: 12px; line-height: 16px; color: var(--text-placeholder); white-space: nowrap; }
-.canvas-task-chevron { rotate: -90deg; }
+.canvas-task-chevron { rotate: -90deg; transition-property: rotate; }
 .canvas-task-trigger[aria-expanded='true'] .canvas-task-chevron { rotate: 0deg; }
-.canvas-task-widget.is-expanded { display: flex; flex-direction: column; width: 240px; height: auto; max-height: calc(100dvh - 160px); background: var(--surface-floating); }
-.canvas-task-widget.is-expanded .canvas-task-trigger { height: 32px; min-height: 32px; padding: 0 8px; border-radius: 8px; }
+.canvas-task-widget.is-expanded { width: 240px; height: min(var(--task-expanded-height), calc(100dvh - 160px)); }
+.canvas-task-widget.is-expanded .canvas-task-trigger { height: 32px; padding: 0 8px; border-radius: 8px; }
 .canvas-task-widget.is-expanded .canvas-task-count, .canvas-task-widget.is-expanded .canvas-task-chevron, .canvas-task-widget.is-expanded .canvas-task-trigger > .icon:first-child { display: inline-block; }
 .canvas-task-content { display: flex; flex-direction: column; gap: 8px; padding: 12px; overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
-.canvas-task-row { display: flex; align-items: center; gap: 10px; padding: 8px; flex-shrink: 0; border-radius: 12px; background: var(--surface-secondary); }
+.canvas-task-item { flex-shrink: 0; min-width: 0; }
+.canvas-task-row { display: flex; align-items: center; width: 100%; height: 64px; gap: 10px; padding: 8px; border: 0; border-radius: 12px; background: var(--surface-secondary); text-align: left; }
+.canvas-task-row--action:hover { background: var(--state-hover); }
 .canvas-task-thumbnail { position: relative; flex: none; width: 48px; height: 48px; border-radius: 4px; overflow: hidden; background: var(--surface-secondary); }
-.canvas-task-thumbnail > img { width: 100%; height: 100%; object-fit: cover; }
+.canvas-task-thumbnail > img { width: 100%; height: 100%; object-fit: contain; }
 .canvas-task-details { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 12px; line-height: 16px; color: var(--text-tertiary); font-weight: 500; }
 .canvas-task-details time { color: var(--text-placeholder); font-weight: 400; white-space: nowrap; }
 .canvas-task-generating { position: absolute; inset: 0; background: var(--background-default); }
 .canvas-task-gradient { position: absolute; inset: -75.48% -62.5% -113.75% -100.96%; animation: task-gradient-spin 3s linear infinite; }
-.canvas-task-gradient > div { position: absolute; }
+.canvas-task-gradient > span { position: absolute; }
 .task-gradient-green { inset: 38.74% 3.8% -3.57% 25.04%; }
 .task-gradient-blue { inset: 6.32% 4.63% 34.25% 30.14%; }
 .task-gradient-purple { inset: -.05% 43.06% 48.19% .01%; }

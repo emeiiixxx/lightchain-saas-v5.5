@@ -1,6 +1,6 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Locale } from '../i18n';
-import { materialReferenceLimit, materialWorkflowSize, materialWorkflowTitle, type MaterialWorkflow } from '../material-workflow';
+import { canGenerateMaterialWorkflow, materialReferenceLimit, materialWorkflowSize, materialWorkflowTitle, type MaterialWorkflow } from '../material-workflow';
 import { videoNodeAssetSets } from '../video-node-assets';
 import { materialGenerationAssets } from '../material-generation-settings-assets';
 import type { VideoReference, VideoWorkflow } from '../video-workflow';
@@ -26,7 +26,7 @@ const copy = {
     storyboard: '分镜配置', crop: '裁切配置', four: '四宫格', nine: '九宫格',
     prompt: '生图描述', placeholder: '请输入服装、人物动作、场景等', smartExpand: '智能扩写',
     expand: '展开编辑', save: '保存指令', library: '提示词库', clear: '清空', close: '关闭', count: '字数',
-    settings: '生成设置', generate: '开始 AI 生成', required: '请输入生图描述',
+    settings: '生成设置', generate: '开始 AI 生成',
   },
   en: {
     quickTip: 'Add references and a prompt to generate images', tip: 'Feature description', references: 'References',
@@ -36,7 +36,7 @@ const copy = {
     storyboard: 'Storyboard layout', crop: 'Crop layout', four: '2 × 2 grid', nine: '3 × 3 grid',
     prompt: 'Image description', placeholder: 'Describe clothing, poses, settings, and more', smartExpand: 'Smart expand',
     expand: 'Expand editor', save: 'Save prompt', library: 'Prompt library', clear: 'Clear', close: 'Close', count: 'Characters',
-    settings: 'Generation settings', generate: 'Start AI generation', required: 'Enter an image description',
+    settings: 'Generation settings', generate: 'Start AI generation',
   },
   ja: {
     quickTip: '参考画像と説明から素材をすばやく生成', tip: '機能の説明', references: '参考画像',
@@ -46,7 +46,7 @@ const copy = {
     storyboard: '絵コンテの構成', crop: '分割設定', four: '4分割', nine: '9分割',
     prompt: '画像の説明', placeholder: '服装、人物の動作、背景などを入力', smartExpand: 'スマート拡張',
     expand: '拡大編集', save: '指示を保存', library: 'プロンプト集', clear: 'クリア', close: '閉じる', count: '文字数',
-    settings: '生成設定', generate: 'AI 生成を開始', required: '画像の説明を入力してください',
+    settings: '生成設定', generate: 'AI 生成を開始',
   },
 };
 
@@ -79,14 +79,13 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
   const t = copy[locale];
   const id = useId();
   const root = useRef<HTMLElement>(null);
-  const prompt = useRef<HTMLTextAreaElement>(null);
-  const [error, setError] = useState(false);
   const suppressPreviewUntil = useRef(0);
   const references = node.references;
   const single = node.kind === 'gridSplit';
   const requiresReferences = node.kind !== 'quick';
   const hasPrompt = node.kind === 'quick' || node.kind === 'storyboard';
   const hasSettings = node.kind === 'quick' || node.kind === 'multiView';
+  const canGenerate = canGenerateMaterialWorkflow(node);
   const assets = references.length ? videoNodeAssetSets.referencesFilled : videoNodeAssetSets.referencesEmpty;
   const title = materialWorkflowTitle(node.kind, locale);
   const sortNode: VideoWorkflow = {
@@ -117,11 +116,9 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
     return () => document.removeEventListener('pointerdown', blur, true);
   }, []);
 
-  function updatePrompt(value: string) { onChange({ prompt: value.slice(0, promptLimit) }); setError(false); }
+  function updatePrompt(value: string) { onChange({ prompt: value.slice(0, promptLimit) }); }
   function generate() {
-    if (requiresReferences && !references.length) { onReference('references'); return; }
-    if (node.kind === 'multiView' && node.view === 'back' && !node.back) { onReference('back'); return; }
-    if (hasPrompt && !node.prompt.trim()) { setError(true); prompt.current?.focus(); return; }
+    if (!canGenerate) return;
     onGenerate();
   }
   function finishDrag() { sorting.end(); suppressPreviewUntil.current = Date.now() + 200; }
@@ -198,9 +195,9 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
       </div>}
       {hasPrompt && <div className="fusion-field material-workflow-prompt">
         <div className="material-prompt-heading"><label className="fusion-label" htmlFor={`${id}-prompt`}>{t.prompt}<span className="fusion-required">*</span></label>{node.kind === 'quick' && expansionControl}</div>
-        <div className={`fusion-textarea${error ? ' has-error' : ''}`}>
-          <textarea ref={prompt} id={`${id}-prompt`} className="nodrag nopan nowheel" value={node.prompt} placeholder={t.placeholder} required maxLength={promptLimit}
-            aria-invalid={error} aria-describedby={error ? `${id}-error` : undefined} onChange={event => updatePrompt(event.target.value)} onWheel={event => event.stopPropagation()} />
+        <div className="fusion-textarea">
+          <textarea id={`${id}-prompt`} className="nodrag nopan nowheel" value={node.prompt} placeholder={t.placeholder} required maxLength={promptLimit}
+            onChange={event => updatePrompt(event.target.value)} onWheel={event => event.stopPropagation()} />
           <div className="fusion-textarea-footer">
             <div className="fusion-prompt-actions nodrag nopan"><PromptTools value={node.prompt} onChange={updatePrompt} labels={t} maxLength={promptLimit}
               expandedHeaderAction={node.kind === 'quick' ? expansionControl : undefined}
@@ -208,7 +205,6 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
             <span className="fusion-counter" aria-label={t.count}>{node.prompt.length}/{promptLimit}</span>
           </div>
         </div>
-        {error && <p className="sr-only" id={`${id}-error`} role="alert">{t.required}</p>}
       </div>}
       {hasSettings && <div className="fusion-field material-generation-field">
         <span className="fusion-label">{t.settings}</span>
@@ -217,7 +213,7 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
       </div>}
     </div>
     <footer className="fusion-node-action material-workflow-action nodrag nopan">
-      <GenerateTaskButton label={t.generate} cost="20" costIcon={<NodeIcon src={assets.generateStar} />} disabled={node.kind === 'quick' && !node.prompt.trim()} onClick={generate} />
+      <GenerateTaskButton label={t.generate} cost="20" costIcon={<NodeIcon src={assets.generateStar} />} disabled={!canGenerate} onClick={generate} />
     </footer>
     <span className="sr-only" id={`${id}-reorder`}>{t.reorder}</span>
   </section>;

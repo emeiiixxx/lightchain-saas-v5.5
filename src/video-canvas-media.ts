@@ -2,7 +2,11 @@ import { readImage, type CanvasImage } from './canvas';
 import { copyCanvasSelection } from './canvas-clipboard';
 import { readVideoReference, type UploadedVideo } from './video-reference-upload';
 
-export type VideoCanvasMedia = CanvasImage & { video?: UploadedVideo };
+export type VideoCanvasMedia = CanvasImage & {
+  video?: UploadedVideo;
+  generatedTaskId?: string;
+  generation?: { taskId: string; status: 'running' | 'failed' };
+};
 
 // Size canvas geometry from intrinsic dimensions before arranging the assets.
 // Landscape media cap height at 360px, portrait media cap width at 360px,
@@ -21,7 +25,7 @@ export function copyVideoCanvasSelection(items: VideoCanvasMedia[], selected: st
   const originals = new Map(items.map(item => [item.id, item]));
   return copyCanvasSelection(items, selected).map(item => {
     const video = originals.get(item.id)?.video;
-    return { ...item, ...(video ? { video: { ...video } } : {}) };
+    return { ...item, generatedTaskId: undefined, ...(video ? { video: { ...video } } : {}) };
   });
 }
 export { pasteCanvasSelection as pasteVideoCanvasSelection } from './canvas-clipboard';

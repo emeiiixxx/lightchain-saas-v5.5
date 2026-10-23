@@ -1,4 +1,4 @@
-/* Figma 76:5477, updated 2026-10-23; shared Beta primitives and native player. */
+/* Figma 76:5477 / 76:5003, updated 2026-10-23; shared Beta primitives and native player. */
 .lc-dialog.video-template-dialog { width: min(1280px, calc(100vw - 32px)); height: min(720px, calc(100dvh - 80px)); max-width: none; max-height: none; padding: 0; overflow: hidden; border-radius: var(--radius-2xl, 24px); color: var(--text-primary); transition-property: height, color, background-color, border-color, opacity; }
 .video-template-dialog[open] { display: flex; }
 .video-template-dialog::backdrop { background: var(--overlay-scrim); backdrop-filter: none; }
@@ -22,9 +22,13 @@
 .video-template-heading h3 { margin: 0; color: var(--text-primary); font-size: 20px; font-weight: 700; line-height: 28px; }
 .video-template-heading p { margin: 0; color: var(--text-secondary); font-size: 12px; font-weight: 400; line-height: 16px; }
 .video-template-configuration { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
-.video-template-uploads { display: flex; flex: 1; flex-direction: column; gap: 16px; padding-block: 8px; }
+.video-template-uploads { display: flex; flex: 0 0 auto; flex-direction: column; gap: 8px; min-width: 0; }
+.video-template-upload-heading { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.video-template-upload-heading h4 { margin: 0; color: var(--text-primary); font-size: 14px; font-weight: 500; line-height: 20px; overflow-wrap: anywhere; }
+.video-template-upload-heading p { margin: 0; color: var(--text-tertiary); font-size: 12px; font-weight: 400; line-height: 16px; overflow-wrap: anywhere; }
+.video-template-upload-fields { display: flex; flex-direction: column; gap: 8px; }
 .video-template-image-field { display: flex; flex-shrink: 0; flex-direction: column; gap: 8px; min-width: 0; }
-.video-template-image-field h4 { margin: 0; padding-inline: 4px; font-size: 14px; font-weight: 400; line-height: 20px; }
+.video-template-image-field h4 { margin: 0; }
 .video-template-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .video-template-upload { position: relative; display: flex; align-items: center; gap: 8px; height: 96px; padding: 8px; overflow: hidden; border-radius: var(--radius-xl); background: var(--state-default); color: var(--text-tertiary); }
 .video-template-upload:hover, .video-template-upload:focus-within { background: var(--state-hover); }

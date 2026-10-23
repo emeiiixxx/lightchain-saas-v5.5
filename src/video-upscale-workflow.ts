@@ -22,6 +22,10 @@ export function videoUpscaleWorkflowSize() {
   return { width: 320, height: 505 };
 }
 
+export function canGenerateVideoUpscaleWorkflow(node: VideoUpscaleWorkflow): boolean {
+  return Boolean(node.video?.url) && videoUpscaleResolutions.includes(node.resolution);
+}
+
 export function createVideoUpscaleWorkflow(source?: VideoCanvasMedia): VideoUpscaleWorkflow {
   return {
     id: crypto.randomUUID(),

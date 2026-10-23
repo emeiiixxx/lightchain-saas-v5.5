@@ -57,7 +57,6 @@
 .video-workflow-settings { height: 60px; }
 .video-workflow-settings .lc-setting-select-value { font-size: 12px; line-height: 16px; }
 .fusion-node-action.video-workflow-action { height: 57px; flex: 0 0 57px; margin: 0; padding: 12px; }
-.video-generation-mode { display: flex; flex: 0 0 104px; width: 104px; min-width: 0; }
 .video-workflow-node .fusion-generate { flex: 1; min-width: 0; width: 100%; padding: 0 20px; font-size: 14px; line-height: 20px; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) {
   .video-frame-upload-empty, .video-reference-tile, .video-reference-tile::after, .video-reference-preview::after, .video-reference-tile .video-reference-remove { transition: none; }

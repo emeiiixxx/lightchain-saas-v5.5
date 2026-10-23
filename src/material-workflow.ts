@@ -36,9 +36,17 @@ export function materialWorkflowSize(node: Pick<MaterialWorkflow, 'kind' | 'view
   return { width: 320, height };
 }
 
+export function canGenerateMaterialWorkflow(node: MaterialWorkflow): boolean {
+  const requiresReferences = node.kind !== 'quick';
+  const hasPrompt = node.kind === 'quick' || node.kind === 'storyboard';
+  return (!requiresReferences || node.references.length > 0)
+    && (node.kind !== 'multiView' || node.view !== 'back' || Boolean(node.back))
+    && (!hasPrompt || Boolean(node.prompt.trim()));
+}
+
 export function createMaterialWorkflow(x: number, y: number, kind: MaterialWorkflowKind, source?: CanvasImage): MaterialWorkflow {
   return { id: crypto.randomUUID(), x, y, kind, view: 'front', grid: 4, prompt: '', smartExpand: false,
-    ratio: '9:16', resolution: '2K', count: 1,
+    ratio: 'auto', resolution: '2K', count: 1,
     references: source ? [{ id: crypto.randomUUID(), sourceImageId: source.id, name: source.name, url: source.url, kind: 'image' }] : [] };
 }
 

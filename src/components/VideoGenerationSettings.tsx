@@ -5,6 +5,7 @@ import { clampVideoDuration, videoDurationLimit, videoGenerationConfig, type Vid
 import { usePresence } from '../usePresence';
 import { Icon } from './ui';
 import { Slider } from './Slider';
+import '../tooltip.css';
 import '../video-generation-settings.css';
 
 // Figma 113:8633 / 113:8634 share the original Beta controls and ratio artwork.
@@ -12,19 +13,19 @@ const ratios = ['auto', '21:9', '9:16', '16:9', '1:1', '3:4', '4:3'];
 const assetBase = `${import.meta.env.BASE_URL}assets/video-settings/`;
 const ratioIcon = (ratio: string) => `${assetBase}parameter-${ratio.replace(':', '-')}.svg`;
 const copy = {
-  'zh-CN': { settings: '生成设置', ratio: '比例', resolution: '选择清晰度', duration: '视频时长', auto: 'Auto', audio: '音频', smart: '智能', mute: '静音', seconds: '秒' },
-  en: { settings: 'Generation settings', ratio: 'Aspect ratio', resolution: 'Resolution', duration: 'Duration', auto: 'Auto', audio: 'Audio', smart: 'Smart', mute: 'Mute', seconds: 's' },
-  ja: { settings: '生成設定', ratio: '比率', resolution: '解像度', duration: '動画の長さ', auto: 'Auto', audio: '音声', smart: '自動', mute: 'ミュート', seconds: '秒' },
+  'zh-CN': { settings: '生成设置', mode: '生成模式', fast: '快捷模式', professional: '专业模式', sample: '样片480p', ratio: '比例', resolution: '选择清晰度', duration: '视频时长', auto: 'Auto', audio: '音频', smart: '智能', mute: '静音', seconds: '秒' },
+  en: { settings: 'Generation settings', mode: 'Generation mode', fast: 'Fast mode', professional: 'Professional mode', sample: 'Preview 480p', ratio: 'Aspect ratio', resolution: 'Resolution', duration: 'Duration', auto: 'Auto', audio: 'Audio', smart: 'Smart', mute: 'Mute', seconds: 's' },
+  ja: { settings: '生成設定', mode: '生成モード', fast: 'クイックモード', professional: 'プロモード', sample: 'プレビュー480p', ratio: '比率', resolution: '解像度', duration: '動画の長さ', auto: 'Auto', audio: '音声', smart: '自動', mute: 'ミュート', seconds: '秒' },
 };
 type Settings = Pick<VideoWorkflow, 'ratio' | 'resolution' | 'duration'> & Partial<Pick<VideoWorkflow, 'generationMode' | 'audio'>>;
 type Option = { value: string; label: string; icon?: string };
 
-function ParameterSegments({ label, options, value, onChange, vertical = false }: {
-  label: string; options: Option[]; value: string; onChange: (value: string) => void; vertical?: boolean;
+function ParameterSegments({ label, options, value, onChange, onSelect, vertical = false }: {
+  label: string; options: Option[]; value: string; onChange: (value: string) => void; onSelect?: (value: string) => void; vertical?: boolean;
 }) {
   return <div className="video-parameter-segments-scroll nowheel"><div className={`video-parameter-segments${vertical ? ' video-parameter-segments--ratios' : ''}`} role="radiogroup" aria-label={label} style={{ '--segments': options.length } as CSSProperties}>
     {options.map((option, index) => <button type="button" role="radio" aria-checked={value === option.value} tabIndex={value === option.value ? 0 : -1} key={option.value}
-      onClick={() => { if (value !== option.value) onChange(option.value); }}
+      onClick={() => { if (onSelect) onSelect(option.value); else if (value !== option.value) onChange(option.value); }}
       onKeyDown={event => {
         if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
         event.preventDefault(); event.stopPropagation();
@@ -37,8 +38,8 @@ function ParameterSegments({ label, options, value, onChange, vertical = false }
   </div></div>;
 }
 
-export function VideoGenerationSettings({ locale, value, onChange, autoIcon, chevron }: {
-  locale: Locale; value: Settings; onChange: (patch: Partial<Settings>) => void; autoIcon?: string; chevron?: ReactNode;
+export function VideoGenerationSettings({ locale, value, onChange, autoIcon, chevron, includeModeInSummary = false, summaryIcon }: {
+  locale: Locale; value: Settings; onChange: (patch: Partial<Settings>) => void; autoIcon?: string; chevron?: ReactNode; includeModeInSummary?: boolean; summaryIcon?: string;
 }) {
   const t = copy[locale];
   const [open, setOpen] = useState(false);
@@ -48,12 +49,16 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
   const keyboardOpen = useRef(false);
   const id = useId();
   const sliderId = useId();
+  const durationTooltipId = useId();
   const generationMode = value.generationMode ?? 'fast';
   const config = videoGenerationConfig[generationMode];
   const durationLimit = videoDurationLimit(generationMode);
   const [durationDraft, setDurationDraft] = useState(() => clampVideoDuration(value.duration, generationMode));
   const [durationInput, setDurationInput] = useState(() => String(Number.parseInt(durationDraft, 10)));
   const [durationDragging, setDurationDragging] = useState(false);
+  const [durationHovered, setDurationHovered] = useState(false);
+  const [durationFocused, setDurationFocused] = useState(false);
+  const durationTooltip = usePresence(open && generationMode === 'professional' && (durationHovered || durationFocused || durationDragging) ? true : null);
   const durationRef = useRef(durationDraft);
   const durationDirty = useRef(false);
   const durationInputRef = useRef(durationInput);
@@ -61,7 +66,9 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
   const rangeActive = useRef(false);
   const latest = useRef({ value, onChange });
   latest.current = { value, onChange };
-  const summary = `${value.ratio === 'auto' ? t.auto : value.ratio} ｜ ${value.resolution} ｜ ${durationDraft}`;
+  const summary = `${includeModeInSummary ? `${t[generationMode]} ｜ ` : ''}${value.ratio === 'auto' ? t.auto : value.ratio} ｜ ${value.resolution} ｜ ${durationDraft}`;
+  const summaryIconUrl = summaryIcon ?? (value.ratio === 'auto' && autoIcon ? autoIcon : ratioIcon(value.ratio));
+  const durationProgress = Math.max(0, Math.min(1, (Number.parseInt(durationDraft, 10) - 5) / (durationLimit - 5)));
 
   useEffect(() => {
     const duration = clampVideoDuration(value.duration, generationMode);
@@ -94,8 +101,30 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
     if (duration !== current.value.duration) current.onChange({ duration });
   }
 
+  function changeGenerationMode(next: string) {
+    const mode = next === 'professional' ? 'professional' : 'fast';
+    const current = latest.current;
+    // Keep an unfinished numeric edit when changing mode, and commit mode +
+    // clamped duration together so canvas undo restores one settings change.
+    const pending = durationInputDirty.current ? durationInputRef.current || durationRef.current : durationRef.current;
+    const duration = clampVideoDuration(pending, mode);
+    rangeActive.current = false;
+    durationDirty.current = false;
+    durationInputDirty.current = false;
+    durationRef.current = duration;
+    durationInputRef.current = String(Number.parseInt(duration, 10));
+    setDurationDraft(duration);
+    setDurationInput(durationInputRef.current);
+    setDurationDragging(false);
+    if (mode !== (current.value.generationMode ?? 'fast') || duration !== current.value.duration) {
+      current.onChange({ generationMode: mode, duration });
+    }
+  }
+
   function close() {
     commitDuration();
+    setDurationHovered(false);
+    setDurationFocused(false);
     setOpen(false);
   }
 
@@ -170,7 +199,7 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
       onKeyDown={event => {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Tab' && open && !event.shiftKey) { event.preventDefault(); event.stopPropagation(); expand(true); }
       }}>
-      <span className="icon video-generation-settings-ratio-icon" aria-hidden="true" style={{ '--icon-url': `url("${value.ratio === 'auto' && autoIcon ? autoIcon : ratioIcon(value.ratio)}")` } as CSSProperties} />
+      <span className="icon video-generation-settings-ratio-icon" aria-hidden="true" style={{ '--icon-url': `url("${summaryIconUrl}")` } as CSSProperties} />
       <span className="lc-setting-select-value">{summary}</span>{chevron ?? <Icon name="imgChevron" size={16} className="lc-setting-select-chevron" />}
     </button>
     {shown.value && createPortal(<div ref={panel} id={id} className="video-generation-settings nodrag nopan nowheel" popover="manual" role="dialog" aria-label={t.settings}
@@ -181,32 +210,16 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
         const edge = event.shiftKey ? stops[0] : stops[stops.length - 1];
         if (document.activeElement === edge) { event.preventDefault(); close(); trigger.current?.focus(); }
       }}>
+      <section className="video-generation-mode-setting"><h3>{t.mode}</h3><ParameterSegments label={t.mode} value={generationMode}
+        onChange={changeGenerationMode} onSelect={changeGenerationMode}
+        options={[{ value: 'fast', label: t.fast }, { value: 'professional', label: t.professional }]} /></section>
       <section><h3>{t.ratio}</h3><ParameterSegments label={t.ratio} vertical value={value.ratio} onChange={ratio => onChange({ ratio })}
         options={ratios.map(ratio => ({ value: ratio, label: ratio === 'auto' ? t.auto : ratio, icon: ratioIcon(ratio) }))} /></section>
       <section><h3>{t.resolution}</h3><ParameterSegments label={t.resolution} value={value.resolution} onChange={resolution => onChange({ resolution })}
-        options={config.resolutions.map(resolution => ({ value: resolution, label: resolution }))} /></section>
+        options={config.resolutions.map(resolution => ({ value: resolution, label: resolution === '480p' ? t.sample : resolution }))} /></section>
       <section className="video-duration-setting">
-        <h3><label htmlFor={sliderId}>{t.duration}</label></h3>
-        <div className="video-duration-control">
-          <span className="video-duration-min" aria-hidden="true">5</span>
-          <Slider id={sliderId} className="video-duration-range nodrag nopan" trackTone="strong" active={durationDragging}
-              min={5} max={durationLimit} step={1} value={Number.parseInt(durationDraft, 10)} aria-valuetext={durationDraft}
-              onChange={event => {
-                const duration = clampVideoDuration(`${event.currentTarget.value}s`, generationMode);
-                durationRef.current = duration;
-                durationDirty.current = true;
-                durationInputRef.current = String(Number.parseInt(duration, 10));
-                durationInputDirty.current = false;
-                setDurationDraft(duration);
-                setDurationInput(durationInputRef.current);
-              }}
-              onPointerDown={() => { rangeActive.current = true; setDurationDragging(true); }} onPointerUp={commitDuration} onPointerCancel={commitDuration} onLostPointerCapture={commitDuration} onBlur={commitDuration}
-              onKeyDown={event => {
-                if (event.key === 'Tab') return;
-                event.stopPropagation();
-                if (event.key === 'Escape') { event.preventDefault(); close(); trigger.current?.focus(); }
-              }}
-              onKeyUp={event => { event.stopPropagation(); commitDuration(); }} />
+        <div className="video-duration-heading">
+          <h3><label htmlFor={sliderId}>{t.duration}</label></h3>
           <label className="video-duration-value">
             <input type="text" inputMode="numeric" className="nodrag nopan" value={durationInput} aria-label={`${t.duration} (${t.seconds})`}
               onChange={event => {
@@ -221,7 +234,11 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
                   durationDirty.current = true;
                   setDurationDraft(`${seconds}s`);
                 }
-              }} onBlur={commitDuration}
+              }} onBlur={event => {
+                // A click on the mode segments commits both edits in that action.
+                if (event.relatedTarget instanceof Element && event.relatedTarget.closest('.video-generation-mode-setting')) return;
+                commitDuration();
+              }}
               onKeyDown={event => {
                 if (event.key === 'Tab') return;
                 event.stopPropagation();
@@ -239,6 +256,38 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
               }} onKeyUp={event => event.stopPropagation()} />
             <span aria-hidden="true">{t.seconds}</span>
           </label>
+        </div>
+        <div className="video-duration-control">
+          <span className="video-duration-endpoint" aria-hidden="true">5</span>
+          <div className="video-duration-slider">
+          <Slider id={sliderId} className="video-duration-range nodrag nopan" trackTone="strong" active={durationDragging}
+              min={5} max={durationLimit} step={1} value={Number.parseInt(durationDraft, 10)} aria-valuetext={`${Number.parseInt(durationDraft, 10)}${t.seconds}`}
+              aria-describedby={durationTooltip.value ? durationTooltipId : undefined}
+              onPointerEnter={() => setDurationHovered(true)} onPointerLeave={() => setDurationHovered(false)}
+              onFocus={event => setDurationFocused(event.currentTarget.matches(':focus-visible'))}
+              onChange={event => {
+                const duration = clampVideoDuration(`${event.currentTarget.value}s`, generationMode);
+                durationRef.current = duration;
+                durationDirty.current = true;
+                durationInputRef.current = String(Number.parseInt(duration, 10));
+                durationInputDirty.current = false;
+                setDurationDraft(duration);
+                setDurationInput(durationInputRef.current);
+              }}
+              onPointerDown={() => { rangeActive.current = true; setDurationDragging(true); }} onPointerUp={commitDuration} onPointerCancel={commitDuration} onLostPointerCapture={commitDuration} onBlur={() => { setDurationFocused(false); commitDuration(); }}
+              onKeyDown={event => {
+                if (event.key === 'Tab') return;
+                event.stopPropagation();
+                if (event.key === 'Escape') { event.preventDefault(); close(); trigger.current?.focus(); }
+              }}
+              onKeyUp={event => { event.stopPropagation(); commitDuration(); }} />
+            {durationTooltip.value && <div id={durationTooltipId} role="tooltip" className="lc-tooltip video-duration-tooltip" data-side="top" data-phase={durationTooltip.phase}
+              style={{ left: `calc(${durationProgress * 100}% + ${9 - durationProgress * 18}px)` }}>
+              <div className="lc-tooltip-bubble">{Number.parseInt(durationDraft, 10)}{t.seconds}</div>
+              <img className="lc-tooltip-arrow" src={`${import.meta.env.BASE_URL}assets/tooltip/arrow.svg`} alt="" aria-hidden="true" width="8" height="4" />
+            </div>}
+          </div>
+          <span className="video-duration-endpoint" aria-hidden="true">{durationLimit}</span>
         </div>
       </section>
       <section><h3>{t.audio}</h3><ParameterSegments label={t.audio} value={value.audio ?? 'auto'} onChange={audio => onChange({ audio: audio === 'mute' ? 'mute' : 'auto' })}

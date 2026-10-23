@@ -565,5 +565,20 @@
         "renderAs": "image"
       }
     }
+  },
+  "combinedSettingsIcon": {
+    "designNodes": [
+      "84:6110",
+      "119:11242"
+    ],
+    "name": "Icon/Editor edit-parameters",
+    "slot": "I84:6150;2575:3889;165:29735;570:4024",
+    "url": "https://www.figma.com/api/mcp/asset/cb20a545-4601-4ede-a770-e345b2dee168.svg",
+    "file": "settings-edit-parameters.svg",
+    "width": 16,
+    "height": 16,
+    "bytes": 1165,
+    "renderAs": "mask",
+    "usage": "Combined short-video generation settings trigger; professional-fashion trigger keeps the selected aspect-ratio icon."
   }
 }

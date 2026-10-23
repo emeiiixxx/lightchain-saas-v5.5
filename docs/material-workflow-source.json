@@ -65,6 +65,7 @@
       "storyboard": 9,
       "gridSplit": 1
     },
+    "referencePicker": "Quick, multi-view and storyboard references use AssetPicker multi-select for library and local images, limited to the remaining slots out of 9. Confirm the entire batch together. Grid split and back-reference fields remain single-select with direct local-upload confirmation.",
     "promptLimit": 2000,
     "promptNodes": [
       "quick",
@@ -91,21 +92,21 @@
       9
     ],
     "defaultSettings": {
-      "ratio": "9:16",
+      "ratio": "auto",
       "resolution": "2K",
       "count": 1
     },
     "cost": 20,
     "emptyReferences": "Use actual count; do not populate example images or the static 2/9 label.",
-    "generation": "Validate required fields then show service-not-connected notice. No generated result, task or charge.",
-    "canvas": "Reuse canvas assets by image URL, create missing assets at editor left, and bind via sourceImageId in one undo operation. Removing a reference preserves its canvas asset; deleting a canvas asset clears every bound reference.",
+    "generation": "Keep the native GenerateTaskButton disabled until all required fields are complete. Quick image needs a non-whitespace prompt only; storyboard needs references and a non-whitespace prompt; multi-view needs references plus a back image when Back is selected; grid split needs one reference. Existing default view/grid selections count as filled. The callback uses the same readiness predicate and returns without opening a picker or showing an error when incomplete. When ready, append fixed local demo images linked to the generating editor in one undo operation. No real AI task or charge; see docs/video-workspace-source.json localDemoGeneration.",
+    "canvas": "Reuse canvas assets by image URL, create missing assets at editor left with collision avoidance between batch items, and bind the entire batch via sourceImageId in one undo operation. Removing a reference preserves its canvas asset; deleting a canvas asset clears every bound reference.",
     "referenceRequired": {
       "quick": false,
       "multiView": true,
       "storyboard": true,
       "gridSplit": true
     },
-    "quickGeneration": "Reference images are optional (0–9). A non-whitespace prompt is required; disable the quick-generation button while it is empty. Text-only input proceeds to the existing service-not-connected handler without opening the image picker."
+    "quickGeneration": "Reference images are optional (0–9). A non-whitespace prompt is required; disable the quick-generation button while it is empty. Text-only input produces local demo images without opening the image picker."
   },
   "reuse": [
     "AssetPicker",
