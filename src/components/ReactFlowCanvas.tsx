@@ -95,6 +95,7 @@ function reconnectTarget(target: EventTarget | null) {
 
 type Props = {
   children: ReactNode; view: Viewport; selectedIds: string[]; hand: boolean; referenceMode: boolean; snap: boolean;
+  spacePanControlled?: boolean;
   onView: (view: Viewport) => void; onSelection: (ids: string[]) => void;
   onPositions: (positions: Map<string, { x: number; y: number }>) => void;
   onSelecting: (active: boolean) => void; onDragStart: () => void; onDragEnd: () => void; onGuides: (guides: SnapGuides | null) => void;
@@ -320,7 +321,7 @@ export function ReactFlowCanvas(props: Props) {
       // Blank-space dragging already enables marquee selection. Binding Shift
       // to it too makes Pane capture node clicks before additive selection.
       selectionOnDrag={!props.hand && !props.referenceMode} selectionMode={SelectionMode.Partial} selectionKeyCode={null} multiSelectionKeyCode="Shift"
-      panOnDrag={props.hand || props.referenceMode ? true : [1]} panActivationKeyCode="Space"
+      panOnDrag={props.hand || props.referenceMode ? true : [1]} panActivationKeyCode={props.spacePanControlled ? null : 'Space'}
       panOnScroll panOnScrollSpeed={1} zoomOnScroll={false} zoomOnPinch zoomActivationKeyCode={['Alt','Meta','Control']}
       proOptions={{ hideAttribution: true }}
       minZoom={0.03} maxZoom={2} zoomOnDoubleClick={false} deleteKeyCode={null}

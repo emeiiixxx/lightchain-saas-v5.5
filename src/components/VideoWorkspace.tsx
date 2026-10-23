@@ -157,6 +157,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const [dropActive, setDropActive] = useState(false);
   const [mode, setMode] = useState<'select' | 'hand'>('select');
   const [spaceDown, setSpaceDown] = useState(false);
+  const effectiveMode = spaceDown ? 'hand' : mode;
   const [dragging, setDragging] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(() => {
@@ -347,14 +348,39 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     resize.observe(element); return () => resize.disconnect();
   }, [active, setView]);
   useEffect(() => {
+    if (!active || shownModal.value || shownPreview.value || shownCutout.value || shownWorkflowUpload.value || shownVideoPreview.value || canvasMenu) return;
+    // Own temporary hand mode before React Flow handles keyboard events, so
+    // panning, the cursor and the toolbar always use the same state.
+    const keydown = (event: KeyboardEvent) => {
+      if (event.code !== 'Space' || event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.target instanceof Element && event.target.closest('input,textarea,select,button,[contenteditable="true"],dialog,[role="menu"]')) return;
+      if (document.querySelector('[popover]:popover-open')) return;
+      event.preventDefault();
+      setSpaceDown(true);
+    };
+    const release = () => setSpaceDown(false);
+    const keyup = (event: KeyboardEvent) => { if (event.code === 'Space') release(); };
+    const visibility = () => { if (document.hidden) release(); };
+    window.addEventListener('keydown', keydown, true);
+    window.addEventListener('keyup', keyup, true);
+    window.addEventListener('blur', release);
+    document.addEventListener('visibilitychange', visibility);
+    return () => {
+      window.removeEventListener('keydown', keydown, true);
+      window.removeEventListener('keyup', keyup, true);
+      window.removeEventListener('blur', release);
+      document.removeEventListener('visibilitychange', visibility);
+      release();
+    };
+  }, [active, shownModal.value, shownPreview.value, shownCutout.value, shownWorkflowUpload.value, shownVideoPreview.value, canvasMenu]);
+  useEffect(() => {
     if (!active || shownModal.value || shownPreview.value || shownCutout.value || shownWorkflowUpload.value || shownVideoPreview.value) return;
     const keydown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing || event.target instanceof Element && event.target.closest('input,textarea,select,button,[contenteditable="true"],dialog,[role="menu"]')) return;
       if (canvasMenu) { if (event.key === 'Escape') { event.preventDefault(); closeCanvasMenu(); } return; }
       if (document.querySelector('[popover]:popover-open')) return;
       const command = event.ctrlKey || event.metaKey;
-      if (event.code === 'Space') { event.preventDefault(); setSpaceDown(true); }
-      else if (command && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelected(); }
+      if (command && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelected(); }
       else if (command && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); }
       else if (command && event.key.toLowerCase() === 'a') { event.preventDefault(); replace({ ...current.current, selected: sceneItems(current.current).map(image => image.id) }); }
       else if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); removeSelected(); }
@@ -363,10 +389,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       else if (!command && event.key.toLowerCase() === 'v') setMode('select');
       else if (!command && event.key.toLowerCase() === 'h') setMode('hand');
     };
-    const keyup = (event: KeyboardEvent) => { if (event.code === 'Space') setSpaceDown(false); };
     const blur = () => { setSpaceDown(false); setDragging(false); setSelecting(false); setGuides(null); };
-    window.addEventListener('keydown', keydown); window.addEventListener('keyup', keyup); window.addEventListener('blur', blur);
-    return () => { window.removeEventListener('keydown', keydown); window.removeEventListener('keyup', keyup); window.removeEventListener('blur', blur); };
+    window.addEventListener('keydown', keydown); window.addEventListener('blur', blur);
+    return () => { window.removeEventListener('keydown', keydown); window.removeEventListener('blur', blur); };
   }, [active, shownModal.value, shownPreview.value, shownCutout.value, shownWorkflowUpload.value, shownVideoPreview.value, canvasMenu, closeCanvasMenu, duplicateSelected, undo, redo, replace, removeSelected, fit]);
 
   function rememberUpload(image: LibraryImage) {
@@ -865,7 +890,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         </section>
       </div>}
       {active && items.length > 0 && <>
-        <ReactFlowCanvas view={view} selectedIds={snapshot.selected} hand={spaceDown || mode === 'hand'} referenceMode={false} snap={snapToGrid}
+        <ReactFlowCanvas view={view} selectedIds={snapshot.selected} hand={effectiveMode === 'hand'} spacePanControlled referenceMode={false} snap={snapToGrid}
           onView={setView} onSelection={ids => replace({ ...current.current, selected: ids })}
           onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
             materialWorkflows: (current.current.materialWorkflows ?? []).map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
@@ -956,7 +981,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
           {shownGuides.value.x !== undefined && <span className="canvas-snap-guide canvas-snap-guide--vertical" style={{ left: shownGuides.value.x * view.zoom + view.x }} />}
           {shownGuides.value.y !== undefined && <span className="canvas-snap-guide canvas-snap-guide--horizontal" style={{ top: shownGuides.value.y * view.zoom + view.y }} />}
         </div>}
-        <CanvasChrome locale={locale} mode={spaceDown ? 'hand' : mode} onMode={setMode} zoom={view.zoom} view={view} canvasSize={canvasSize} images={items} tasks={tasks} showSmartSearch={false}
+      <CanvasChrome locale={locale} mode={effectiveMode} onMode={setMode} zoom={view.zoom} view={view} canvasSize={canvasSize} images={items} tasks={tasks} showSmartSearch={false}
           taskListNodeId="165:30270" onSelectTask={focusTaskResults} canSelectTask={task => taskResults(task).length > 0}
           sideActions={<>
             <Button className="canvas-icon-button" aria-label={t.platformAssets} onClick={openAssets}><Icon name="platformIcon" size={24} /></Button>
