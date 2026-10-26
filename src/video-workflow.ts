@@ -1,4 +1,5 @@
 import type { CanvasImage, FusionReference } from './canvas';
+import type { Locale } from './i18n';
 
 export type VideoFrameReference = FusionReference;
 export type VideoReference = VideoFrameReference & { kind: 'image' | 'video' };
@@ -19,6 +20,15 @@ export type VideoWorkflow = {
   ratio: string;
   audio: 'auto' | 'mute';
 };
+
+export function videoWorkflowTitle(mode: VideoWorkflow['mode'], locale: Locale): string {
+  const titles = {
+    'zh-CN': { frames: '服装短视频', references: '专业服装视频' },
+    en: { frames: 'Fashion short video', references: 'Professional fashion video' },
+    ja: { frames: 'ファッション短編動画', references: 'プロ向けファッション動画' },
+  };
+  return titles[locale][mode];
+}
 
 // Figma configuration menus: fast 113:8633, professional 113:8634.
 export const videoGenerationConfig = {
@@ -44,7 +54,8 @@ export function videoDurationLimit(mode: VideoWorkflow['generationMode']) {
 
 export function clampVideoDuration(duration: string, mode: VideoWorkflow['generationMode']) {
   const seconds = Number.parseInt(duration, 10);
-  return `${Math.max(5, Math.min(videoDurationLimit(mode), Number.isFinite(seconds) ? seconds : 5))}s`;
+  const stepped = Number.isFinite(seconds) ? Math.round(seconds / 5) * 5 : 5;
+  return `${Math.max(5, Math.min(videoDurationLimit(mode), stepped))}s`;
 }
 
 // Apply mode changes atomically so undo restores the complete configuration.
@@ -129,5 +140,5 @@ export function createVideoWorkflow(x: number, y: number, source?: CanvasImage, 
 // Canvas navigation and React Flow share the same geometry for images and nodes.
 export function videoWorkflowBox(node: VideoWorkflow): CanvasImage {
   return { id: node.id, x: node.x, y: node.y, ...videoWorkflowSize(node),
-    name: node.mode === 'frames' ? '服装短视频' : '专业服装视频', url: node.main?.url ?? videoWorkflowReferences(node).find(reference => reference.kind === 'image')?.url ?? '' };
+    name: videoWorkflowTitle(node.mode, 'zh-CN'), url: node.main?.url ?? videoWorkflowReferences(node).find(reference => reference.kind === 'image')?.url ?? '' };
 }

@@ -10,7 +10,6 @@ type Position = { x: number; y: number };
 type LayoutGroup = { positions: Map<string, Position>; width: number; height: number };
 const STACK_GAP = 120;
 const EDITOR_GAP = 80;
-const OUTPUT_GAP = 160;
 const GROUP_GAP = 240;
 const STAGE_GAP = 480;
 const GROUPS_PER_ROW = 5;
@@ -62,7 +61,7 @@ function layoutGroup(vertices: VideoLayoutVertex[], state: VideoLayoutState): La
     const tree = new Map<string, HierarchyData>();
     for (const vertex of vertices) tree.set(vertex.id, {
       id: vertex.id, height: vertex.height,
-      width: sizes[ranks.get(vertex.id)!].width + (vertex.kind === 'workflow' && vertex.sources.length > 1 ? OUTPUT_GAP - EDITOR_GAP : 0),
+      width: sizes[ranks.get(vertex.id)!].width,
       children: [],
     });
     for (const column of columns) for (const vertex of column) {
@@ -96,9 +95,7 @@ function layoutGroup(vertices: VideoLayoutVertex[], state: VideoLayoutState): La
       positions.set(item.id, { x: x + (item.kind === 'media' ? size.width - item.width : 0), y });
       y += item.height + STACK_GAP;
     }
-    const multiOutput = column.some(item => item.kind === 'workflow' && item.sources.length > 1
-      && columns[index + 1]?.some(child => child.kind === 'media' && child.sources.includes(item.id)));
-    x += size.width + (index < columns.length - 1 ? multiOutput ? OUTPUT_GAP : EDITOR_GAP : 0);
+    x += size.width + (index < columns.length - 1 ? EDITOR_GAP : 0);
   });
   return { positions, width: x, height };
 }

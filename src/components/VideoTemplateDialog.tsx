@@ -4,7 +4,8 @@ import { readImage } from '../canvas';
 import type { Locale } from '../i18n';
 import { usePresence } from '../usePresence';
 import { videoAssets } from '../video-assets';
-import { videoTemplateMessages, videoTemplates, type VideoTemplateId } from '../video-templates';
+import { videoTemplateMedia, videoTemplateMessages, videoTemplates, type VideoTemplateId, type VideoTemplateImageSlot, type VideoTemplateReplacements } from '../video-templates';
+import { videoWorkflowTitle } from '../video-workflow';
 import { AssetPicker } from './AssetPicker';
 import { GenerateTaskButton } from './GenerateTaskButton';
 import { TagChip } from './TagChip';
@@ -14,16 +15,17 @@ import { Button, Dialog, Divider, Icon } from './ui';
 import '../video-template-dialog.css';
 
 type UploadedImage = { url: string; name: string };
-type ImageSlot = 'garment' | 'model';
+type ImageSlot = VideoTemplateImageSlot;
 type TemplateUploads = Partial<Record<VideoTemplateId, Partial<Record<ImageSlot, UploadedImage>>>>;
 
-function TemplateImageField({ locale, slot, value, onChange, onUpload, onChoose, active }: {
+function TemplateImageField({ locale, slot, value, onChange, onUpload, onChoose, onBusyChange, active }: {
   locale: Locale;
   slot: ImageSlot;
   value?: UploadedImage;
   onChange: (image?: UploadedImage) => void;
   onUpload: (image: LibraryImage) => void;
   onChoose: () => void;
+  onBusyChange: (busy: boolean) => void;
   active: boolean;
 }) {
   const t = videoTemplateMessages[locale];
@@ -35,6 +37,8 @@ function TemplateImageField({ locale, slot, value, onChange, onUpload, onChoose,
   const dragDepth = useRef(0);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const busyCallback = useRef(onBusyChange); busyCallback.current = onBusyChange;
+  useEffect(() => { busyCallback.current(busy); return () => busyCallback.current(false); }, [busy]);
 
   useEffect(() => () => { request.current++; }, []);
   useEffect(() => {
@@ -101,12 +105,14 @@ function TemplateImageField({ locale, slot, value, onChange, onUpload, onChoose,
   </section>;
 }
 
-export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUploads, onUpload }: {
+export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUploads, onUpload, onGenerate, onEdit }: {
   locale: Locale;
   onClose: () => void;
   phase: 'enter' | 'exit';
   uploads: LibraryImage[];
   onUpload: (image: LibraryImage) => void;
+  onGenerate: (templateId: VideoTemplateId, replacements: VideoTemplateReplacements, signal: AbortSignal) => Promise<boolean>;
+  onEdit: (templateId: VideoTemplateId, replacements: VideoTemplateReplacements, signal: AbortSignal) => Promise<boolean>;
 }) {
   const t = videoTemplateMessages[locale];
   const id = useId();
@@ -115,13 +121,41 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
   const [imagePicker, setImagePicker] = useState<{ templateId: VideoTemplateId; slot: ImageSlot } | null>(null);
   const shownPicker = usePresence(phase === 'enter' ? imagePicker : null);
   const [videoFailed, setVideoFailed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [busySlots, setBusySlots] = useState({ garment: false, model: false });
+  const generationRequest = useRef<AbortController | null>(null);
   const video = useRef<HTMLVideoElement>(null);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const template = videoTemplates.find(item => item.id === selected)!;
-  const media: { portraitVideo?: string; landscapeVideo?: string; portraitPoster: string; landscapePoster: string } = videoAssets;
-  const videoSource = template.preview === 'portrait' ? media.portraitVideo : media.landscapeVideo;
-  const poster = template.preview === 'portrait' ? media.portraitPoster : media.landscapePoster;
-  const canGenerate = phase === 'enter' && Boolean(template.preview && (uploads[selected]?.garment?.url || uploads[selected]?.model?.url));
+  const { video: videoSource, poster } = videoTemplateMedia(template);
+  const canEdit = phase === 'enter' && !submitting && !busySlots.garment && !busySlots.model && !shownPicker.value
+    && Boolean(template.preview && template.workflow);
+  const canGenerate = canEdit && Boolean(uploads[selected]?.garment?.url || uploads[selected]?.model?.url);
+
+  useEffect(() => () => { generationRequest.current?.abort(); generationRequest.current = null; }, []);
+  useEffect(() => { if (phase === 'exit') generationRequest.current?.abort(); }, [phase]);
+
+  function changeBusy(slot: ImageSlot, busy: boolean) {
+    setBusySlots(previous => previous[slot] === busy ? previous : { ...previous, [slot]: busy });
+  }
+
+  async function submit(action: 'edit' | 'generate') {
+    if (!(action === 'edit' ? canEdit : canGenerate) || generationRequest.current) return;
+    const request = new AbortController();
+    generationRequest.current = request;
+    setSubmitting(true);
+    try {
+      const created = await (action === 'edit' ? onEdit : onGenerate)(selected, { ...uploads[selected] }, request.signal);
+      if (created && !request.signal.aborted) close();
+    } catch {
+      if (!request.signal.aborted) notify(t.generateError, 'error');
+    } finally {
+      if (generationRequest.current === request) {
+        generationRequest.current = null;
+        setSubmitting(false);
+      }
+    }
+  }
 
   useEffect(() => {
     const player = video.current;
@@ -129,10 +163,12 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
     return () => { player?.pause(); };
   }, [phase, selected]);
 
-  function close() { video.current?.pause(); setImagePicker(null); onClose(); }
+  function close() { generationRequest.current?.abort(); video.current?.pause(); setImagePicker(null); onClose(); }
 
   function selectTemplate(next: VideoTemplateId) {
     if (next === selected) return;
+    generationRequest.current?.abort(); generationRequest.current = null;
+    setSubmitting(false); setBusySlots({ garment: false, model: false });
     video.current?.pause();
     setVideoFailed(false);
     setSelected(next);
@@ -186,9 +222,9 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
             <header className="video-template-heading" data-node-id="141:24213">
               <div className="video-template-title"><h3>{template.label[locale]}</h3><p>{template.description?.[locale]}</p></div>
               {template.references && <VideoTemplateReferences key={selected} locale={locale} references={template.references} />}
-              {template.configuration && <div className="video-template-configuration" data-node-id="141:24226">
-                <TagChip>{t.maintenanceInfo}</TagChip>
-                <TagChip>{template.configuration.ratio} ｜ {template.configuration.resolution} ｜ {template.configuration.duration}s</TagChip>
+              {template.workflow && <div className="video-template-configuration" data-node-id="141:24226">
+                <TagChip>{videoWorkflowTitle(template.workflow.mode, locale)}</TagChip>
+                <TagChip>{template.workflow.ratio} ｜ {template.workflow.resolution} ｜ {template.workflow.duration}</TagChip>
               </div>}
             </header>
             <Divider />
@@ -198,12 +234,12 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
                 <p id={`${id}-upload-requirement`}>{t.uploadRequirement}</p>
               </header>
               <div className="video-template-upload-fields">
-                <TemplateImageField locale={locale} slot="garment" value={uploads[selected]?.garment} active={phase === 'enter'} onChange={image => changeImage(selected, 'garment', image)} onUpload={onUpload} onChoose={() => chooseImage('garment')} />
-                <TemplateImageField locale={locale} slot="model" value={uploads[selected]?.model} active={phase === 'enter'} onChange={image => changeImage(selected, 'model', image)} onUpload={onUpload} onChoose={() => chooseImage('model')} />
+                <TemplateImageField locale={locale} slot="garment" value={uploads[selected]?.garment} active={phase === 'enter' && !submitting} onChange={image => changeImage(selected, 'garment', image)} onUpload={onUpload} onChoose={() => chooseImage('garment')} onBusyChange={busy => changeBusy('garment', busy)} />
+                <TemplateImageField locale={locale} slot="model" value={uploads[selected]?.model} active={phase === 'enter' && !submitting} onChange={image => changeImage(selected, 'model', image)} onUpload={onUpload} onChoose={() => chooseImage('model')} onBusyChange={busy => changeBusy('model', busy)} />
               </div>
             </section>
           </div>
-          <footer className="video-template-actions"><Button variant="secondary" size="m" onClick={() => notify(t.editPending)}>{t.edit}</Button><GenerateTaskButton label={t.generate} cost="80" disabled={!canGenerate} onClick={() => { if (canGenerate) notify(t.generatePending); }} /></footer>
+          <footer className="video-template-actions"><Button variant="secondary" size="m" disabled={!canEdit} onClick={() => { void submit('edit'); }}>{t.edit}</Button><GenerateTaskButton label={submitting ? t.preparing : t.generate} cost="80" disabled={!canGenerate} aria-busy={submitting} onClick={() => { void submit('generate'); }} /></footer>
         </div>
       </> : <>
         <div className="video-template-close"><Button aria-label={t.close} onClick={close}><Icon name="close" size={20} /></Button></div>

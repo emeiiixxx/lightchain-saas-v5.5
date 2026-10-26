@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, type CSSProperties } from 'react';
 import type { Locale } from '../i18n';
-import { canGenerateVideoWorkflow, videoReferenceLimits, videoWorkflowReferences, videoWorkflowSize, type VideoReference, type VideoWorkflow } from '../video-workflow';
+import { canGenerateVideoWorkflow, videoReferenceLimits, videoWorkflowReferences, videoWorkflowSize, videoWorkflowTitle, type VideoReference, type VideoWorkflow } from '../video-workflow';
 import { videoNodeAssetSets, videoSettingsIcon } from '../video-node-assets';
 import { Button, Icon } from './ui';
 import { GenerateTaskButton } from './GenerateTaskButton';
@@ -69,7 +69,7 @@ function NodeIcon({ src, size = 16, className = '' }: { src: string; size?: numb
 export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference, onPreview, onGenerate }: Props) {
   const t = copy[locale];
   const frames = node.mode === 'frames';
-  const title = frames ? t.title : t.referenceTitle;
+  const title = videoWorkflowTitle(node.mode, locale);
   const references = videoWorkflowReferences(node);
   const canGenerate = canGenerateVideoWorkflow(node);
   const frameAssets = node.main ? videoNodeAssetSets.framesFilled : videoNodeAssetSets.framesEmpty;

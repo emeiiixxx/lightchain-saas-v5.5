@@ -580,94 +580,20 @@
       },
       "modeChange": "Normalize against the target mode. Unsupported resolution falls back to 480p for professional or 768p for fast. Fast mode forces audio to auto and clamps durations to 5–15 seconds. Professional supports 5–30 seconds. Commit mode and normalized settings in one undo action. Preserve valid existing values, ratio, prompt and media.",
       "interaction": "Mode, ratio, resolution and audio apply without closing. Both editors use one trigger summarizing mode | ratio | resolution | duration. Audio remains outside the summary. Preserve per-node state, undo, keyboard, outside-click/Escape dismissal, dark/light themes and 200ms exit motion.",
-      "durationSlider": {
-        "library": "Lightchain SaaS v5.1 libraries Beta",
-        "source": {
-          "sliderControlInstance": "I113:8302;891:4593;113:8485",
-          "professionalSliderControlInstance": "I113:8635;891:4593;165:29912",
-          "sharedAcrossGenerationModes": "Both SliderControl instances and nested Slider components use the same keys, geometry, states and tokens.",
-          "sliderControlMode": "Value (minimum and maximum labels); editable input separately placed in duration title row",
-          "sliderControlComponentKey": "18344c81fe5ef50e786c256f7da43e56151c3f0f",
-          "sliderComponentSetKey": "190e412c7435d6e268fa198927c59b00ff18279d",
-          "sliderVariant": "Size=M, State=default, Value=50",
-          "sliderComponentKey": "2a2384d7aa44ec7bf47c45779826f4e3940fdb62"
-        },
-        "implementation": [
-          "src/components/Slider.tsx",
-          "src/components/slider.css"
-        ],
-        "geometry": {
-          "rowPaddingHorizontal": 4,
-          "control": {
-            "width": 301,
-            "height": 18
-          },
-          "minimumLabel": {
-            "text": "5",
-            "width": 7,
-            "height": 16,
-            "gapAfter": 8
-          },
-          "slider": {
-            "width": 264,
-            "height": 18,
-            "verticalAlign": "center"
-          },
-          "trackHeight": 6,
-          "thumbSize": 18,
-          "thumbStroke": {
-            "width": 2,
-            "align": "inside"
-          },
-          "radius": 999,
-          "shadow": "0 2px 4px Overlay/weak",
-          "maximumLabel": {
-            "textByMode": {
-              "fast": "15",
-              "professional": "30"
-            },
-            "width": 14,
-            "height": 16,
-            "gapBefore": 8
-          }
-        },
-        "tokens": {
-          "track": "Border/strong (design instance override)",
-          "progress": "Brand/primary",
-          "thumbFill": "Control/fill/white (#ffffff in both themes)",
-          "thumbStroke": "Border/medium; Border/weak at the minimum endpoint",
-          "hoverThumbStroke": "Brand/primary-hover",
-          "disabledThumbFill": "Control/fill/disabled",
-          "disabledTrack": "Border/weak",
-          "disabledProgress": "Brand/primary-disabled"
-        },
+      "durationOptions": {
+        "userOverride": "2026-10-26: Replace the duration slider with directly visible single-choice options in both modes.",
+        "implementation": "ParameterSegments in src/components/VideoGenerationSettings.tsx; reuse resolution/audio segmented controls and theme tokens.",
         "unit": "seconds",
-        "step": 1,
-        "ranges": {
-          "fast": {
-            "min": 5,
-            "max": 15
-          },
-          "professional": {
-            "min": 5,
-            "max": 30
-          }
+        "optionsByMode": {
+          "fast": [5, 10, 15],
+          "professional": [5, 10, 15, 20, 25, 30]
         },
-        "rowHeight": 18,
-        "sliderWidth": 264,
-        "gap": 8,
-        "input": {
-          "width": 64,
-          "height": 24,
-          "editable": true,
-          "commit": "On Enter, blur or panel close, clamp to the current mode range and commit one history record.",
-          "position": "Duration title row, aligned to the right, 64×24px."
-        },
-        "modeChange": "Switching to fast clamps durations above 15 seconds to 15; commit mode, duration and any resolution/audio normalization together as one undo transaction.",
-        "interaction": "Display the current duration immediately while dragging; commit one history record when the gesture finishes.",
-        "labels": "Minimum 5 and mode-specific maximum 15 or 30 flank the slider. The numeric seconds input is at the title row right.",
-        "userOverride": "Minimum remains 5 seconds in both modes and is visible as the leading label. The professional design's 15-second value is an example and does not overwrite an existing duration.",
-        "tooltip": "Professional mode hover, keyboard focus and dragging show the live duration above the slider thumb, reusing shared Tooltip styling, arrow and 200ms presence."
+        "layout": "One row of equal-width options; all three locales use the s suffix (5s, 10s, etc.) and the existing selected state.",
+        "input": { "enabled": false },
+        "slider": { "enabled": false },
+        "interaction": "Select immediately without closing the menu; one undo record per change. Support arrow keys, Home and End.",
+        "normalization": "Round existing off-step durations to the nearest five seconds within the mode range.",
+        "modeChange": "Switching to fast clamps durations above 15 seconds to 15; commit mode, duration and resolution/audio normalization together as one undo transaction."
       },
       "nodeId": "113:8302",
       "nodeIdByGenerationMode": {
@@ -1052,7 +978,6 @@
     "multiple image visual design",
     "video remake and editing",
     "storyboard-to-video workflow",
-    "template editing workflow",
     "video generation service",
     "material generation services",
     "image upscale workflow",
@@ -1120,7 +1045,17 @@
         "brand": "16:9"
       },
       "titleAndRatioDecision": "User confirmed that title and ratio follow the selected template, overriding the commerce title and portrait-ratio placeholders in the landscape design.",
-      "informationLabel": "维护信息"
+      "informationLabel": "Resolve the actual node name from template.workflow.mode using the shared videoWorkflowTitle; current commerce and brand examples use 专业服装视频.",
+      "settingsSource": "src/video-templates.ts workflow configuration drives both the summary and instantiated node. Existing 2K / 10s examples use the references node with fast generation mode, where 2K is supported; node type and generation mode are independent."
+    },
+    "generation": {
+      "source": "User instruction 2026-10-26; locally maintained definitions in src/video-templates.ts and slot resolution in src/video-template-generation.ts.",
+      "required": "Generate now requires at least one replacement image (product or model). Edit template also accepts original inputs. Both block during image reading or submission and validate the configured workflow and input capacity.",
+      "replacement": "Replace the whole configured slot image group with the user image when supplied. Otherwise preserve all original slot images. Both replacements apply independently. Bind each resulting canvas image ID to the configured main, endFrame or references input; do not deduplicate by URL.",
+      "canvas": "Generate now closes the dialog and appends only an independent loading result, without input images or an editor. The placeholder uses the submitted generation ratio (portrait width 320, landscape height 320; Auto follows the resolved first input). One undo removes the submission. Preserve existing canvas positions and frame the new result.",
+      "task": "Reuse the existing three-second demo task, ratio-based placeholder, in-place completion and completed-task focus behavior. Each template uses its own preview clip and poster as the fixed demo result; no real AI generation or billing.",
+      "cancellation": "Changing category, closing the dialog, leaving the workspace or unmounting cancels preparation. Failed image reads create no partial nodes or task; uploads remain available to retry.",
+      "editing": "Edit template closes the dialog and appends the resolved input images, configured editor and existing demo result with actual connections. It starts no task. Select the editor, frame the group and commit everything in one undo step."
     },
     "chips": {
       "component": "TagChip / Filled / default / S",

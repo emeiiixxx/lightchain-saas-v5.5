@@ -21,6 +21,8 @@ import { FullVideoViewer } from './FullVideoViewer';
 import { ProgressiveImage } from './ProgressiveImage';
 import { ReactFlowCanvas } from './ReactFlowCanvas';
 import { VideoTemplateDialog } from './VideoTemplateDialog';
+import { videoTemplates, type VideoTemplateId, type VideoTemplateReplacements } from '../video-templates';
+import { prepareVideoTemplateGeneration } from '../video-template-generation';
 import { VideoIcon } from './VideoIcon';
 import { VideoSelectionToolbar } from './VideoSelectionToolbar';
 import { VideoAssetToolbar } from './VideoAssetToolbar';
@@ -33,7 +35,8 @@ import { canGenerateMaterialWorkflow, createMaterialWorkflow, materialReferenceL
 import { ImageConnection } from './ImageConnection';
 import { canGenerateVideoWorkflow, normalizeVideoWorkflowSettings, createVideoWorkflow, removeVideoWorkflowSources, videoReferenceLimits, videoWorkflowBox, videoWorkflowReferences, videoWorkflowSourceIds, videoWorkflowSize, type VideoWorkflow, type VideoReference } from '../video-workflow';
 import { arrangeVideoWorkflowMedia, reconcileVideoWorkflowLayout, type VideoLayoutState } from '../video-workflow-layout';
-import { bindCompletedTaskResults, createCompletedTaskExamples, createMaterialDemoResults, createVideoDemoResult, demoPlaceholderSize } from '../video-workspace-demo';
+import { bindCompletedTaskResults, createFashionVideoDemoResult, createMaterialDemoResults, createVideoDemoResult, demoPlaceholderSize } from '../video-workspace-demo';
+import { cropMaterialGrid, gridCropExample } from '../grid-crop';
 import { copyVideoCanvasSelection, pasteVideoCanvasSelection, prepareVideoCanvasMedia, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
 import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, writeCanvasClipboardEvent, writeCanvasClipboardSystem, type CanvasClipboard } from '../canvas-clipboard-session';
 import { videoReferenceUploadMessages, type UploadedVideo } from '../video-reference-upload';
@@ -63,9 +66,9 @@ const contextCopy = {
   en: { materials: 'Asset generation', videos: 'Video generation', multiView: 'Multiple views', gridSplit: 'Split grid image', storyboardVideo: 'Storyboard to video', remake: 'Video remake', upload: 'Upload images/videos', upscale: 'Video upscale' },
   ja: { materials: '素材生成', videos: '動画生成', multiView: 'マルチビュー', gridSplit: 'グリッド画像分割', storyboardVideo: '絵コンテから動画', remake: '動画再現', upload: '画像・動画をアップロード', upscale: '動画高画質化' },
 };
-type Snapshot = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; materialWorkflows?: MaterialWorkflow[]; upscaleWorkflows?: VideoUpscaleWorkflow[]; selected: string[]; taskExamplesSeeded?: boolean; layout?: VideoLayoutState };
+type Snapshot = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; materialWorkflows?: MaterialWorkflow[]; upscaleWorkflows?: VideoUpscaleWorkflow[]; selected: string[]; layout?: VideoLayoutState };
 type DemoResult = Omit<VideoCanvasMedia, 'x' | 'y'>;
-type DemoTaskRecord = { editorId: string; timer: number | null; status: CanvasTask['status']; results: DemoResult[] };
+type DemoTaskRecord = { editorId?: string; timer: number | null; status: CanvasTask['status']; results: DemoResult[] };
 const DEMO_TASK_DURATION = 3000;
 type VideoClipboard = CanvasClipboard<VideoCanvasMedia>;
 type CopiedMedia = Pick<VideoClipboard, 'items'>;
@@ -149,6 +152,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const [uploads, setUploads] = useState<LibraryImage[]>([]);
   const [uploadedVideos, setUploadedVideos] = useState<UploadedVideo[]>([]);
   const ownedUrls = useRef(new Set<string>());
+  const pendingGridCrops = useRef(new Set<string>());
+  const pendingVideoExamples = useRef(new Set<string>());
   const pendingMediaRead = useRef<AbortController | null>(null);
   const uploadEpoch = useRef(0), uploadLocked = useRef(false);
   const [reading, setReading] = useState(false);
@@ -198,11 +203,13 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     // Task settlement is independent of canvas undo. Restored snapshots resolve
     // old slots to their finished result or failure, never a stranded spinner.
     const images = next.images.map(image => {
-      if (!image.generation) return image;
+      if (!image.generation) return image.video ? sizeVideoCanvasMedia(image) : image;
       const task = demoTaskRecords.current.get(image.generation.taskId);
       if (task?.status === 'completed') {
         const result = task.results.find(item => item.id === image.id);
-        return result ? { ...result, x: image.x, y: image.y, width: image.width, height: image.height, generatedByEditorId: image.generatedByEditorId } : image;
+        if (!result) return image;
+        const size = result.video ? sizeVideoCanvasMedia(result) : image;
+        return { ...result, x: image.x, y: image.y, width: size.width, height: size.height, generatedByEditorId: image.generatedByEditorId };
       }
       if (task?.status === 'failed' && image.generation.status !== 'failed') return { ...image, generation: { ...image.generation, status: 'failed' as const } };
       return image;
@@ -213,6 +220,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const grouped = { ...normalized, layout: reconcileVideoWorkflowLayout(normalized.images, normalized.workflows, normalized.materialWorkflows, normalized.upscaleWorkflows, normalized.layout) };
     current.current = grouped; setSnapshot(grouped);
   }, []);
+  // Apply the current media sizing rule to an already-open preview as well.
+  useEffect(() => { replace(current.current); }, [replace]);
   const saveUndo = useCallback(() => {
     history.current.past = [...history.current.past.slice(-99), current.current];
     history.current.future = [];
@@ -308,7 +317,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     for (const [id, task] of demoTaskRecords.current) {
       if (task.status !== 'running') continue;
       const hasSlot = snapshot.images.some(image => image.generation?.taskId === id);
-      if (editors.has(task.editorId) && hasSlot) continue;
+      if ((!task.editorId || editors.has(task.editorId)) && hasSlot) continue;
       if (task.timer !== null) window.clearTimeout(task.timer);
       task.timer = null; task.status = 'failed'; removed.add(id);
     }
@@ -318,7 +327,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     }
   }, [tasks, snapshot.images, snapshot.workflows, snapshot.materialWorkflows, snapshot.upscaleWorkflows, replace]);
   useEffect(() => {
-    if (active) { seedCompletedTaskExamples(); return; }
+    if (active) return;
     stopCamera();
     uploadEpoch.current++; uploadLocked.current = false;
     pendingMediaRead.current?.abort();
@@ -550,11 +559,14 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (!previous.upscaleWorkflows?.some(node => node.id === id)) return;
     commit({ ...previous, upscaleWorkflows: previous.upscaleWorkflows.map(node => node.id === id ? { ...node, ...patch } : node) });
   }
-  function appendDemoPlaceholders(previous: Snapshot, editor: CanvasImage, sourceIds: string[], results: DemoResult[]) {
+  function appendDemoPlaceholders(previous: Snapshot, editor: CanvasImage | undefined, sourceIds: string[], results: DemoResult[]) {
     const occupied = sceneItems(previous);
+    const bounds = boundsOf(occupied);
     const added: VideoCanvasMedia[] = [];
     for (const result of results) {
-      const output = { ...result, x: editor.x + editor.width + 80, y: editor.y + (editor.height - result.height) / 2 };
+      const output = { ...result,
+        x: editor ? editor.x + editor.width + 80 : bounds ? bounds.x + bounds.width + 240 : 0,
+        y: editor ? editor.y + (editor.height - result.height) / 2 : bounds?.y ?? 0 };
       // Keep the existing scene in place and reserve room for the entire batch.
       while (occupied.some(item => output.x < item.x + item.width + 40 && output.x + output.width + 40 > item.x
         && output.y < item.y + item.height + 40 && output.y + output.height + 40 > item.y)) {
@@ -565,28 +577,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     commit({ ...previous, images: [...previous.images, ...added], selected: added.map(result => result.id) });
     const element = canvas.current;
     if (element && activeRef.current) {
-      animateView(fitImages([...previous.images.filter(image => sourceIds.includes(image.id)), editor, ...added], element.clientWidth, element.clientHeight));
+      animateView(fitImages([...previous.images.filter(image => sourceIds.includes(image.id)), ...(editor ? [editor] : []), ...added], element.clientWidth, element.clientHeight));
       element.focus({ preventScroll: true });
     }
-  }
-  function seedCompletedTaskExamples() {
-    const previous = current.current;
-    if (previous.taskExamplesSeeded || tasks.some(task => task.id.startsWith('video-task-example-'))) return;
-    const example = createCompletedTaskExamples(locale);
-    const existing = sceneItems(previous);
-    const bounds = boundsOf(existing);
-    // Append the demonstration beside the existing scene; never move user nodes.
-    const offset = bounds ? { x: bounds.x + bounds.width + 240, y: bounds.y } : { x: 0, y: 0 };
-    const position = <T extends { x: number; y: number }>(item: T): T => ({ ...item, x: item.x + offset.x, y: item.y + offset.y });
-    const next = {
-      ...previous, taskExamplesSeeded: true,
-      images: [...previous.images, ...example.images.map(position)],
-      workflows: [...previous.workflows, ...example.workflows.map(position)],
-      materialWorkflows: [...(previous.materialWorkflows ?? []), ...example.materialWorkflows.map(position)],
-    };
-    commit(next);
-    setTasks(previousTasks => [...previousTasks, ...example.tasks]);
-    if (!existing.length && canvas.current) setView(fitImages(sceneItems(next), canvas.current.clientWidth, canvas.current.clientHeight));
   }
   function taskResults(task: CanvasTask) {
     const ids = new Set(task.resultIds ?? demoTaskRecords.current.get(task.id)?.results.map(result => result.id) ?? []);
@@ -600,14 +593,13 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     animateView(fitImages(results, element.clientWidth, element.clientHeight));
     element.focus({ preventScroll: true });
   }
-  function startDemoTask(editorId: string, sourceIds: string[], results: DemoResult[], ratio = 'auto') {
+  function startDemoTask(editorId: string | undefined, sourceIds: string[], results: DemoResult[], ratio = 'auto', previous = current.current, templateSource?: VideoCanvasMedia) {
     if (!results.length) return;
-    const previous = current.current;
     const editor = [...previous.workflows.map(videoWorkflowBox), ...(previous.materialWorkflows ?? []).map(materialWorkflowBox), ...(previous.upscaleWorkflows ?? []).map(videoUpscaleWorkflowBox)].find(node => node.id === editorId);
-    if (!editor) return;
+    if (editorId && !editor) return;
     const id = crypto.randomUUID();
-    const boundResults = results.map(result => ({ ...result, generatedTaskId: id }));
-    const source = sourceIds.map(sourceId => previous.images.find(image => image.id === sourceId && !image.generation)).find(Boolean);
+    const boundResults = results.map(result => ({ ...result, generatedByEditorId: editorId, generatedTaskId: id }));
+    const source = sourceIds.map(sourceId => previous.images.find(image => image.id === sourceId && !image.generation)).find(Boolean) ?? templateSource;
     const size = demoPlaceholderSize(ratio, source);
     const placeholders: DemoResult[] = results.map(result => ({
       id: result.id, name: result.name, url: '', ...size,
@@ -621,7 +613,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       if (task.status !== 'running') return;
       task.timer = null;
       const latest = current.current;
-      const editorExists = [...latest.workflows, ...(latest.materialWorkflows ?? []), ...(latest.upscaleWorkflows ?? [])].some(node => node.id === editorId);
+      const editorExists = !editorId || [...latest.workflows, ...(latest.materialWorkflows ?? []), ...(latest.upscaleWorkflows ?? [])].some(node => node.id === editorId);
       const slots = latest.images.filter(image => image.generation?.taskId === id);
       if (!editorExists || !slots.length) {
         task.status = 'failed'; replace(latest);
@@ -629,22 +621,97 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         return;
       }
       task.status = 'completed';
-      // Replace the same canvas IDs in place, retaining any drag/arrangement
-      // and the reserved ratio. Submission remains a single undo operation.
+      // Retain canvas IDs and positions; finished videos use their actual
+      // aspect ratio. Submission remains a single undo operation.
       replace(latest);
       const thumbnailUrl = results.find(result => result.id === slots[0].id)?.url;
       setTasks(previousTasks => previousTasks.map(task => task.id === id ? { ...task, status: 'completed', thumbnailUrl } : task));
     }, DEMO_TASK_DURATION);
   }
-  function generateVideoDemo(id: string) {
+  async function generateVideoDemo(id: string) {
     const previous = current.current, node = previous.workflows.find(item => item.id === id);
     if (!activeRef.current || !node || !canGenerateVideoWorkflow(node)) return;
-    startDemoTask(node.id, videoWorkflowSourceIds(node), [createVideoDemoResult(node.id, locale)], node.ratio);
+    if (pendingVideoExamples.current.has(id)) return;
+    pendingVideoExamples.current.add(id);
+    const epoch = uploadEpoch.current;
+    try {
+      const result = await createFashionVideoDemoResult(id, locale);
+      const latest = current.current.workflows.find(item => item.id === id);
+      if (!activeRef.current || epoch !== uploadEpoch.current || !latest || !canGenerateVideoWorkflow(latest)) return;
+      startDemoTask(id, videoWorkflowSourceIds(latest), [result], latest.ratio);
+    } catch {
+      if (activeRef.current && epoch === uploadEpoch.current) notify(videoReferenceUploadMessages[locale].error, 'error');
+    } finally {
+      pendingVideoExamples.current.delete(id);
+    }
   }
-  function generateMaterialDemo(id: string) {
+  async function generateTemplate(templateId: VideoTemplateId, replacements: VideoTemplateReplacements, signal: AbortSignal) {
+    const template = videoTemplates.find(item => item.id === templateId);
+    if (!activeRef.current || signal.aborted || !template?.workflow || !template.preview) return false;
+    const epoch = uploadEpoch.current;
+    const prepared = await prepareVideoTemplateGeneration(template, replacements, locale);
+    if (signal.aborted || !activeRef.current || uploadEpoch.current !== epoch) return false;
+    const source = prepared.images[0];
+    startDemoTask(undefined, [], [prepared.result], prepared.workflow.ratio, current.current, source ? { ...source, x: 0, y: 0 } : undefined);
+    requestAnimationFrame(() => { if (activeRef.current) canvas.current?.focus({ preventScroll: true }); });
+    return true;
+  }
+  async function editTemplate(templateId: VideoTemplateId, replacements: VideoTemplateReplacements, signal: AbortSignal) {
+    const template = videoTemplates.find(item => item.id === templateId);
+    if (!activeRef.current || signal.aborted || !template?.workflow || !template.preview) return false;
+    const epoch = uploadEpoch.current;
+    const prepared = await prepareVideoTemplateGeneration(template, replacements, locale, false);
+    if (signal.aborted || !activeRef.current || uploadEpoch.current !== epoch) return false;
+    // Editing materializes the existing template, without submitting a task.
+    const previous = current.current;
+    const images: VideoCanvasMedia[] = prepared.images.map(image => ({ ...image, x: 0, y: 0 }));
+    const workflow = prepared.workflow;
+    images.push({ ...sizeVideoCanvasMedia(prepared.result), x: 0, y: 0 });
+    const positions = arrangeVideoWorkflowMedia(images, [workflow]);
+    const bounds = boundsOf(sceneItems(previous));
+    const offset = bounds ? { x: bounds.x + bounds.width + 240, y: bounds.y } : { x: 0, y: 0 };
+    const position = <T extends { id: string; x: number; y: number }>(item: T): T => {
+      const point = positions.get(item.id) ?? item;
+      return { ...item, x: point.x + offset.x, y: point.y + offset.y };
+    };
+    const staged: Snapshot = { ...previous,
+      images: [...previous.images, ...images.map(position)],
+      workflows: [...previous.workflows, position(workflow)], selected: [workflow.id],
+    };
+    commit(staged);
+    if (canvas.current) animateView(fitImages([...images.map(position), videoWorkflowBox(position(workflow))], canvas.current.clientWidth, canvas.current.clientHeight));
+    requestAnimationFrame(() => { if (activeRef.current) canvas.current?.focus({ preventScroll: true }); });
+    return true;
+  }
+  async function generateMaterialDemo(id: string) {
     const previous = current.current, node = previous.materialWorkflows?.find(item => item.id === id);
     if (!activeRef.current || !node || !canGenerateMaterialWorkflow(node)) return;
-    startDemoTask(node.id, materialWorkflowSourceIds(node), createMaterialDemoResults(node, locale), node.kind === 'storyboard' || node.kind === 'gridSplit' ? 'auto' : node.ratio);
+    if (node.kind !== 'gridSplit') {
+      const results = createMaterialDemoResults(node, locale);
+      const ratio = node.kind === 'storyboard' ? `${results[0].naturalWidth}:${results[0].naturalHeight}` : node.ratio;
+      startDemoTask(node.id, materialWorkflowSourceIds(node), results, ratio);
+      return;
+    }
+    if (pendingGridCrops.current.has(id)) return;
+    pendingGridCrops.current.add(id);
+    const epoch = uploadEpoch.current;
+    try {
+      const results = await cropMaterialGrid(node, locale);
+      const latest = current.current.materialWorkflows?.find(item => item.id === id);
+      if (!activeRef.current || epoch !== uploadEpoch.current || !latest || latest.grid !== node.grid
+        || latest.references[0]?.id !== node.references[0]?.id) {
+        results.forEach(result => URL.revokeObjectURL(result.url));
+        return;
+      }
+      results.forEach(result => ownedUrls.current.add(result.url));
+      const first = results[0];
+      startDemoTask(id, materialWorkflowSourceIds(latest), results, `${first.naturalWidth}:${first.naturalHeight}`);
+    } catch {
+      if (activeRef.current && epoch === uploadEpoch.current) notify(locale === 'zh-CN' ? '图片裁切失败，请重新选择参考图。'
+        : locale === 'ja' ? '画像を分割できませんでした。参照画像を選び直してください。' : 'Unable to crop the image. Please select the reference again.', 'error');
+    } finally {
+      pendingGridCrops.current.delete(id);
+    }
   }
   function generateUpscaleDemo(id: string) {
     const previous = current.current, node = previous.upscaleWorkflows?.find(item => item.id === id);
@@ -912,7 +979,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
             {image.generation ? <CanvasGenerationPlaceholder locale={locale} failed={image.generation.status === 'failed'} /> : <>
             {image.video ? <Button variant="tonal" className="image-preview-button video-canvas-play nodrag nopan" title={m.play} aria-label={`${m.play} · ${image.name}`} data-node-id="97:6653" onClick={event => { event.stopPropagation(); setVideoPreview(image.video!); }}><VideoIcon name="playVideo" size={20} /></Button>
               : <Button variant="tonal" className="image-preview-button nodrag nopan" title={t.viewFull} aria-label={`${t.viewFull} · ${image.name}`} onClick={event => { event.stopPropagation(); setPreview(image); }}><Icon name="viewFull" size={20} /></Button>}
-            <ProgressiveImage src={image.url} alt={image.name} width={image.width} height={image.height} fit={image.video ? 'contain' : 'cover'} />
+            <ProgressiveImage src={image.url} alt={image.name} width={image.width} height={image.height} fit="cover" />
             </>}
           </div>)}
           {snapshot.workflows.flatMap(node => videoWorkflowSourceIds(node).map(sourceId => {
@@ -1019,9 +1086,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       onDuplicate={() => { duplicateSelected(); closeCanvasMenu(); }}
       onDelete={() => { removeSelected(); closeCanvasMenu(); }}
       onPaste={() => { if (canvasMenu) pasteCopiedItems({ x: canvasMenu.worldX, y: canvasMenu.worldY }); closeCanvasMenu(); }} />
-    {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} />}
+    {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} onGenerate={generateTemplate} onEdit={editTemplate} />}
     {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} videoUploads={uploadedVideos} onUpload={rememberUpload} onVideoUpload={rememberVideo} onConfirm={image => addMedia([image])} onConfirmMediaBatch={addMedia} limitMessage={m.limit} onClose={closeModal} />}
-    {active && shownWorkflowUpload.value && <AssetPicker key={`${shownWorkflowUpload.value.id}-${shownWorkflowUpload.value.field}-${shownWorkflowUpload.value.kind}`} locale={locale} phase={shownWorkflowUpload.phase} uploads={uploads} onUpload={rememberUpload} onConfirm={image => applyWorkflowImage(image, shownWorkflowUpload.value!)} mediaKind={shownWorkflowUpload.value.kind}
+    {active && shownWorkflowUpload.value && <AssetPicker key={`${shownWorkflowUpload.value.id}-${shownWorkflowUpload.value.field}-${shownWorkflowUpload.value.kind}`} locale={locale} phase={shownWorkflowUpload.phase} uploads={snapshot.materialWorkflows?.some(node => node.id === shownWorkflowUpload.value!.id && node.kind === 'gridSplit') ? [gridCropExample, ...uploads] : uploads} onUpload={rememberUpload} onConfirm={image => applyWorkflowImage(image, shownWorkflowUpload.value!)} mediaKind={shownWorkflowUpload.value.kind}
       onConfirmBatch={materialBatchUpload ? images => applyMaterialWorkflowImages(images, shownWorkflowUpload.value!) : undefined}
       maxCount={materialUploadRemaining} limitMessage={materialBatchUpload ? materialUploadLimitMessage(materialUploadRemaining!) : undefined}
       excludedUrls={shownWorkflowUpload.value.kind === 'video' && shownWorkflowUpload.value.field === 'references'
