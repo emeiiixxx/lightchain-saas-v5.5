@@ -722,7 +722,6 @@ export default function App() {
           <img src={assets.imgContainerLightchainLogo01} alt="" width="24" height="24" />
           <Icon name="imgContainerLightchainLogo02" size={113} className="wordmark" />
         </div>
-        {page !== 'canvas' && <a className="demo-page-link canvas-return-link" href="#/canvas" aria-label={t.workspace}><Icon name="imgIcon1" size={16} /><span>{t.workspace}</span></a>}
         <a className="demo-page-link video-workspace-link" href="#/video-workspace" aria-current={page === 'video' ? 'page' : undefined}>{locale === 'en' ? 'Video workspace' : locale === 'ja' ? '動画ワークスペース' : '视频工作台'}</a>
         <div className="flex items-center gap-2">
         <div className="relative" data-menu>
@@ -925,7 +924,7 @@ export default function App() {
     </main>
 
     <AiTryOnPage active={page === 'tryon'} locale={locale} uploads={uploads} onUpload={rememberUpload} />
-    <VideoWorkspace active={page === 'video'} locale={locale} onBack={() => { window.location.hash = '#/canvas'; }} />
+    <VideoWorkspace active={page === 'video'} locale={locale} onBack={() => announce(locale === 'en' ? 'Project list is not available yet.' : locale === 'ja' ? 'プロジェクト一覧はまだ利用できません。' : '项目列表暂未接入')} />
 
     <CanvasContextMenu point={canvasMenu} canPaste={!!canvasClipboard.current} locale={locale} onClose={closeCanvasMenu}
       onDownload={() => { closeCanvasMenu(); void downloadSelected(); }}

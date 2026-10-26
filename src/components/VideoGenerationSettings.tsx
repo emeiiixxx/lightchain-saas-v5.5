@@ -12,9 +12,9 @@ const ratios = ['auto', '21:9', '9:16', '16:9', '1:1', '3:4', '4:3'];
 const assetBase = `${import.meta.env.BASE_URL}assets/video-settings/`;
 const ratioIcon = (ratio: string) => `${assetBase}parameter-${ratio.replace(':', '-')}.svg`;
 const copy = {
-  'zh-CN': { settings: '生成设置', mode: '生成模式', fast: '快捷模式', professional: '专业模式', sample: '样片模式', ratio: '比例', resolution: '选择清晰度', resolutionHelp: '清晰度说明', resolutionHint: '480P低成本快速出片，满意后选中视频进行高清放大', duration: '视频时长', auto: '自适应', audio: '音频', smart: '智能', mute: '静音', seconds: 's' },
-  en: { settings: 'Generation settings', mode: 'Generation mode', fast: 'Fast mode', professional: 'Professional mode', sample: 'Preview mode', ratio: 'Aspect ratio', resolution: 'Resolution', resolutionHelp: 'About resolution', resolutionHint: 'Create a low-cost 480p preview quickly. Once satisfied, select the video to upscale it.', duration: 'Duration', auto: 'Auto', audio: 'Audio', smart: 'Smart', mute: 'Mute', seconds: 's' },
-  ja: { settings: '生成設定', mode: '生成モード', fast: 'クイックモード', professional: 'プロモード', sample: 'プレビューモード', ratio: '比率', resolution: '解像度', resolutionHelp: '解像度について', resolutionHint: '480Pで低コストの動画を素早く生成。満足したら動画を選択して高画質化できます。', duration: '動画の長さ', auto: '自動', audio: '音声', smart: '自動', mute: 'ミュート', seconds: 's' },
+  'zh-CN': { settings: '生成设置', mode: '生成模式', fast: '快捷模式', professional: '专业模式', sample: '样片', ratio: '比例', resolution: '选择清晰度', resolutionHelp: '清晰度说明', resolutionHint: '480P低成本快速出片，满意后选中视频进行高清放大', duration: '视频时长', auto: '自适应', audio: '音频', smart: '智能', mute: '静音', seconds: 's' },
+  en: { settings: 'Generation settings', mode: 'Generation mode', fast: 'Fast', professional: 'Pro', sample: 'Preview', ratio: 'Aspect ratio', resolution: 'Resolution', resolutionHelp: 'About resolution', resolutionHint: 'Create a low-cost 480p preview quickly. Once satisfied, select the video to upscale it.', duration: 'Duration', auto: 'Auto', audio: 'Audio', smart: 'Smart', mute: 'Mute', seconds: 's' },
+  ja: { settings: '生成設定', mode: '生成モード', fast: '高速', professional: 'プロ', sample: 'プレビュー', ratio: '比率', resolution: '解像度', resolutionHelp: '解像度について', resolutionHint: '480Pで低コストの動画を素早く生成。満足したら動画を選択して高画質化できます。', duration: '動画の長さ', auto: '自動', audio: '音声', smart: '自動', mute: 'ミュート', seconds: 's' },
 };
 type Settings = Pick<VideoWorkflow, 'ratio' | 'resolution' | 'duration'> & Partial<Pick<VideoWorkflow, 'generationMode' | 'audio'>>;
 type Option = { value: string; label: string; icon?: string };
