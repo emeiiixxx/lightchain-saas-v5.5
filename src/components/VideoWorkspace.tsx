@@ -45,9 +45,9 @@ import { Button, Dialog, Icon } from './ui';
 import '../video-workspace.css';
 
 const copy = {
-  'zh-CN': { title: '视频工作台', headline: '从一个视频想法开始', intro: '从下方选择一个功能查看示例或点击添加素材，开启您的创作', templates: '热门模版', videoTemplates: '视频模版', quickImage: '快捷生图', storyboardImage: '分镜图', fashionVideo: '服装短视频', proFashionVideo: '专业服装视频', pending: '此功能暂未接入，现可添加图片或使用热门模版。', help: '拖动图片移动位置；Shift + 点击或拖动空白处多选。按住空格拖动可平移，滚轮平移画布，按住 Ctrl / ⌘ / Alt 滚轮缩放。Delete 删除选中图片，Ctrl / ⌘ + Z 撤销，Ctrl / ⌘ + Shift + Z 重做，0 适应屏幕。', back: '返回融合画布' },
-  en: { title: 'Video workspace', headline: 'Start with a video idea', intro: 'Choose a feature to explore an example, or add assets to start creating', templates: 'Templates', videoTemplates: 'Video templates', quickImage: 'Quick image', storyboardImage: 'Storyboard image', fashionVideo: 'Fashion video', proFashionVideo: 'Pro fashion video', pending: 'This feature is not connected yet. Add images or explore the templates.', help: 'Drag images to move them. Shift-click or drag the background to select multiple images. Hold Space and drag to pan; scroll to pan, or hold Ctrl / ⌘ / Alt and scroll to zoom. Delete removes selected images. Ctrl / ⌘ + Z undoes, Ctrl / ⌘ + Shift + Z redoes, and 0 fits the canvas.', back: 'Back to outfit canvas' },
-  ja: { title: '動画ワークスペース', headline: '動画のアイデアから始めよう', intro: '下の機能でサンプルを見るか、素材を追加して制作を始めましょう', templates: '人気テンプレート', videoTemplates: '動画テンプレート', quickImage: 'クイック画像生成', storyboardImage: '絵コンテ', fashionVideo: 'ファッション動画', proFashionVideo: 'プロ向けファッション動画', pending: 'この機能はまだ接続されていません。画像の追加とテンプレートをお試しいただけます。', help: '画像をドラッグして移動。Shift + クリックまたは背景のドラッグで複数選択。Space を押しながらドラッグして移動、スクロールで移動、Ctrl / ⌘ / Alt + スクロールで拡大・縮小。Delete で削除、Ctrl / ⌘ + Z で取り消し、Ctrl / ⌘ + Shift + Z でやり直し、0 で全体を表示します。', back: 'コーディネート画面に戻る' },
+  'zh-CN': { title: '视频工作台', headline: '从一个视频想法开始', intro: '从下方选择一个功能或点击添加素材，开启您的创作', templates: '热门模版', videoTemplates: '视频模版', quickImage: '快捷生图', storyboardImage: '分镜图', fashionVideo: '服装短视频', proFashionVideo: '专业服装视频', pending: '此功能暂未接入，现可添加图片或使用热门模版。', help: '拖动图片移动位置；Shift + 点击或拖动空白处多选。按住空格拖动可平移，滚轮平移画布，按住 Ctrl / ⌘ / Alt 滚轮缩放。Delete 删除选中图片，Ctrl / ⌘ + Z 撤销，Ctrl / ⌘ + Shift + Z 重做，0 适应屏幕。', back: '返回融合画布' },
+  en: { title: 'Video workspace', headline: 'Start with a video idea', intro: 'Choose a feature below or add assets to start creating', templates: 'Templates', videoTemplates: 'Video templates', quickImage: 'Quick image', storyboardImage: 'Storyboard image', fashionVideo: 'Fashion video', proFashionVideo: 'Pro fashion video', pending: 'This feature is not connected yet. Add images or explore the templates.', help: 'Drag images to move them. Shift-click or drag the background to select multiple images. Hold Space and drag to pan; scroll to pan, or hold Ctrl / ⌘ / Alt and scroll to zoom. Delete removes selected images. Ctrl / ⌘ + Z undoes, Ctrl / ⌘ + Shift + Z redoes, and 0 fits the canvas.', back: 'Back to outfit canvas' },
+  ja: { title: '動画ワークスペース', headline: '動画のアイデアから始めよう', intro: '下から機能を選ぶか、素材を追加して制作を始めましょう', templates: '人気テンプレート', videoTemplates: '動画テンプレート', quickImage: 'クイック画像生成', storyboardImage: '絵コンテ', fashionVideo: 'ファッション動画', proFashionVideo: 'プロ向けファッション動画', pending: 'この機能はまだ接続されていません。画像の追加とテンプレートをお試しいただけます。', help: '画像をドラッグして移動。Shift + クリックまたは背景のドラッグで複数選択。Space を押しながらドラッグして移動、スクロールで移動、Ctrl / ⌘ / Alt + スクロールで拡大・縮小。Delete で削除、Ctrl / ⌘ + Z で取り消し、Ctrl / ⌘ + Shift + Z でやり直し、0 で全体を表示します。', back: 'コーディネート画面に戻る' },
 };
 const entries = [
   { id: 'templates', label: 'videoTemplates', icon: 'entryTemplates', nodeId: '64:2062' },
@@ -772,7 +772,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       animateView(fitImages([...images.filter(item => sourceIds.has(item.id)), videoWorkflowBox(updated)], canvas.current.clientWidth, canvas.current.clientHeight));
     }
   }
-  function materialUploadLimitMessage(remaining: number) {
+  function referenceImageUploadLimitMessage(remaining: number) {
     return locale === 'zh-CN' ? `本次最多还能添加${remaining}张参考图。`
       : locale === 'ja' ? `参照画像はあと${remaining}枚追加できます。`
       : `You can add up to ${remaining} more reference images.`;
@@ -793,7 +793,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       urls.add(image.url);
       return true;
     });
-    if (unique.length > remaining) { notify(materialUploadLimitMessage(remaining), 'error'); return; }
+    if (unique.length > remaining) { notify(referenceImageUploadLimitMessage(remaining), 'error'); return; }
     if (!unique.length) { setWorkflowUpload(null); return; }
     let staged = previous;
     let updated = node;
@@ -810,6 +810,40 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (canvas.current) {
       const sourceIds = new Set(materialWorkflowSourceIds(updated));
       animateView(fitImages([...staged.images.filter(item => sourceIds.has(item.id)), materialWorkflowBox(updated)], canvas.current.clientWidth, canvas.current.clientHeight));
+    }
+  }
+  function applyVideoWorkflowImages(uploaded: Omit<CanvasImage, 'x' | 'y'>[], expectedTarget: WorkflowUpload) {
+    const target = workflowUploadRef.current;
+    if (!target || target !== expectedTarget || target.editor === 'material' || target.editor === 'upscale'
+      || target.field !== 'references' || target.kind !== 'image' || !activeRef.current) return;
+    const previous = current.current;
+    const node = previous.workflows.find(item => item.id === target.id);
+    if (!node || node.mode !== 'references') { setWorkflowUpload(null); return; }
+    const remaining = Math.max(0, videoReferenceLimits.image - videoWorkflowReferences(node).filter(reference => reference.kind === 'image').length);
+    // Deduplicate this confirmation only; earlier selections retain independent canvas instances.
+    const urls = new Set<string>();
+    const unique = uploaded.filter(image => {
+      if (urls.has(image.url)) return false;
+      urls.add(image.url);
+      return true;
+    });
+    if (unique.length > remaining) { notify(referenceImageUploadLimitMessage(remaining), 'error'); return; }
+    if (!unique.length) { setWorkflowUpload(null); return; }
+    let staged = previous;
+    let updated = node;
+    for (const uploadedImage of unique) {
+      const image = sizeVideoCanvasMedia(uploadedImage);
+      const { images, source } = placeWorkflowMedia(videoWorkflowBox(node), image, staged);
+      const reference: VideoReference = { id: crypto.randomUUID(), sourceImageId: source.id, name: image.name, url: image.url, kind: 'image' };
+      updated = { ...updated, references: [...updated.references, reference] };
+      staged = { ...staged, images };
+    }
+    // Create and bind the entire selection in one undoable change.
+    commit({ ...staged, workflows: previous.workflows.map(item => item.id === node.id ? updated : item) });
+    setWorkflowUpload(null);
+    if (canvas.current) {
+      const sourceIds = new Set(videoWorkflowSourceIds(updated));
+      animateView(fitImages([...staged.images.filter(item => sourceIds.has(item.id)), videoWorkflowBox(updated)], canvas.current.clientWidth, canvas.current.clientHeight));
     }
   }
   function applyWorkflowImage(uploaded: Omit<CanvasImage, 'x' | 'y'>, expectedTarget: WorkflowUpload) {
@@ -917,6 +951,15 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     ? snapshot.materialWorkflows?.find(node => node.id === shownWorkflowUpload.value!.id) : undefined;
   const materialBatchUpload = !!materialUploadNode && materialReferenceLimit(materialUploadNode.kind) > 1;
   const materialUploadRemaining = materialUploadNode ? Math.max(0, materialReferenceLimit(materialUploadNode.kind) - materialUploadNode.references.length) : undefined;
+  const imageUploadTarget = shownWorkflowUpload.value;
+  const videoImageUploadNode = imageUploadTarget && imageUploadTarget.editor !== 'material' && imageUploadTarget.editor !== 'upscale'
+    && imageUploadTarget.field === 'references' && imageUploadTarget.kind === 'image'
+    ? snapshot.workflows.find(node => node.id === imageUploadTarget.id && node.mode === 'references') : undefined;
+  const imageBatchUpload = materialBatchUpload || !!videoImageUploadNode;
+  const imageUploadRemaining = videoImageUploadNode
+    ? Math.max(0, videoReferenceLimits.image - videoWorkflowReferences(videoImageUploadNode).filter(reference => reference.kind === 'image').length)
+    : materialUploadRemaining;
+
 
   return <>
     <main ref={canvas} hidden={!active} inert={!active} tabIndex={-1} lang={locale} className={`canvas video-workspace${items.length ? '' : ' video-workspace--empty'}${spaceDown || mode === 'hand' ? ' is-panning' : ''}${dragging ? ' is-dragging' : ''}`} aria-label={v.title} data-node-id={items.length ? '76:5683' : '64:2057'}
@@ -1089,8 +1132,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     {active && shownModal.value === 'templates' && <VideoTemplateDialog locale={locale} onClose={closeModal} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} onGenerate={generateTemplate} onEdit={editTemplate} />}
     {active && shownModal.value === 'assets' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} videoUploads={uploadedVideos} onUpload={rememberUpload} onVideoUpload={rememberVideo} onConfirm={image => addMedia([image])} onConfirmMediaBatch={addMedia} limitMessage={m.limit} onClose={closeModal} />}
     {active && shownWorkflowUpload.value && <AssetPicker key={`${shownWorkflowUpload.value.id}-${shownWorkflowUpload.value.field}-${shownWorkflowUpload.value.kind}`} locale={locale} phase={shownWorkflowUpload.phase} uploads={snapshot.materialWorkflows?.some(node => node.id === shownWorkflowUpload.value!.id && node.kind === 'gridSplit') ? [gridCropExample, ...uploads] : uploads} onUpload={rememberUpload} onConfirm={image => applyWorkflowImage(image, shownWorkflowUpload.value!)} mediaKind={shownWorkflowUpload.value.kind}
-      onConfirmBatch={materialBatchUpload ? images => applyMaterialWorkflowImages(images, shownWorkflowUpload.value!) : undefined}
-      maxCount={materialUploadRemaining} limitMessage={materialBatchUpload ? materialUploadLimitMessage(materialUploadRemaining!) : undefined}
+      onConfirmBatch={materialBatchUpload ? images => applyMaterialWorkflowImages(images, shownWorkflowUpload.value!)
+        : videoImageUploadNode ? images => applyVideoWorkflowImages(images, shownWorkflowUpload.value!) : undefined}
+      maxCount={imageUploadRemaining} limitMessage={imageBatchUpload ? referenceImageUploadLimitMessage(imageUploadRemaining!) : undefined}
       excludedUrls={shownWorkflowUpload.value.kind === 'video' && shownWorkflowUpload.value.field === 'references'
         ? snapshot.workflows.filter(node => node.id === shownWorkflowUpload.value!.id).flatMap(node => videoWorkflowReferences(node).filter(reference => reference.kind === 'video').map(reference => reference.url)) : undefined}
       videoUploads={uploadedVideos} onConfirmVideo={shownWorkflowUpload.value.kind === 'video' ? reference => applyWorkflowVideo(reference, shownWorkflowUpload.value!) : undefined} onClose={() => setWorkflowUpload(null)} />}
