@@ -722,7 +722,6 @@ export default function App() {
           <img src={assets.imgContainerLightchainLogo01} alt="" width="24" height="24" />
           <Icon name="imgContainerLightchainLogo02" size={113} className="wordmark" />
         </div>
-        <a className="demo-page-link video-workspace-link" href="#/video-workspace" aria-current={page === 'video' ? 'page' : undefined}>{locale === 'en' ? 'Video workspace' : locale === 'ja' ? '動画ワークスペース' : '视频工作台'}</a>
         <div className="flex items-center gap-2">
         <div className="relative" data-menu>
           <button className="language-trigger flex items-center gap-2 h-8 px-2 rounded-lg" aria-label={t.language} aria-expanded={menu === 'language'} onClick={() => setMenu(menu === 'language' ? null : 'language')}>
