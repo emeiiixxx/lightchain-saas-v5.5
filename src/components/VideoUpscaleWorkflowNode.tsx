@@ -1,3 +1,4 @@
+import { WorkflowSourceMenu, type WorkflowSource } from './WorkflowSourceMenu';
 import { useId, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Locale } from '../i18n';
 import type { UploadedVideo } from '../video-reference-upload';
@@ -22,7 +23,7 @@ type Props = {
   node: VideoUpscaleWorkflow;
   locale: Locale;
   onChange: (patch: Partial<VideoUpscaleWorkflow>) => void;
-  onUpload: () => void;
+  onUpload: (source: WorkflowSource) => void;
   onPreview: (video: UploadedVideo) => void;
   onGenerate: () => void;
 };
@@ -65,9 +66,9 @@ export function VideoUpscaleWorkflowNode({ node, locale, onChange, onUpload, onP
             </button>
             <Button variant="tonal" className="video-upscale-remove nodrag nopan" title={t.remove} aria-label={`${t.remove} ${node.video.name}`}
               onClick={() => onChange({ video: undefined })}><Icon name="close" size={12} /></Button>
-          </> : <button type="button" className="video-upscale-empty nodrag nopan" onClick={onUpload}>
+          </> : <WorkflowSourceMenu locale={locale} kind="video" label={t.add} className="video-upscale-empty nodrag nopan" onChoose={onUpload}>
             <span className="icon video-upscale-upload-icon" aria-hidden="true" style={{ width: 24, height: 24, '--icon-url': `url("${uploadIcon}")` } as CSSProperties} /><span>{t.add}</span>
-          </button>}
+          </WorkflowSourceMenu>}
         </div>
       </div>
       <div className="fusion-field video-upscale-resolution-field">

@@ -1,3 +1,4 @@
+import { WorkflowSourceMenu, type WorkflowSource } from './WorkflowSourceMenu';
 import { useEffect, useId, useRef, type CSSProperties } from 'react';
 import type { Locale } from '../i18n';
 import { canGenerateVideoWorkflow, videoReferenceLimits, videoWorkflowReferences, videoWorkflowSize, videoWorkflowTitle, type VideoReference, type VideoWorkflow } from '../video-workflow';
@@ -56,8 +57,8 @@ type Props = {
   node: VideoWorkflow;
   locale: Locale;
   onChange: (patch: Partial<VideoWorkflow>) => void;
-  onMain: () => void;
-  onReference: (kind: VideoReference['kind']) => void;
+  onMain: (source: WorkflowSource) => void;
+  onReference: (kind: VideoReference['kind'], source: WorkflowSource) => void;
   onPreview: (reference: VideoReference) => void;
   onGenerate: () => void;
 };
@@ -138,7 +139,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
         onDragOver={event => sorting.over(event, kind)} onDragLeave={sorting.leave}
         onDrop={event => { sorting.drop(event, kind); suppressPreviewUntil.current = Date.now() + 200; }}>
         {items.map(reference => thumbnail(reference, () => removeReference(reference), visualOrder.indexOf(reference.id)))}
-        {items.length < videoReferenceLimits[kind] && <button type="button" className="fusion-reference video-workflow-reference-add" style={{ order: items.length }} aria-label={addLabel} data-tooltip={addLabel} onClick={() => onReference(kind)}><NodeIcon src={referenceAssets.addReference} size={20} /></button>}
+        {items.length < videoReferenceLimits[kind] && <WorkflowSourceMenu locale={locale} kind={kind} label={addLabel} className="fusion-reference video-workflow-reference-add nodrag nopan" style={{ order: items.length }} onChoose={source => onReference(kind, source)}><NodeIcon src={referenceAssets.addReference} size={20} /></WorkflowSourceMenu>}
       </div>
     </div>;
   }
@@ -150,12 +151,12 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
         <div className="fusion-field video-workflow-frame-field">
           <div className="fusion-label">{t.main}<span className="fusion-required">*</span></div>
           {node.main ? <div className="video-frame-upload">{thumbnail({ ...node.main, kind: 'image' }, () => onChange({ main: undefined }))}<span>{t.mainFrame}</span></div>
-            : <button type="button" className="video-frame-upload video-frame-upload-empty" onClick={onMain}><NodeIcon src={frameAssets.addImage} size={20} /><span>{t.addMain}</span></button>}
+            : <WorkflowSourceMenu locale={locale} label={t.addMain} className="video-frame-upload video-frame-upload-empty nodrag nopan" onChoose={onMain}><NodeIcon src={frameAssets.addImage} size={20} /><span>{t.addMain}</span></WorkflowSourceMenu>}
         </div>
         <div className="fusion-field video-workflow-frame-field">
           <div className="fusion-label">{t.endFrame}<Button className="video-reference-info" aria-label={t.endTip} title={t.endTip} data-tooltip-side="right"><NodeIcon src={assets.info} /></Button></div>
           {node.endFrame ? <div className="video-frame-upload">{thumbnail(node.endFrame, () => onChange({ endFrame: undefined }))}<span>{t.endFrame}</span></div>
-            : <button type="button" className="video-frame-upload video-frame-upload-empty" onClick={() => onReference('image')}><NodeIcon src={frameAssets.addImage} size={20} /><span>{t.addEnd}</span></button>}
+            : <WorkflowSourceMenu locale={locale} label={t.addEnd} className="video-frame-upload video-frame-upload-empty nodrag nopan" onChoose={source => onReference('image', source)}><NodeIcon src={frameAssets.addImage} size={20} /><span>{t.addEnd}</span></WorkflowSourceMenu>}
         </div>
       </> : <div className="fusion-field video-workflow-materials">
         <div className="fusion-label">{t.media}<span className="fusion-required">*</span><Button className="video-reference-info" aria-label={t.mediaTip} title={t.mediaTip} data-tooltip-side="right"><NodeIcon src={assets.info} /></Button></div>

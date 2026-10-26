@@ -1,3 +1,4 @@
+import { WorkflowSourceMenu, type WorkflowSource } from './WorkflowSourceMenu';
 import { useEffect, useId, useRef, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Locale } from '../i18n';
 import { canGenerateMaterialWorkflow, materialReferenceLimit, materialWorkflowHasBackView, materialWorkflowSize, materialWorkflowTitle, materialWorkflowViews, type MaterialView, type MaterialWorkflow } from '../material-workflow';
@@ -54,7 +55,7 @@ type Props = {
   node: MaterialWorkflow;
   locale: Locale;
   onChange: (patch: Partial<MaterialWorkflow>) => void;
-  onReference: (field: 'references' | 'back') => void;
+  onReference: (field: 'references' | 'back', source: WorkflowSource) => void;
   onPreview: (reference: VideoReference) => void;
   onGenerate: () => void;
 };
@@ -177,8 +178,7 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
           onDrop={supportsReferenceSorting ? event => { sorting.drop(event, 'image'); suppressPreviewUntil.current = Date.now() + 200; } : undefined}
           onWheel={event => { if (event.ctrlKey || event.metaKey || event.altKey) return; event.stopPropagation(); if (!event.deltaX) event.currentTarget.scrollLeft += event.deltaY; }}>
           {references.map(reference => thumbnail(reference, 'references', sorting.order.indexOf(reference.id)))}
-          {references.length < materialReferenceLimit(node.kind) && <button type="button" className="fusion-reference video-workflow-reference-add nodrag nopan" style={{ order: references.length }}
-            aria-label={t.add} data-tooltip={t.add} onClick={() => onReference('references')}><NodeIcon src={assets.addReference} size={20} /></button>}
+          {references.length < materialReferenceLimit(node.kind) && <WorkflowSourceMenu locale={locale} label={t.add} className="fusion-reference video-workflow-reference-add nodrag nopan" style={{ order: references.length }} onChoose={source => onReference('references', source)}><NodeIcon src={assets.addReference} size={20} /></WorkflowSourceMenu>}
         </div>
       </div>
       {node.kind === 'multiView' && <div className="fusion-field material-view-field">
@@ -189,8 +189,7 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
         {hasBackView && <div className="fusion-field material-back-field">
           <div className="fusion-label">{t.backReference}<span className="fusion-required">*</span></div>
           <div className="material-back-reference">
-            {node.back ? thumbnail(node.back, 'back') : <button type="button" className="fusion-reference video-workflow-reference-add nodrag nopan" aria-label={t.addBack}
-              data-tooltip={t.addBack} onClick={() => onReference('back')}><NodeIcon src={assets.addReference} size={20} /></button>}
+            {node.back ? thumbnail(node.back, 'back') : <WorkflowSourceMenu locale={locale} label={t.addBack} className="fusion-reference video-workflow-reference-add nodrag nopan" onChoose={source => onReference('back', source)}><NodeIcon src={assets.addReference} size={20} /></WorkflowSourceMenu>}
           </div>
         </div>}
       </div>}

@@ -53,3 +53,8 @@
   .video-entry-tool .video-entry-badge { left: auto; right: -4px; }
   .video-upload { height: 280px; }
 }
+
+/* Choose existing inputs without moving assets or editing the destination node. */
+.video-workspace--picking .fusion-position { pointer-events: none; }
+.video-workspace--picking .canvas-image { cursor: pointer; }
+.video-workspace--picking .canvas-image.video-source-unavailable { opacity: .35; cursor: not-allowed; }
