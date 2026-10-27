@@ -233,11 +233,13 @@ export function ReactFlowCanvas(props: Props) {
     latest.current.onDragStart();
   }, []);
   const endDrag = useCallback(() => { drag.current = null; latest.current.onGuides(null); latest.current.onDragEnd(); }, []);
-  const onViewport = useCallback((v: Viewport) => {
-    const current = latest.current.view;
-    // Controlled viewport updates also emit this event. Only user/store changes
-    // feed back into App, so its preset-zoom animation is not cancelled by echo.
-    if (v.x !== current.x || v.y !== current.y || v.zoom !== current.zoom) latest.current.onView(v);
+  const onViewportMove = useCallback((event: MouseEvent | TouchEvent | null, v: Viewport) => {
+    // React Flow also emits move events when synchronizing controlled frames.
+    // Coordinate equality cannot identify a delayed echo from an earlier frame:
+    // forwarding it would cancel the workspace's in-flight camera animation.
+    // Only pointer/wheel gestures may interrupt that animation.
+    if (!event || 'sync' in event || 'internal' in event) return;
+    latest.current.onView(v);
   }, []);
   return <div className="lc-react-flow" data-hand={props.hand} data-free-connections={freeConnections} data-connectable={connectable} data-connecting={connecting} style={{ '--canvas-inverse-scale': 1 / props.view.zoom } as CSSProperties}
     onPointerMoveCapture={e => {
@@ -312,7 +314,7 @@ export function ReactFlowCanvas(props: Props) {
       }
     }}>
     <ReactFlow<ContentNode, CanvasEdge> nodes={graph.nodes} edges={graph.edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
-      defaultViewport={props.view} viewport={props.view} onViewportChange={onViewport} onNodesChange={onChanges} onEdgesChange={onEdgeChanges}
+      defaultViewport={props.view} viewport={props.view} onMove={onViewportMove} onNodesChange={onChanges} onEdgesChange={onEdgeChanges}
       onSelectionStart={() => latest.current.onSelecting(true)} onSelectionEnd={() => latest.current.onSelecting(false)}
       onNodeDragStart={beginDrag} onNodeDragStop={endDrag}
       onSelectionDragStart={(e, nodes) => { if (nodes[0]) beginDrag(e, nodes[0], nodes); }} onSelectionDragStop={endDrag}
