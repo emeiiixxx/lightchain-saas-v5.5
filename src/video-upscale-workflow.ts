@@ -3,7 +3,7 @@ import type { Locale } from './i18n';
 import type { VideoCanvasMedia } from './video-canvas-media';
 import type { UploadedVideo } from './video-reference-upload';
 
-export const videoUpscaleResolutions = ['540p', '720p', '1080p', '2K', '4K'] as const;
+export const videoUpscaleResolutions = ['720p', '1080p', '2K', '4K'] as const;
 export type VideoUpscaleResolution = typeof videoUpscaleResolutions[number];
 export type VideoUpscaleWorkflow = {
   id: string;

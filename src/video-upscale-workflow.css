@@ -22,6 +22,7 @@
 .video-upscale-empty:hover { color: var(--text-primary); }
 .video-upscale-resolution-field { height: 60px; }
 .video-upscale-resolutions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; }
+.video-upscale-resolutions > .lc-choice-chip { min-width: 56px; }
 .fusion-node-action.video-upscale-workflow-action { height: 57px; flex: 0 0 57px; margin: 0; padding: 12px; }
 .video-upscale-workflow-action > .generate-task-button { flex: 1; min-width: 0; width: 100%; padding: 0 20px; font-size: 14px; line-height: 20px; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) {
