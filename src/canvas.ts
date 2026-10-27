@@ -2,8 +2,9 @@ import { compactBox, type HierarchyData } from '@antv/hierarchy';
 import { groupTaskBlocks } from './canvas-task-layout';
 import { rememberImagePreview } from './image-previews';
 import type { DrawingGuide } from './drawing-guide';
-import { mergeGroupStages, MERGE_GROUP_GAP, MERGE_OUTPUT_GAP } from './canvas-merge-layout';
-export { MERGE_OUTPUT_GAP } from './canvas-merge-layout';
+import { mergeGroupStages } from './canvas-merge-layout';
+import { layoutConnectedGroup, type FlowLayoutVertex } from './canvas-connected-layout';
+import { placeConnectedGroupStages, type ConnectedLayoutGroup } from './canvas-group-placement';
 export type Viewport = { x: number; y: number; zoom: number };
 export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string };
 export const MAX_FUSION_REFERENCES = 9;
@@ -48,7 +49,7 @@ export function workflowHeight(settings?: FusionSettings) {
   const count = Math.min(MAX_DIRECTED_POINTS, settings.directedPoints?.length ?? 0);
   return 282 + count * 141 - (count === MAX_DIRECTED_POINTS ? 68 : 0);
 }
-export type CanvasImage = { id: string; name: string; url: string; x: number; y: number; width: number; height: number; naturalWidth?: number; naturalHeight?: number; role?: 'main'; layoutTaskId?: string; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
+export type CanvasImage = { id: string; name: string; url: string; x: number; y: number; width: number; height: number; naturalWidth?: number; naturalHeight?: number; role?: 'main'; layoutTaskId?: string; layoutOriginOrder?: number; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
 export const CANVAS_GRID_SIZE = 32;
 
 export function workflowSources(items: CanvasImage[], editor: CanvasImage): CanvasImage[] {
@@ -134,13 +135,19 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
     if (item.fusion) vertices.set(`${item.id}:fusion`, {id:`${item.id}:fusion`, width:workflowWidth(item.fusion), height:workflowHeight(item.fusion), editor:true, children:[]});
   }
   const parents = new Map<string, string>();
+  const inputSources = new Map<string, string[]>();
   const mergeRoots = new Set(items.filter(item => isMultiInputWorkflow(item.fusion)).map(item => `${item.id}:fusion`));
   const connect = (parent: string | undefined, child: string) => {
     if (!parent || !vertices.has(parent) || !vertices.has(child) || parent === child) return;
     parents.set(child, parent);
   };
   for (const item of items) {
-    if (!item.nodeOnly) connect(item.sourceImageId ?? (item.generatedByEditorId ? `${item.generatedByEditorId}:fusion` : undefined), item.id);
+    if (!item.nodeOnly) {
+      const source = item.sourceImageId ?? (item.generatedByEditorId ? `${item.generatedByEditorId}:fusion` : undefined);
+      connect(source, item.id);
+      inputSources.set(item.id, source ? [source] : []);
+    }
+    if (item.fusion) inputSources.set(`${item.id}:fusion`, workflowSources(items, item).map(source => source.id));
     // Merge inputs remain visible cross-group links, but do not own the merge.
     if (item.fusion && !isMultiInputWorkflow(item.fusion)) connect(workflowSources(items, item)[0]?.id, `${item.id}:fusion`);
   }
@@ -185,8 +192,7 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
       const data = tree.get(id)!;
       // Reserve the widest node at each depth BEFORE contour compaction.
       // Shifting columns afterwards would invalidate the computed separation.
-      // Reserve the wider output gap before contour layout without changing node widths.
-      data.width = widths[depth] + (mergeRoots.has(id) ? MERGE_OUTPUT_GAP - FUSION_GAP : 0);
+      data.width = widths[depth];
       data.children = vertices.get(id)!.children.map(child => tree.get(child)!);
     }
     const layout = compactBox(tree.get(root.id)!, {
@@ -213,32 +219,48 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
     const connected = nodes.length > 1 || nodes.some(node => crossGroupMembers.has(node.id));
     (!connected ? independent : mergeRoots.has(root.id) ? mergeBlocks : related).push(block);
   }
-  groupTaskBlocks(items, related, mergeBlocks);
-  function pack(blocks: Block[], columns: number, gap = GROUP_GAP): Block {
+  const order = Object.fromEntries([...vertices.keys()].map((id, index) => [id, index]));
+  // Ownership and chronological order come from grouping. Its temporary boxes
+  // must not turn parallel inputs into consecutive workflow steps.
+  const groups = groupTaskBlocks(items, related, mergeBlocks).map(block => {
+    const members: FlowLayoutVertex[] = block.nodes.map(node => {
+      const vertex = vertices.get(node.id)!;
+      return {
+        id: vertex.id, width: vertex.width, height: vertex.height,
+        kind: vertex.editor ? 'workflow' : 'media', sources: inputSources.get(vertex.id) ?? [],
+      };
+    });
+    const layout = layoutConnectedGroup(members, order);
+    return {
+      width: layout.width, height: layout.height,
+      nodes: [...layout.positions].map(([id, point]) => ({ id, ...point })),
+      connected: { layout, vertices: members },
+    };
+  });
+  function pack(blocks: Block[], columns: number, gap = GROUP_GAP, centerGroups = true): Block {
     const nodes: Placement[] = [];
     let width = 0, y = 0;
     for (let row=0;row<blocks.length;row+=columns) {
-      let x=0, rowHeight=0;
-      for (const block of blocks.slice(row,row+columns)) {
-        nodes.push(...moved(block,x,y)); x += block.width+gap; rowHeight=Math.max(rowHeight,block.height);
+      const rowBlocks = blocks.slice(row,row+columns);
+      const rowHeight = Math.max(...rowBlocks.map(block => block.height));
+      let x=0;
+      for (const block of rowBlocks) {
+        const groupY = y + (centerGroups ? (rowHeight - block.height) / 2 : 0);
+        nodes.push(...moved(block,x,groupY)); x += block.width+gap;
       }
       width=Math.max(width,x-gap); y+=rowHeight+gap;
     }
     return {nodes, width, height:Math.max(0,y-gap)};
   }
   // Keep complete groups together and wrap after five, regardless of viewport.
-  const top = pack(related, GROUPS_PER_ROW);
-  const bottom = pack(independent, GROUPS_PER_ROW, options.independentGap ?? GROUP_GAP);
-  const mergeLayouts = mergeGroupStages(items, mergeBlocks).map(blocks => pack(blocks, GROUPS_PER_ROW));
-  const topHeight = Math.max(top.height, ...mergeLayouts.map(block => block.height));
-  const placements = moved(top,0,(topHeight-top.height)/2);
-  let topWidth = top.width;
-  for (const block of mergeLayouts) {
-    const x = topWidth ? topWidth + MERGE_GROUP_GAP : 0;
-    placements.push(...moved(block,x,(topHeight-block.height)/2));
-    topWidth = x + block.width;
-  }
-  const bottomY = placements.length && bottom.nodes.length ? topHeight + GROUP_GAP * 2 : 0;
+  const bottom = pack(independent, GROUPS_PER_ROW, options.independentGap ?? GROUP_GAP, false);
+  const connectedGroups = new Map<Block, ConnectedLayoutGroup>(groups.map(group => [group, group.connected]));
+  const relatedLayout = placeConnectedGroupStages(
+    mergeGroupStages(items, groups).map(blocks => blocks.map(block => connectedGroups.get(block)!)),
+    order, { groupGap: GROUP_GAP, groupsPerRow: GROUPS_PER_ROW },
+  );
+  const placements: Placement[] = [...relatedLayout.positions].map(([id, point]) => ({ id, ...point }));
+  const bottomY = placements.length && bottom.nodes.length ? relatedLayout.height + GROUP_GAP : 0;
   placements.push(...moved(bottom,0,bottomY));
   const positions = new Map(placements.map(node=>[node.id,{x:node.x+startX,y:node.y}]));
   return items.map(item=>{
@@ -307,9 +329,7 @@ export function createFusionEditor(items: CanvasImage[], sourceId: string, id: s
   if (!source) return null;
   const x = source.x + source.width + FUSION_GAP;
   const width = workflowWidth(defaultFusion(kind)), height = workflowHeight(defaultFusion(kind));
-  let y = source.y + (source.height - height) / 2;
-  const occupied = canvasNodes(items);
-  while (occupied.some(n => x < n.x + n.width + 16 && x + width + 16 > n.x && y < n.y + n.height + 16 && y + height + 16 > n.y)) y += height + FUSION_GAP;
+  const y = source.y + (source.height - height) / 2;
   return {id, name: source.name, url: '', x, y, width, height,
     nodeOnly: true, editorSourceId: source.id, fusion: {...defaultFusion(kind), position: {x,y}}};
 }
@@ -319,13 +339,8 @@ export function createMergeEditor(items: CanvasImage[], selected: string[], id: 
   if (sources.length < 2 || sources.length > (batchFlat ? 20 : MAX_FUSION_REFERENCES)) return null;
   const bounds = boundsOf(sources)!;
   const fusion = { ...defaultFusion(batchFlat ? 'flat' : 'merge'), batchFlat, references: sources.map(source => ({ id: source.id, name: source.name, url: source.url, sourceImageId: source.id })) };
-  const height = workflowHeight(fusion), x = bounds.x + bounds.width + MERGE_GROUP_GAP;
-  let y = bounds.y + (bounds.height - height) / 2;
-  const occupied = canvasNodes(items);
-  let collisions;
-  while ((collisions = occupied.filter(item => x < item.x + item.width + 16 && x + FUSION_WIDTH + 16 > item.x && y < item.y + item.height + 16 && y + height + 16 > item.y)).length) {
-    y = Math.max(...collisions.map(item => item.y + item.height)) + FUSION_GAP;
-  }
+  const height = workflowHeight(fusion), x = bounds.x + bounds.width + FUSION_GAP;
+  const y = bounds.y + (bounds.height - height) / 2;
   return { id, name: batchFlat ? '转3D平铺' : '合拼生图', url: '', x, y, width: FUSION_WIDTH, height, nodeOnly: true,
     fusion: { ...fusion, position: { x, y }, references: sources.map(source => ({ id: source.id, name: source.name, url: source.url, sourceImageId: source.id })) } };
 }
@@ -341,13 +356,8 @@ export function createBatchEditor(items: CanvasImage[], selected: string[], id: 
     id: source.id, name: source.name, url: source.url, sourceImageId: source.id,
   })), references: [] };
   const width = workflowWidth(fusion), height = workflowHeight(fusion);
-  const x = bounds.x + bounds.width + MERGE_GROUP_GAP;
-  let y = bounds.y + (bounds.height - height) / 2;
-  const occupied = canvasNodes(items);
-  let collisions;
-  while ((collisions = occupied.filter(item => x < item.x + item.width + 16 && x + width + 16 > item.x && y < item.y + item.height + 16 && y + height + 16 > item.y)).length) {
-    y = Math.max(...collisions.map(item => item.y + item.height)) + FUSION_GAP;
-  }
+  const x = bounds.x + bounds.width + FUSION_GAP;
+  const y = bounds.y + (bounds.height - height) / 2;
   return { id, name: '批量编辑', url: '', x, y, width, height, nodeOnly: true,
     fusion: { ...fusion, position: { x, y } } };
 }

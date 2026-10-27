@@ -1,11 +1,10 @@
 import { isMultiInputWorkflow, workflowSources, type CanvasImage } from './canvas';
+import { orderedLayoutStages } from './canvas-layout-stages';
 
 export type LayoutBlock = { width: number; height: number; nodes: { id: string; x: number; y: number }[] };
-export const MERGE_OUTPUT_GAP = 160;
-export const MERGE_GROUP_GAP = 480;
 
-// Cross-group input edges affect the order of merge groups, never source ownership.
-// A merge and its own downstream operations form a separate block.
+// Input blocks are ordered by their main images' upload sequence.
+// Cross-group edges constrain placement without changing source ownership.
 export function mergeGroupStages(items: CanvasImage[], blocks: LayoutBlock[]): LayoutBlock[][] {
   const owner = new Map<string, number>();
   blocks.forEach((block, index) => block.nodes.forEach(node => owner.set(node.id, index)));
@@ -19,14 +18,8 @@ export function mergeGroupStages(items: CanvasImage[], blocks: LayoutBlock[]): L
       if (parent !== undefined && parent !== target) dependencies[target].add(parent);
     }
   }
-  const pending = new Set(blocks.map((_, index) => index));
-  const stages: LayoutBlock[][] = [];
-  while (pending.size) {
-    const ready = [...pending].filter(index => [...dependencies[index]].every(parent => !pending.has(parent)));
-    // Legacy malformed cycles must not omit content or change stored edges.
-    if (!ready.length) ready.push(pending.values().next().value!);
-    stages.push(ready.map(index => blocks[index]));
-    ready.forEach(index => pending.delete(index));
-  }
-  return stages;
+  return orderedLayoutStages(
+    blocks.map((_, index) => index),
+    new Map(dependencies.map((parents, index) => [index, parents])),
+  ).map(stage => stage.map(index => blocks[index]));
 }

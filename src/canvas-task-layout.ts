@@ -1,5 +1,6 @@
-import { isMultiInputWorkflow, workflowInputs, workflowSources, type CanvasImage } from './canvas';
+import { isMultiInputWorkflow, workflowSources, type CanvasImage } from './canvas';
 import type { LayoutBlock } from './canvas-merge-layout';
+import { canvasImageOriginOrders } from './canvas-origin-order';
 
 // New, unconnected uploads may enter a task; existing workflows keep their
 // ownership when another task uses one of their images as an input.
@@ -10,8 +11,9 @@ export function standaloneTaskInputs(items: CanvasImage[]): Set<string> {
     if (item.generatedByEditorId) { connected.add(item.id); connected.add(item.generatedByEditorId); }
     if (item.fusion) {
       connected.add(item.id);
-      if (item.editorSourceId) connected.add(item.editorSourceId);
-      for (const reference of workflowInputs(item.fusion)) if (reference.sourceImageId) connected.add(reference.sourceImageId);
+      // Match the rendered connections. Editor-only reference thumbnails must
+      // not give a canvas image an owner, including legacy reference bindings.
+      for (const source of workflowSources(items, item)) connected.add(source.id);
     }
   }
   return new Set(items.filter(item => !item.nodeOnly && !connected.has(item.id)).map(item => item.id));
@@ -20,9 +22,9 @@ export function standaloneTaskInputs(items: CanvasImage[]): Set<string> {
 const offset = (block: LayoutBlock, x: number, y: number) => block.nodes.map(node => ({ ...node, x: node.x + x, y: node.y + y }));
 const rootImage = (items: CanvasImage[], block: LayoutBlock) => items.find(item => !item.nodeOnly && block.nodes.some(node => node.id === item.id && node.x === 0));
 
-export function groupTaskBlocks(items: CanvasImage[], related: LayoutBlock[], tasks: LayoutBlock[]) {
+export function groupTaskBlocks(items: CanvasImage[], related: LayoutBlock[], tasks: LayoutBlock[]): LayoutBlock[] {
   const editors = items.filter(item => isMultiInputWorkflow(item.fusion));
-  const imageOrder = new Map(items.filter(item => !item.nodeOnly).map((item, index) => [item.id, index]));
+  const imageOrder = canvasImageOriginOrders(items);
   const firstMainOrder = (block: LayoutBlock) => Math.min(...block.nodes.filter(node => node.x === 0).map(node => imageOrder.get(node.id) ?? Infinity));
 
   // Direct batch operations have no shared editor. Their source/result pairs
@@ -117,15 +119,8 @@ export function groupTaskBlocks(items: CanvasImage[], related: LayoutBlock[], ta
     for (const node of parent.nodes) owner.set(node.id, parent);
   }
 
-  related.splice(0); tasks.splice(0);
-  for (const group of groups) {
-    const ids = new Set(group.nodes.map(node => node.id));
-    const external = editors.some(editor => ids.has(`${editor.id}:fusion`) && workflowSources(items, editor).some(source => !ids.has(source.id)));
-    (external ? tasks : related).push(group);
-  }
-  // Cross-group dependency stages still take precedence; within each stage,
-  // groups follow their main images' upload order rather than editor creation.
+  // Keep one chronological sequence across independent and downstream groups.
+  // Dependency placement must not move newer independent groups ahead of older results.
   const byMainUpload = (a: LayoutBlock, b: LayoutBlock) => (orders.get(a) ?? Infinity) - (orders.get(b) ?? Infinity);
-  related.sort(byMainUpload);
-  tasks.sort(byMainUpload);
+  return [...groups].sort(byMainUpload);
 }

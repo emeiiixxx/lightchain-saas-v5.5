@@ -6,7 +6,7 @@ import { ProgressiveImage } from './components/ProgressiveImage';
 import { notify, ToastHost } from './components/Toast';
 import { CutoutEditor } from './components/CutoutEditor';
 import { DrawingGuideEditor } from './components/DrawingGuideEditor';
-import { isMultiInputWorkflow, fusionReferences, batchMainImages, workflowInputs, workflowReferenceLimit, workflowWidth, workflowHeight, workflowSources, createMergeEditor, createBatchEditor, isWorkflowDescendant, MERGE_OUTPUT_GAP, MAX_FUSION_REFERENCES, MAX_BATCH_MAIN_IMAGES, MAX_DIRECTED_POINTS, type WorkflowKind, type FusionReference } from './canvas';
+import { isMultiInputWorkflow, fusionReferences, batchMainImages, workflowInputs, workflowReferenceLimit, workflowWidth, workflowHeight, workflowSources, createMergeEditor, createBatchEditor, isWorkflowDescendant, FUSION_GAP, MAX_FUSION_REFERENCES, MAX_BATCH_MAIN_IMAGES, MAX_DIRECTED_POINTS, type WorkflowKind, type FusionReference } from './canvas';
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { assets } from './assets';
 import { Button, Dialog, Divider, Icon, type IconName } from './components/ui';
@@ -33,6 +33,7 @@ import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, wr
 import { CanvasContextMenu } from './components/CanvasContextMenu';
 import { standaloneTaskInputs } from './canvas-task-layout';
 import { createImageResults } from './canvas-image-results';
+import { withCanvasOriginOrder } from './canvas-origin-order';
 import { PromptLibraryProvider } from './PromptLibraryContext';
 
 type Theme = 'dark' | 'light' | 'system';
@@ -79,7 +80,14 @@ export default function App() {
   const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number; worldX: number; worldY: number; kind?: 'image' } | null>(null);
   const closeCanvasMenu = useCallback(() => setCanvasMenu(null), []);
   const [modal, setModal] = useState<Modal>(null);
-  const [images, setImages] = useState<CanvasImage[]>([]);
+  const [images, commitImages] = useState<CanvasImage[]>([]);
+  function setImages(update: CanvasImage[] | ((previous: CanvasImage[]) => CanvasImage[])) {
+    commitImages(previous => {
+      const before = withCanvasOriginOrder(previous);
+      const next = typeof update === 'function' ? update(before) : update;
+      return withCanvasOriginOrder(next, before);
+    });
+  }
   const [referenceTarget, setReferenceTarget] = useState<ImagePickerTarget | null>(null);
   const shownReference = usePresence(referenceTarget);
   const [canvasReference, setCanvasReference] = useState<(ImagePickerTarget & { ids: string[] }) | null>(null);
@@ -261,7 +269,7 @@ export default function App() {
   }, [menu]);
 
   const announce = notify;
-  const remember = useCallback((previous: CanvasImage[], selection = selectedRef.current) => { history.current = [...history.current.slice(-39), {images: previous, selectedIds: selection}]; future.current = []; setCanUndo(true); setCanRedo(false); }, []);
+  const remember = useCallback((previous: CanvasImage[], selection = selectedRef.current) => { history.current = [...history.current.slice(-39), {images: withCanvasOriginOrder(previous), selectedIds: selection}]; future.current = []; setCanUndo(true); setCanRedo(false); }, []);
   const selectFlowNodes = useCallback((ids: string[]) => { selectedRef.current = ids; setSelectedIds(ids); }, []);
   const flowDragging = useRef(false);
   const flowDragRecorded = useRef(false);
@@ -537,7 +545,7 @@ export default function App() {
     } else if (!workflowSources(current, editor).length) return;
     const position = fusionPosition(editor);
     const sample = workflowExampleResult(editor.fusion?.kind ?? 'fusion');
-    const { width, height } = sample, x = position.x + workflowWidth(editor.fusion) + (editor.fusion?.kind === 'merge' ? MERGE_OUTPUT_GAP : 80);
+    const { width, height } = sample, x = position.x + workflowWidth(editor.fusion) + FUSION_GAP;
     let y = position.y + (workflowHeight(editor.fusion) - height) / 2;
     const occupied = canvasNodes(current);
     while (occupied.some(item => x < item.x + item.width + 16 && x + width + 16 > item.x && y < item.y + item.height + 16 && y + height + 16 > item.y)) y += height + 80;
@@ -556,7 +564,7 @@ export default function App() {
     const references = workflowInputs(editor.fusion).filter(ref => !referenceId || ref.id === referenceId);
     if (!references.length) { announce(t.resultEditorUnavailable); return; }
     const sample = workflowExampleResult(batch ? 'batch' : 'flat');
-    const position = fusionPosition(editor), x = position.x + workflowWidth(editor.fusion) + MERGE_OUTPUT_GAP;
+    const position = fusionPosition(editor), x = position.x + workflowWidth(editor.fusion) + FUSION_GAP;
     const occupied = canvasNodes(current);
     const results: CanvasImage[] = [];
     const resultsHeight = references.length * sample.height + (references.length - 1) * 120;
