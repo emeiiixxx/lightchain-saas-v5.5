@@ -106,8 +106,16 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const [projectName, setProjectName] = useState(() => {
     try { return localStorage.getItem('lc-v55-video-project-name') || 'Untitle'; } catch { return 'Untitle'; }
   });
-  const [snapshot, setSnapshot] = useState<Snapshot>({ images: [], workflows: [], materialWorkflows: [], selected: [] });
-  const current = useRef(snapshot); current.current = snapshot;
+  const [storedSnapshot, setSnapshot] = useState<Snapshot>({ images: [], workflows: [], materialWorkflows: [], selected: [] });
+  const current = useRef(storedSnapshot); current.current = storedSnapshot;
+  // Animate display coordinates only. The final layout is one undoable change.
+  const [arrangePositions, setArrangePositions] = useState<Map<string, { x: number; y: number }> | null>(null);
+  const snapshot = useMemo(() => {
+    if (!arrangePositions) return storedSnapshot;
+    const place = <T extends { id: string; x: number; y: number }>(nodes: T[]) => nodes.map(node => ({ ...node, ...arrangePositions.get(node.id) }));
+    return { ...storedSnapshot, images: place(storedSnapshot.images), workflows: place(storedSnapshot.workflows),
+      materialWorkflows: place(storedSnapshot.materialWorkflows ?? []), upscaleWorkflows: place(storedSnapshot.upscaleWorkflows ?? []) };
+  }, [storedSnapshot, arrangePositions]);
   const [tasks, setTasks] = useState<CanvasTask[]>([]);
   const demoTaskRecords = useRef(new Map<string, DemoTaskRecord>());
   const history = useRef<{ past: Snapshot[]; future: Snapshot[] }>({ past: [], future: [] });
@@ -117,18 +125,20 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const stopCamera = useCallback(() => {
     if (cameraFrame.current !== null) cancelAnimationFrame(cameraFrame.current);
     cameraFrame.current = null;
+    setArrangePositions(null);
   }, []);
   const setView = useCallback((next: Viewport | ((previous: Viewport) => Viewport)) => {
     stopCamera();
     const target = typeof next === 'function' ? next(viewRef.current) : next;
     viewRef.current = target; commitView(target);
   }, [stopCamera]);
-  const animateView = useCallback((target: Viewport) => {
+  const animateView = useCallback((target: Viewport, onProgress?: (progress: number) => void) => {
     stopCamera();
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setView(target); return; }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setView(target); onProgress?.(1); return; }
     const from = viewRef.current, started = performance.now();
     const duration = readMotionDuration();
-    if (duration === 0) { setView(target); return; }
+    if (duration === 0) { setView(target); onProgress?.(1); return; }
+    onProgress?.(0);
     // Match the image canvas and CSS ease-out: cubic-bezier(0, 0, .58, 1).
     const frame = (now: number) => {
       const progress = Math.min(1, (now - started) / duration);
@@ -142,6 +152,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       const eased = 3 * (1 - time) * time * time + time * time * time;
       const next = progress === 1 ? target : { x: from.x + (target.x - from.x) * eased, y: from.y + (target.y - from.y) * eased, zoom: from.zoom + (target.zoom - from.zoom) * eased };
       viewRef.current = next; commitView(next);
+      onProgress?.(progress === 1 ? 1 : eased);
       cameraFrame.current = progress < 1 ? requestAnimationFrame(frame) : null;
     };
     cameraFrame.current = requestAnimationFrame(frame);
@@ -239,15 +250,17 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }, []);
   const commit = useCallback((next: Snapshot) => { saveUndo(); replace(next); }, [replace, saveUndo]);
   const undo = useCallback(() => {
+    stopCamera();
     const previous = history.current.past.pop();
     if (!previous) return;
     history.current.future.push(current.current); replace(previous);
-  }, [replace]);
+  }, [replace, stopCamera]);
   const redo = useCallback(() => {
+    stopCamera();
     const next = history.current.future.pop();
     if (!next) return;
     history.current.past.push(current.current); replace(next);
-  }, [replace]);
+  }, [replace, stopCamera]);
   const fit = useCallback(() => {
     const element = canvas.current;
     if (element) setView(current.current.workflows.length || current.current.materialWorkflows?.length || current.current.upscaleWorkflows?.length ? fitImages(sceneItems(current.current), element.clientWidth, element.clientHeight) : fitVideoImages(current.current.images, element.clientWidth, element.clientHeight));
@@ -932,10 +945,23 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   function arrangeScene() {
     const previous = current.current;
     const positions = arrangeVideoWorkflowMedia(previous.images, previous.workflows, previous.materialWorkflows, previous.upscaleWorkflows, previous.layout);
-    commit({ ...previous, images: previous.images.map(image => ({ ...image, ...positions.get(image.id)! })), workflows: previous.workflows.map(node => ({ ...node, ...positions.get(node.id)! })),
+    const from = new Map(sceneItems(snapshot).map(item => [item.id, { x: item.x, y: item.y }]));
+    const next = { ...previous, images: previous.images.map(image => ({ ...image, ...positions.get(image.id)! })), workflows: previous.workflows.map(node => ({ ...node, ...positions.get(node.id)! })),
       materialWorkflows: (previous.materialWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)! })),
-      upscaleWorkflows: (previous.upscaleWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)! })) });
-    fit();
+      upscaleWorkflows: (previous.upscaleWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)! })) };
+    commit(next);
+    const element = canvas.current;
+    if (!element) return;
+    const targetView = next.workflows.length || next.materialWorkflows.length || next.upscaleWorkflows.length
+      ? fitImages(sceneItems(next), element.clientWidth, element.clientHeight)
+      : fitVideoImages(next.images, element.clientWidth, element.clientHeight);
+    animateView(targetView, progress => {
+      if (progress === 1) { setArrangePositions(null); return; }
+      setArrangePositions(new Map([...positions].map(([id, target]) => {
+        const start = from.get(id) ?? target;
+        return [id, { x: start.x + (target.x - start.x) * progress, y: start.y + (target.y - start.y) * progress }];
+      })));
+    });
   }
   async function downloadSelected(format: DownloadFormat) {
     if (downloadLocked.current) return;
@@ -1044,7 +1070,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
           onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
             materialWorkflows: (current.current.materialWorkflows ?? []).map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
             upscaleWorkflows: (current.current.upscaleWorkflows ?? []).map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node) })}
-          onDragStart={() => { saveUndo(); setDragging(true); }} onDragEnd={() => { setDragging(false); setGuides(null); }} onGuides={setGuides} onSelecting={setSelecting}>
+          onDragStart={() => { stopCamera(); saveUndo(); setDragging(true); }} onDragEnd={() => { setDragging(false); setGuides(null); }} onGuides={setGuides} onSelecting={setSelecting}>
           {snapshot.images.map(image => <div key={image.id} data-image data-canvas-id={image.id} data-node-id={image.video ? '97:6651' : undefined} className={`canvas-image${image.video ? ' canvas-video' : ''}${(canvasPick ? canvasPick.ids.includes(image.id) : snapshot.selected.includes(image.id)) ? ' selected' : ''}${canvasPick && !canvasSourceEligible(snapshot, canvasPick.target, image) ? ' video-source-unavailable' : ''}`} style={{ left: image.x, top: image.y, width: image.width, height: image.height }} role="button" tabIndex={0} aria-label={`${image.video ? m.video : t.image}: ${image.name}`} aria-pressed={canvasPick ? canvasPick.ids.includes(image.id) : snapshot.selected.includes(image.id)}
             onPointerDown={event => { pickPointerStart.current = { x: event.clientX, y: event.clientY }; }}
             onClick={event => {
