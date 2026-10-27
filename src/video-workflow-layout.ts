@@ -11,6 +11,7 @@ export type { VideoLayoutState } from './video-layout-groups';
 type Position = { x: number; y: number };
 type LayoutGroup = { positions: Map<string, Position>; width: number; height: number };
 const GROUP_GAP = 240;
+const STANDALONE_GAP = 40;
 const GROUPS_PER_ROW = 5;
 
 export function videoLayoutVertices(images: VideoCanvasMedia[], videoWorkflows: VideoWorkflow[], materialWorkflows: MaterialWorkflow[] = [], upscaleWorkflows: VideoUpscaleWorkflow[] = []): VideoLayoutVertex[] {
@@ -45,12 +46,12 @@ function packGroups(groups: LayoutGroup[], centerGroups = true): LayoutGroup {
     for (const group of row) {
       const groupY = y + (centerGroups ? (rowHeight - group.height) / 2 : 0);
       for (const [id, position] of group.positions) positions.set(id, { x: x + position.x, y: groupY + position.y });
-      x += group.width + GROUP_GAP;
+      x += group.width + STANDALONE_GAP;
     }
-    width = Math.max(width, x - GROUP_GAP);
-    y += rowHeight + GROUP_GAP;
+    width = Math.max(width, x - STANDALONE_GAP);
+    y += rowHeight + STANDALONE_GAP;
   }
-  return { positions, width, height: Math.max(0, y - GROUP_GAP) };
+  return { positions, width, height: Math.max(0, y - STANDALONE_GAP) };
 }
 
 // Groups retain their own assets. Cross-group references order whole groups
