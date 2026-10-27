@@ -1,3 +1,4 @@
+import { readMotionDuration } from './motion-duration';
 import { useEffect, useState } from 'react';
 
 // Retain closing content until the shared exit curve finishes. Reopening cancels
@@ -7,7 +8,7 @@ export function usePresence<T>(value: T | null) {
   useEffect(() => {
     if (value !== null) { setRetained(value); return; }
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const duration = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion-duration')) || 200;
+    const duration = readMotionDuration();
     const timer = window.setTimeout(() => setRetained(null), reduced ? 0 : duration);
     return () => window.clearTimeout(timer);
   }, [value]);

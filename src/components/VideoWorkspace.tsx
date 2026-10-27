@@ -1,3 +1,4 @@
+import { readMotionDuration } from '../motion-duration';
 import { canvasSourceInfo, canvasSourceEligible, bindCanvasSources, type WorkflowUpload, type VideoWorkflowUpload, type MaterialWorkflowUpload } from '../video-canvas-source';
 import type { WorkflowSource } from './WorkflowSourceMenu';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
@@ -126,7 +127,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     stopCamera();
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setView(target); return; }
     const from = viewRef.current, started = performance.now();
-    const duration = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion-duration')) || 200;
+    const duration = readMotionDuration();
+    if (duration === 0) { setView(target); return; }
     // Match the image canvas and CSS ease-out: cubic-bezier(0, 0, .58, 1).
     const frame = (now: number) => {
       const progress = Math.min(1, (now - started) / duration);
