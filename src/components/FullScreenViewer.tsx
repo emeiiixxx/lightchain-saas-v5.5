@@ -25,7 +25,7 @@ export function FullScreenViewer({ label, closeLabel, phase, onClose, children, 
     };
   }, []);
   return <dialog ref={dialog} className={`full-image-viewer ${className}`} data-phase={phase} data-node-id={nodeId} inert={phase === 'exit'} aria-label={label}
-    onCancel={event => { event.preventDefault(); onClose(); }}>
+    onCancel={event => { event.preventDefault(); event.stopPropagation(); onClose(); }}>
     {children}
     <Button className="full-image-close" aria-label={closeLabel} onClick={onClose} data-node-id={closeNodeId}><Icon name="close" size={20} /></Button>
   </dialog>;

@@ -3,9 +3,12 @@ import type { Locale } from '../i18n';
 import { videoTemplateReferenceAssets as assets, type VideoTemplateReferenceSet } from '../video-template-reference-assets';
 import { ProgressiveImage } from './ProgressiveImage';
 import { Button } from './ui';
+import { createPortal } from 'react-dom';
+import { FullImageViewer } from './FullImageViewer';
+import { usePresence } from '../usePresence';
 import './video-template-references.css';
 
-type ReferenceImage = { key: string; thumbnail: string; label: string };
+type ReferenceImage = { key: string; thumbnail: string; url: string; label: string };
 type Props = { locale: Locale; references: VideoTemplateReferenceSet };
 const copy = {
   'zh-CN': {
@@ -28,11 +31,13 @@ const copy = {
 export function VideoTemplateReferences({ locale, references }: Props) {
   const t = copy[locale];
   const images = useMemo<ReferenceImage[]>(() => [
-    ...references.subjects.map((url, index) => ({ key: `subject-${index}`,
+    ...references.subjects.map((url, index) => ({ key: `subject-${index}`, url,
       thumbnail: index === 0 ? references.subjectThumbnail : url, label: t.subjectImage(index + 1) })),
-    { key: 'model', thumbnail: references.modelThumbnail, label: t.modelImage },
+    { key: 'model', thumbnail: references.modelThumbnail, url: references.modelPreview, label: t.modelImage },
   ], [references, t]);
   const [edges, setEdges] = useState({ left: false, right: false });
+  const [preview, setPreview] = useState<ReferenceImage | null>(null);
+  const shownPreview = usePresence(preview);
   const root = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const id = useId();
@@ -69,9 +74,10 @@ export function VideoTemplateReferences({ locale, references }: Props) {
 
   return <div ref={root} className="video-template-references" role="group" aria-label={t.references} data-node-id="171:30350">
     <div ref={track} id={`${id}-thumbnails`} className="video-template-reference-track" onScroll={updateEdges}>
-      {images.map(image => <div key={image.key} className="video-template-reference-card">
+      {images.map(image => <button type="button" key={image.key} className="video-template-reference-card"
+        aria-label={image.label} aria-haspopup="dialog" onClick={() => setPreview(image)}>
         <ProgressiveImage src={image.thumbnail} alt={image.label} eager />
-      </div>)}
+      </button>)}
     </div>
     {([-1, 1] as const).map(direction => {
       const available = direction === -1 ? edges.left : edges.right;
@@ -86,5 +92,8 @@ export function VideoTemplateReferences({ locale, references }: Props) {
           '--icon-url': `url("${assets.thumbnailNext}")` } as CSSProperties} />
       </Button>;
     })}
+    {shownPreview.value && createPortal(<FullImageViewer key={shownPreview.value.key}
+      image={{ url: shownPreview.value.url, name: shownPreview.value.label }} locale={locale}
+      phase={shownPreview.phase} onClose={() => setPreview(null)} viewportFit />, document.body)}
   </div>;
 }

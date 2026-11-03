@@ -4,8 +4,11 @@ import { FullScreenViewer } from './FullScreenViewer';
 import type { CanvasImage } from '../canvas';
 import { messages, type Locale } from '../i18n';
 
-type Props = { image: CanvasImage; locale: Locale; phase: 'enter' | 'exit'; onClose: () => void };
-export function FullImageViewer({ image, locale, phase, onClose }: Props) {
+type Props = {
+  image: Pick<CanvasImage, 'name' | 'url'> & Partial<Pick<CanvasImage, 'width' | 'height'>>;
+  locale: Locale; phase: 'enter' | 'exit'; onClose: () => void; viewportFit?: boolean;
+};
+export function FullImageViewer({ image, locale, phase, onClose, viewportFit = false }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const gesture = useRef<{ pointer: number; clientX: number; clientY: number; x: number; y: number } | null>(null);
   const [position, setPosition] = useState({ x: 0, y: 0, zoom: 1 });
@@ -52,10 +55,11 @@ export function FullImageViewer({ image, locale, phase, onClose }: Props) {
     gesture.current = null; setDragging(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
-  const fit = Math.min(800 / image.width, 800 / image.height, Math.max(1, size.width - (size.width <= 680 ? 32 : 80)) / image.width, Math.max(1, size.height - 160) / image.height);
-  return <FullScreenViewer label={`${t.viewFull} · ${image.name}`} closeLabel={t.close} phase={phase} onClose={onClose} nodeId="68:27657" closeNodeId="68:28013">
+  const width = image.width ?? 1, height = image.height ?? 1;
+  const fit = Math.min(800 / width, 800 / height, Math.max(1, size.width - (size.width <= 680 ? 32 : 80)) / width, Math.max(1, size.height - 160) / height);
+  return <FullScreenViewer label={`${t.viewFull} · ${image.name}`} closeLabel={t.close} phase={phase} onClose={onClose} nodeId={viewportFit ? '313:4097' : '68:27657'} closeNodeId={viewportFit ? '313:4100' : '68:28013'}>
     <div ref={stage} className={`full-image-stage${dragging ? ' is-panning' : ''}`} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}>
-      <div className="full-image-center" style={{ width: image.width * fit, height: image.height * fit }}>
+      <div className="full-image-center" style={viewportFit ? { width: '100%', height: '100%' } : { width: width * fit, height: height * fit }}>
         <ProgressiveImage className="full-image-content" src={image.url} alt={image.name} eager fit="contain" style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${position.zoom})` }} />
       </div>
     </div>
