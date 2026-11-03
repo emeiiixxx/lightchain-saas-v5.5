@@ -63,8 +63,8 @@ export const assets = {
   fusionStar: "/assets/fusion/fusionStar.svg",
   fusionTip: "/assets/fusion/fusionTip.svg",
 
-  "imgImageFill": "/assets/imgImageFill.png",
-  "img": "/assets/img.png",
+  "imgImageFill": "/assets/display/imgImageFill.webp",
+  "img": "/assets/display/img.webp",
   "imgIcon": "/assets/imgIcon.svg",
   "imgIcon1": "/assets/imgIcon1.svg",
   "imgIconBusinessAi": "/assets/imgIconBusinessAi.svg",

@@ -60,7 +60,7 @@ export function FullImageViewer({ image, locale, phase, onClose, viewportFit = f
   return <FullScreenViewer label={`${t.viewFull} · ${image.name}`} closeLabel={t.close} phase={phase} onClose={onClose} nodeId={viewportFit ? '313:4097' : '68:27657'} closeNodeId={viewportFit ? '313:4100' : '68:28013'}>
     <div ref={stage} className={`full-image-stage${dragging ? ' is-panning' : ''}`} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}>
       <div className="full-image-center" style={viewportFit ? { width: '100%', height: '100%' } : { width: width * fit, height: height * fit }}>
-        <ProgressiveImage className="full-image-content" src={image.url} alt={image.name} eager fit="contain" style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${position.zoom})` }} />
+        <ProgressiveImage original className="full-image-content" src={image.url} alt={image.name} eager fit="contain" style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${position.zoom})` }} />
       </div>
     </div>
     <div className="full-image-instructions" role="status" data-node-id="68:27757">{t.fullImageInstructions}</div>

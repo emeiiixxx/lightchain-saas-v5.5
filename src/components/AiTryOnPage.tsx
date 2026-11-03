@@ -121,7 +121,7 @@ export function AiTryOnPage({ active, locale, uploads, onUpload }: { active: boo
             {!draft.garments.length && <>
               <Divider vertical />
               <div className={`tryon-garment-example${reusableGarments.length ? ' has-previous' : ''}`}>
-                <video className="tryon-example-art" src="/assets/try-on/single-item-60fps.mp4" poster="/assets/try-on/garment-example.png" aria-label={garmentText.example} autoPlay loop muted playsInline />
+                <video className="tryon-example-art" src={active ? "/assets/try-on/single-item-60fps.mp4" : undefined} preload="none" poster="/assets/try-on/garment-example.png" aria-label={garmentText.example} autoPlay={active} loop muted playsInline />
                 <span className="tryon-example-label">{garmentText.example}</span>
                 {reusableGarments.length > 0 && <div className="tryon-previous-garments">
                   <div className="tryon-previous-images" data-count={1} aria-label={garmentText.previous}>

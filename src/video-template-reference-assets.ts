@@ -2,15 +2,15 @@ const base = `${import.meta.env.BASE_URL}assets/video-template-20261023/`;
 
 // Original Figma assets: template 76:5477, hover panels 141:24346 / 141:24242.
 export const videoTemplateReferenceAssets = {
-  subjectThumbnail: `${base}subject-thumbnail.png`,
-  modelThumbnail: `${base}model-thumbnail.png`,
+  subjectThumbnail: `${base}subject-front.jpg`,
+  modelThumbnail: `${import.meta.env.BASE_URL}assets/try-on/history/regular-2.png`,
   subjectFront: `${base}subject-front.jpg`,
   subjectBack: `${base}subject-back.png`,
   subjectPrevious: `${base}subject-previous.svg`,
   subjectNext: `${base}subject-next.svg`,
   // Figma 171:30376, Beta Tonal XS chevron-right, native 16px icon.
   thumbnailNext: `${base}thumbnail-next.svg`,
-  modelPreview: `${base}model-preview.png`,
+  modelPreview: `${import.meta.env.BASE_URL}assets/try-on/history/regular-2.png`,
   brandSubject: `${base}brand-subject.png`,
   brandModel: `${base}brand-model.png`,
 };

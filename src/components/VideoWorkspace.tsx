@@ -18,7 +18,7 @@ import { CanvasChrome } from './CanvasChrome';
 import type { CanvasTask } from './CanvasTaskList';
 import { CanvasGenerationPlaceholder } from './CanvasGenerationPlaceholder';
 import { CanvasContextMenu } from './CanvasContextMenu';
-import { CutoutEditor } from './CutoutEditor';
+import { CutoutEditor } from './DeferredEditors';
 import { FullImageViewer } from './FullImageViewer';
 import { FullVideoViewer } from './FullVideoViewer';
 import { ProgressiveImage } from './ProgressiveImage';

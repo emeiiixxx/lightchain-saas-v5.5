@@ -1,0 +1,11 @@
+{
+  "reason": "Superseded demo fixtures with no runtime references; original files remain in git history.",
+  "assets": [
+    "workflow-examples/directed-reference.png",
+    "workflow-examples/flat-result.png",
+    "workflow-examples/fusion-main.png",
+    "workflow-examples/directed-result.png",
+    "workflow-examples/flat-main.jpg",
+    "video-workspace/portraitPoster.png"
+  ]
+}

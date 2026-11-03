@@ -1,13 +1,10 @@
-import { AiTryOnPage } from './components/AiTryOnPage';
-import { VideoWorkspace } from './components/VideoWorkspace';
 import { CanvasBackground } from './components/CanvasBackground';
 import { CanvasProjectPanel } from './components/CanvasProjectPanel';
 import { ProgressiveImage } from './components/ProgressiveImage';
 import { notify, ToastHost } from './components/Toast';
-import { CutoutEditor } from './components/CutoutEditor';
-import { DrawingGuideEditor } from './components/DrawingGuideEditor';
+import { CutoutEditor, DrawingGuideEditor } from './components/DeferredEditors';
 import { isMultiInputWorkflow, fusionReferences, batchMainImages, workflowInputs, workflowReferenceLimit, workflowWidth, workflowHeight, workflowSources, createMergeEditor, createBatchEditor, isWorkflowDescendant, FUSION_GAP, MAX_FUSION_REFERENCES, MAX_BATCH_MAIN_IMAGES, MAX_DIRECTED_POINTS, type WorkflowKind, type FusionReference } from './canvas';
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { assets } from './assets';
 import { Button, Dialog, Divider, Icon, type IconName } from './components/ui';
 import { DEFAULT_VIEW, createFusionEditor, relatedCanvasIds, deleteCanvasSelection, canvasSafeArea, GROUP_GAP, canvasNodes, defaultFusion, fusionPosition, arrangeImages, boundsOf, fitImages, readImage, zoomAt, type CanvasImage, type FusionSettings, type Viewport } from './canvas';
@@ -36,6 +33,9 @@ import { createImageResults } from './canvas-image-results';
 import { withCanvasOriginOrder } from './canvas-origin-order';
 import { PromptLibraryProvider } from './PromptLibraryContext';
 
+const AiTryOnPage = lazy(() => import('./components/AiTryOnPage').then(module => ({ default: module.AiTryOnPage })));
+const VideoWorkspace = lazy(() => import('./components/VideoWorkspace').then(module => ({ default: module.VideoWorkspace })));
+
 type Theme = 'dark' | 'light' | 'system';
 type Page = 'canvas' | 'tryon' | 'video';
 const currentPage = (): Page => window.location.hash === '#/video-workspace' ? 'video' : window.location.hash === '#/ai-try-on' ? 'tryon' : 'canvas';
@@ -57,6 +57,8 @@ const isField = (target: EventTarget | null) => target instanceof HTMLElement &&
 
 export default function App() {
   const [page, setPage] = useState<Page>(currentPage);
+  // Mount a workspace only after its first visit; keep it mounted thereafter to retain drafts.
+  const [visitedPages, setVisitedPages] = useState(() => new Set<Page>([currentPage()]));
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.focusNavigation = 'pointer';
@@ -224,7 +226,9 @@ export default function App() {
 
   useEffect(() => {
     const route = () => {
-      setPage(currentPage());
+      const nextPage = currentPage();
+      setPage(nextPage);
+      setVisitedPages(previous => new Set([...previous, nextPage]));
       setMenu(null); setCanvasMenu(null); setDirectedTarget(null); setSpaceDown(false); setDragging(false); setSelecting(false); setSnapGuide(null); setCanvasReference(null);
       setModal(null); setReferenceTarget(null); setMainTarget(null); setCutoutImage(null); setPreviewImage(null);
       document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'page-navigation' }));
@@ -930,8 +934,10 @@ export default function App() {
       {reading && !modal && <div className="canvas-message" role="status">{t.reading}</div>}
     </main>
 
-    <AiTryOnPage active={page === 'tryon'} locale={locale} uploads={uploads} onUpload={rememberUpload} />
-    <VideoWorkspace active={page === 'video'} locale={locale} onBack={() => announce(locale === 'en' ? 'Project list is not available yet.' : locale === 'ja' ? 'プロジェクト一覧はまだ利用できません。' : '项目列表暂未接入')} />
+    <Suspense fallback={<div className="canvas-message" role="status">{t.reading}</div>}>
+    {visitedPages.has('tryon') && <AiTryOnPage active={page === 'tryon'} locale={locale} uploads={uploads} onUpload={rememberUpload} />}
+    {visitedPages.has('video') && <VideoWorkspace active={page === 'video'} locale={locale} onBack={() => announce(locale === 'en' ? 'Project list is not available yet.' : locale === 'ja' ? 'プロジェクト一覧はまだ利用できません。' : '项目列表暂未接入')} />}
+    </Suspense>
 
     <CanvasContextMenu point={canvasMenu} canPaste={!!canvasClipboard.current} locale={locale} onClose={closeCanvasMenu}
       onDownload={() => { closeCanvasMenu(); void downloadSelected(); }}

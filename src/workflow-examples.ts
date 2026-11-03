@@ -13,7 +13,7 @@ const examples = {
   directed: {
     title: '定向融合',
     main: { name: '黑色无袖上衣模特 · 示例主图', url: '/assets/workflow-examples/directed-neckline-main.png' },
-    reference: { name: '细吊带弧形领口 · 示例参考图', url: '/assets/workflow-examples/directed-neckline-reference.png' },
+    reference: { name: '细吊带弧形领口 · 示例参考图', url: '/assets/try-on/history/regular-1.png' },
     result: { name: '细吊带领口局部融合 · 示例结果', url: '/assets/workflow-examples/directed-neckline-result.jpg' },
     prompt: '',
   },
@@ -27,8 +27,8 @@ const examples = {
   lingerie: {
     title: '内衣试衣',
     main: { name: '黄紫拼色内衣套装 · 示例主图', url: '/assets/workflow-examples/lingerie-product.jpeg' },
-    reference: { name: '金发模特 · 示例参考图', url: '/assets/workflow-examples/lingerie-model.png' },
-    result: { name: '黄紫拼色内衣上身 · 试衣演示', url: '/assets/workflow-examples/lingerie-result.png' },
+    reference: { name: '金发模特 · 示例参考图', url: '/assets/try-on/history/lingerie-purple.png' },
+    result: { name: '黄紫拼色内衣上身 · 试衣演示', url: '/assets/try-on/history/lingerie-yellow.png' },
     prompt: '将主图中的黄紫拼色内衣套装穿到参考模特身上，保留淡黄色蕾丝、浅紫色罩杯、黑色肩带与包边，以及配套高腰内裤的拼色和侧边镂空细节。保留模特的金色长发、双臂抬起的姿势，搭配暖桃色背景与粉色球形布景，呈现自然贴合、柔和光影的内衣产品大片。',
   },
 } satisfies Record<Exclude<WorkflowKind, 'merge' | 'batch'>, unknown>;

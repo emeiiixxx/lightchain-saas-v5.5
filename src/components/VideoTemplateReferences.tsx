@@ -76,7 +76,7 @@ export function VideoTemplateReferences({ locale, references }: Props) {
     <div ref={track} id={`${id}-thumbnails`} className="video-template-reference-track" onScroll={updateEdges}>
       {images.map(image => <button type="button" key={image.key} className="video-template-reference-card"
         aria-label={image.label} aria-haspopup="dialog" onClick={() => setPreview(image)}>
-        <ProgressiveImage src={image.thumbnail} alt={image.label} eager />
+        <ProgressiveImage src={image.thumbnail} alt={image.label} width={90} height={120} />
       </button>)}
     </div>
     {([-1, 1] as const).map(direction => {

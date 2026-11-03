@@ -40,7 +40,7 @@ export function DirectedFusionNode({ image, locale, onChange, onAddMain, onChoos
         <div className="directed-point-preview">
           <div className="directed-point-images">
             {image.nodeOnly ? <div className="directed-point-empty"><Icon name="fusionAddImage" size={20} /></div> : <ProgressiveImage src={point.maskSourceUrl === image.url && point.maskPreviewUrl ? point.maskPreviewUrl : image.url} alt={`${t.main} · ${t.point}${index + 1}`} className="directed-mask-preview" width={56} height={56} fit="contain" />}
-            <ProgressiveImage src={point.reference.url.endsWith("/assets/workflow-examples/directed-neckline-reference.png") ? point.reference.url.replace("directed-neckline-reference.png", "directed-neckline-reference-mask-teal.png") : point.reference.url} alt={`${t.reference} · ${point.reference.name}`} className="directed-mask-preview" width={56} height={56} fit="contain" />
+            <ProgressiveImage src={point.reference.url.endsWith("/assets/try-on/history/regular-1.png") && point.reference.name === "细吊带弧形领口 · 示例参考图" ? "/assets/workflow-examples/directed-neckline-reference-mask-teal.png" : point.reference.url} alt={`${t.reference} · ${point.reference.name}`} className="directed-mask-preview" width={56} height={56} fit="contain" />
           </div>
           <button type="button" className="directed-mask" onClick={() => image.nodeOnly ? onAddMain() : onNotify(t.maskPending)}><span>{t.mask}</span><Icon name="directedChevron" size={16} /></button>
         </div>

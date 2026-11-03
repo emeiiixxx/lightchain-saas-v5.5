@@ -46,7 +46,7 @@ export const multiDemoAssets: LibraryImage[] = [
   {
     "id": "figma-multi-7",
     "name": "浅蓝吊带裙",
-    "url": "/assets/upload/imgAsset7.png"
+    "url": "/assets/try-on/history/regular-4.png"
   },
   {
     "id": "figma-multi-8",
@@ -56,17 +56,17 @@ export const multiDemoAssets: LibraryImage[] = [
   {
     "id": "figma-multi-9",
     "name": "白色吊带上衣",
-    "url": "/assets/upload/imgAsset9.png"
+    "url": "/assets/try-on/history/regular-1.png"
   },
   {
     "id": "figma-multi-10",
     "name": "米白衬衫套装",
-    "url": "/assets/upload/imgAsset10.png"
+    "url": "/assets/try-on/history/regular-2.png"
   },
   {
     "id": "figma-multi-11",
     "name": "白色系带连衣裙",
-    "url": "/assets/upload/imgAsset11.png"
+    "url": "/assets/try-on/history/regular-3.png"
   },
   {
     "id": "figma-multi-12",
@@ -76,12 +76,12 @@ export const multiDemoAssets: LibraryImage[] = [
   {
     "id": "figma-multi-13",
     "name": "黑色无袖上衣",
-    "url": "/assets/upload/imgAsset13.png"
+    "url": "/assets/workflow-examples/directed-neckline-main.png"
   },
   {
     "id": "figma-multi-14",
     "name": "蓝色条纹衬衫",
-    "url": "/assets/upload/imgAsset14.png"
+    "url": "/assets/workflow-examples/flat-blue-stripe-main.png"
   },
   {
     "id": "figma-multi-15",
