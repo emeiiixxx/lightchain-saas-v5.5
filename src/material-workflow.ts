@@ -42,7 +42,7 @@ export function materialWorkflowHasBackView(node: Pick<MaterialWorkflow, 'kind' 
 // Geometry is shared by React Flow, connections, fit, minimap and arrangement.
 export function materialWorkflowSize(node: Pick<MaterialWorkflow, 'kind' | 'view'> & Partial<Pick<MaterialWorkflow, 'references'>>) {
   const height = node.kind === 'multiView' ? (materialWorkflowHasBackView(node) ? 541 : 441)
-    : node.kind === 'gridSplit' ? 329 : 533;
+    : node.kind === 'gridSplit' ? 329 : node.kind === 'storyboard' ? 609 : 533;
   const limit = materialReferenceLimit(node.kind);
   const count = node.references?.length ?? 0;
   const slots = count + (count < limit ? 1 : 0);
