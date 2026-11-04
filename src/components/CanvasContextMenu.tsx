@@ -48,7 +48,7 @@ export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMe
     if (!menu.matches(':popover-open')) menu.showPopover();
     menu.style.left = `${Math.max(8, Math.min(shown.value.x, innerWidth - menu.offsetWidth - 8))}px`;
     menu.style.top = `${Math.max(8, Math.min(shown.value.y, innerHeight - menu.offsetHeight - 8))}px`;
-    if (point) menu.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+    if (point) menu.focus({ preventScroll: true });
   }, [point, shown.value]);
   useEffect(() => {
     if (!point) return;
@@ -70,7 +70,7 @@ export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMe
     };
   }, [point, onClose]);
   if (!shown.value) return null;
-  return createPortal(<div ref={ref} popover="manual" lang={locale} data-canvas-context-menu data-node-id={!imageMenu ? nodeId : undefined} data-image-menu={imageMenu || undefined} data-grouped-menu={!imageMenu && Boolean(groups?.length) || undefined} data-overlay role="menu" aria-label={imageMenu ? itemMenuLabel ?? imageLabels[0] : labels[0]}
+  return createPortal(<div ref={ref} popover="manual" lang={locale} data-canvas-context-menu data-node-id={!imageMenu ? nodeId : undefined} data-image-menu={imageMenu || undefined} data-grouped-menu={!imageMenu && Boolean(groups?.length) || undefined} data-overlay role="menu" tabIndex={-1} aria-label={imageMenu ? itemMenuLabel ?? imageLabels[0] : labels[0]}
     className="lc-select-popup canvas-context-menu" data-phase={shown.phase} inert={shown.phase === 'exit'}
     onContextMenu={event => event.preventDefault()}
     onScroll={event => { if (event.target === event.currentTarget) setActiveGroup(null); }}
@@ -83,7 +83,7 @@ export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMe
       if (imageMenu && (event.key === 'Delete' || event.key === 'Backspace')) { event.preventDefault(); onDelete?.(); return; }
       const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')).filter(button => button.closest('[role="menu"]') === event.currentTarget);
       const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
-      const next = event.key === 'ArrowDown' ? (index + 1) % buttons.length : event.key === 'ArrowUp' ? (index - 1 + buttons.length) % buttons.length : event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : -1;
+      const next = event.key === 'ArrowDown' ? (index + 1) % buttons.length : event.key === 'ArrowUp' ? (index < 0 ? buttons.length - 1 : (index - 1 + buttons.length) % buttons.length) : event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : -1;
       if (next >= 0) { event.preventDefault(); setActiveGroup(null); buttons[next]?.focus(); }
       if ((event.key === 'Escape' || event.key === 'ArrowLeft') && activeGroupId) {
         event.preventDefault();

@@ -10,7 +10,9 @@
 .lc-select-popup:popover-open { display: flex; flex-direction: column; gap: 8px; }
 .lc-select-popup .lc-select-option { display: flex; flex-shrink: 0; align-items: center; gap: 8px; width: 100%; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 14px; font-weight: 400; line-height: 20px; text-align: left; white-space: nowrap; }
 .lc-select-option > span:first-child { flex: 1; }
-.lc-select-popup .lc-select-option:is(:hover,:focus-visible) { outline: none; background: var(--state-hover); color: var(--text-primary); }
+.lc-select-popup .lc-select-option:hover,
+.lc-select-popup:not(.canvas-context-menu) .lc-select-option:focus-visible,
+:root[data-focus-navigation='keyboard'] .canvas-context-menu .lc-select-option:focus-visible { outline: none; background: var(--state-hover); color: var(--text-primary); }
 .lc-select-popup .lc-select-option[aria-checked='true'] { background: var(--state-hover); color: var(--text-brand); }
 .canvas-context-menu .canvas-context-shortcut { margin-left: auto; color: var(--text-tertiary); font-size: 12px; }
 .canvas-context-menu .lc-select-option > .icon { flex: 0 0 auto; }
