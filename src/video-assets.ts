@@ -39,6 +39,8 @@ export const videoAssets = {
   videoExtend: `${videoAssetBase}videoExtend.svg`,
   videoEdit: `${videoAssetBase}videoEdit.svg`,
   // Latest 97:6649 material controls, original 20×20 SVGs (2026-10-22).
+  // Figma 97:6650 professional entry; exact original 20×20 SVG shared with multi-selection.
+  professionalVideo: `${import.meta.env.BASE_URL}assets/video-multi-toolbar/professional.svg`,
   remakeVideo: `${materialAssetBase}remake.svg`,
   modifyVideo: `${materialAssetBase}modify.svg`,
   hdVideo: `${materialAssetBase}hd.svg`,

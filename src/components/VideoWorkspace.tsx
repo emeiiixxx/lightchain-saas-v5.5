@@ -29,6 +29,7 @@ import { prepareVideoTemplateGeneration } from '../video-template-generation';
 import { VideoIcon } from './VideoIcon';
 import { VideoSelectionToolbar } from './VideoSelectionToolbar';
 import { VideoAssetToolbar } from './VideoAssetToolbar';
+import { videoHistoryAssets } from '../video-history-assets';
 import { VideoMultiSelectionToolbar, type VideoMultiAction } from './VideoMultiSelectionToolbar';
 import { VideoWorkflowNode } from './VideoWorkflowNode';
 import { MaterialWorkflowNode } from './MaterialWorkflowNode';
@@ -161,7 +162,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const measured = useRef({ width: 0, height: 0 });
   const [uploads, setUploads] = useState<LibraryImage[]>([]);
-  const [uploadedVideos, setUploadedVideos] = useState<UploadedVideo[]>([]);
+  const [uploadedVideos, setUploadedVideos] = useState<UploadedVideo[]>(() => [...videoHistoryAssets]);
   const ownedUrls = useRef(new Set<string>());
   const pendingGridCrops = useRef(new Set<string>());
   const pendingVideoExamples = useRef(new Set<string>());
@@ -492,14 +493,19 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     // Toolbar entries bind the actual canvas asset, including its current
     // geometry, rather than a fading selection overlay's snapshot.
     const source = sourceId ? previous.images.find(image => image.id === sourceId) : undefined;
-    if (sourceId && (!source || source.video || source.generation)) return;
+    if (sourceId && (!source || source.generation || (source.video && mode !== 'references'))) return;
     const scene = sceneItems(previous), viewport = viewRef.current;
     const size = videoWorkflowSize(mode);
     const node = createVideoWorkflow(
       source ? source.x + source.width + 80 : point?.x ?? (canvasSize.width / 2 - viewport.x) / viewport.zoom - size.width / 2,
       source ? source.y + (source.height - size.height) / 2 : point?.y ?? (canvasSize.height / 2 - viewport.y) / viewport.zoom - size.height / 2,
-      source, mode,
+      source?.video ? undefined : source, mode,
     );
+    if (source?.video) {
+      node.references = [{ id: crypto.randomUUID(), sourceImageId: source.id,
+        name: source.video.name, url: source.video.url, kind: 'video' }];
+      node.y = source.y + (source.height - videoWorkflowSize(node).height) / 2;
+    }
     // Toolbar nodes keep their source's center even when they overlap.
     // Only an empty node without an explicit position avoids existing content.
     while (!source && !point && scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
@@ -1132,6 +1138,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         {shownSingle.value && !canvasPick && !selecting && <div className="selection-overlay" data-phase={shownSingle.phase} aria-label={t.selectionTools} style={{ left: shownSingle.value.x * view.zoom + view.x, top: shownSingle.value.y * view.zoom + view.y, width: shownSingle.value.width * view.zoom, height: shownSingle.value.height * view.zoom }}>
           <div className="media-toolbar-anchor" data-overlay inert={shownSingle.phase === 'exit'}>
             {shownSingle.value.video ? <VideoAssetToolbar key={shownSingle.value.id} locale={locale} onDownload={downloadSelectedVideo}
+              onProfessional={() => { if (shownSingle.value) addWorkflow(shownSingle.value.id, 'references'); }}
               onRemake={() => notify(locale === 'zh-CN' ? '视频复刻功能暂未接入。' : locale === 'ja' ? '動画再現はまだ接続されていません。' : 'Video remake is not connected yet.')}
               onModify={() => notify(locale === 'zh-CN' ? '视频修改功能暂未接入。' : locale === 'ja' ? '動画編集はまだ接続されていません。' : 'Video editing is not connected yet.')}
               onHD={() => { if (shownSingle.value) addUpscaleWorkflow(shownSingle.value.id); }}
