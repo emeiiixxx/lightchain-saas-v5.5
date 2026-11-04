@@ -4,18 +4,19 @@ import { sizeVideoCanvasMedia, type VideoCanvasMedia } from './video-canvas-medi
 import { createVideoWorkflow, canGenerateVideoWorkflow, normalizeVideoWorkflowSettings, videoReferenceLimits, videoWorkflowReferences, type VideoReference } from './video-workflow';
 import { videoTemplateMedia, type VideoTemplate, type VideoTemplateReplacements } from './video-templates';
 
-// The locally maintained template is the source of node type, settings,
-// instructions and slot bindings. Unchanged slots retain all original images.
+// Uploaded images replace the template's complete input set. Editing without
+// uploads preserves the maintained template's original images and slot bindings.
 export async function prepareVideoTemplateGeneration(template: VideoTemplate, replacements: VideoTemplateReplacements, locale: Locale, requireReplacement = true) {
   const definition = template.workflow;
-  if (!definition || !template.preview || (requireReplacement && !definition.inputs.some(input => replacements[input.slot]?.url))) {
+  if (!definition || !template.preview || (requireReplacement && !replacements.length)) {
     throw new Error('template_inputs_required');
   }
-  const slots = definition.inputs.flatMap(input => {
-    const replacement = replacements[input.slot];
-    const originals = input.images.map((url, index) => ({ url, name: `${template.label[locale]} · ${input.slot === 'garment' ? '商品' : '模特'} ${index + 1}` }));
-    return (replacement ? [replacement] : originals).map(image => ({ ...image, target: input.target }));
-  });
+  if (replacements.length > videoReferenceLimits.image || replacements.some(image => !image.url)) throw new Error('invalid_template_inputs');
+  const slots = replacements.length
+    ? replacements.map((image, index) => ({ ...image, target: definition.mode === 'references' ? 'references' as const : index === 0 ? 'main' as const : 'endFrame' as const }))
+    : definition.inputs.flatMap(input => input.images.map((url, index) => ({
+      url, name: `${template.label[locale]} · ${input.slot === 'garment' ? '商品' : '模特'} ${index + 1}`, target: input.target,
+    })));
   if (definition.mode === 'frames' && (slots.some(slot => slot.target === 'references')
     || slots.filter(slot => slot.target === 'main').length !== 1 || slots.filter(slot => slot.target === 'endFrame').length > 1)) {
     throw new Error('invalid_template_frame_slots');

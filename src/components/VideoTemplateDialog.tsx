@@ -4,7 +4,7 @@ import { readImage } from '../canvas';
 import type { Locale } from '../i18n';
 import { usePresence } from '../usePresence';
 import { videoAssets } from '../video-assets';
-import { videoTemplateMedia, videoTemplateMessages, videoTemplates, type VideoTemplateId, type VideoTemplateImageSlot, type VideoTemplateReplacements } from '../video-templates';
+import { videoTemplateMedia, videoTemplateMessages, videoTemplates, type VideoTemplateId, type VideoTemplateReplacements } from '../video-templates';
 import { videoWorkflowTitle } from '../video-workflow';
 import { AssetPicker } from './AssetPicker';
 import { GenerateTaskButton } from './GenerateTaskButton';
@@ -14,94 +14,82 @@ import { notify } from './Toast';
 import { Button, Dialog, Divider, Icon } from './ui';
 import '../video-template-dialog.css';
 
-type UploadedImage = { url: string; name: string };
-type ImageSlot = VideoTemplateImageSlot;
-type TemplateUploads = Partial<Record<VideoTemplateId, Partial<Record<ImageSlot, UploadedImage>>>>;
+type UploadedImage = { id: string; url: string; name: string };
+type TemplateUploads = Partial<Record<VideoTemplateId, UploadedImage[]>>;
+const uploadLimit = 9;
 
-function TemplateImageField({ locale, slot, value, onChange, onUpload, onChoose, onBusyChange, active }: {
+function TemplateImageUploads({ locale, images, active, onAdd, onRemove, onUpload, onChoose, onBusyChange }: {
   locale: Locale;
-  slot: ImageSlot;
-  value?: UploadedImage;
-  onChange: (image?: UploadedImage) => void;
+  images: UploadedImage[];
+  active: boolean;
+  onAdd: (images: UploadedImage[]) => void;
+  onRemove: (id: string) => void;
   onUpload: (image: LibraryImage) => void;
   onChoose: () => void;
   onBusyChange: (busy: boolean) => void;
-  active: boolean;
 }) {
   const t = videoTemplateMessages[locale];
-  const label = slot === 'garment' ? t.garment : t.model;
-  const placeholder = slot === 'garment' ? t.garmentPlaceholder : t.modelPlaceholder;
   const id = useId();
-  const emptyButton = useRef<HTMLButtonElement>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
   const request = useRef(0);
   const dragDepth = useRef(0);
+  const locked = useRef(false);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const busyCallback = useRef(onBusyChange); busyCallback.current = onBusyChange;
   useEffect(() => { busyCallback.current(busy); return () => busyCallback.current(false); }, [busy]);
-
   useEffect(() => () => { request.current++; }, []);
   useEffect(() => {
-    if (!active) { request.current++; setBusy(false); setDragging(false); dragDepth.current = 0; }
+    if (!active) { request.current++; locked.current = false; setBusy(false); setDragging(false); dragDepth.current = 0; }
   }, [active]);
 
   async function upload(files: File[]) {
-    if (!active || files.length === 0) return;
-    const version = ++request.current;
-    setBusy(false);
-    if (files.length !== 1) { notify(t.singleImage, 'error'); return; }
-    const file = files[0];
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 20 * 1024 * 1024) {
-      notify(t.uploadError, 'error');
-      return;
+    if (!active || locked.current || !files.length) return;
+    if (files.length + images.length > uploadLimit) { notify(t.imageLimit, 'error'); return; }
+    if (files.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 20 * 1024 * 1024)) {
+      notify(t.uploadError, 'error'); return;
     }
-    setBusy(true);
+    const version = ++request.current;
+    locked.current = true; setBusy(true);
+    const loaded: Awaited<ReturnType<typeof readImage>>[] = [];
     try {
-      const image = await readImage(file);
-      if (version !== request.current) { URL.revokeObjectURL(image.url); return; }
-      onUpload(image);
-      onChange({ url: image.url, name: image.name });
+      for (const file of files) {
+        const image = await readImage(file);
+        loaded.push(image);
+        if (version !== request.current) return;
+      }
+      loaded.forEach(onUpload);
+      onAdd(loaded.map(image => ({ id: crypto.randomUUID(), url: image.url, name: image.name })));
+      loaded.length = 0; // Uploaded URLs are now owned by the workspace history.
     } catch {
       if (version === request.current) notify(t.decodeError, 'error');
     } finally {
-      if (version === request.current) setBusy(false);
+      loaded.forEach(image => URL.revokeObjectURL(image.url));
+      if (version === request.current) { locked.current = false; setBusy(false); }
     }
   }
 
-  function dragEnter(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (active && event.dataTransfer.types.includes('Files')) { dragDepth.current++; setDragging(true); }
-  }
-
-  function choose() {
-    request.current++;
-    setBusy(false);
-    onChoose();
-  }
-
-  return <section className="video-template-image-field" aria-labelledby={`${id}-label`}>
-    <h4 id={`${id}-label`} className="video-template-visually-hidden">{label}</h4>
+  return <section className="video-template-uploads" aria-labelledby={`${id}-title`} aria-describedby={`${id}-count`}>
+    <header className="video-template-upload-heading">
+      <h4 id={`${id}-title`}>{t.uploadTitle}</h4>
+      <p id={`${id}-count`} aria-live="polite">{t.uploadCount}<span className="video-template-upload-count">{images.length}</span>/{uploadLimit}</p>
+    </header>
     <span id={`${id}-formats`} className="video-template-visually-hidden">{t.formats}</span>
-    <div className="video-template-upload" data-filled={!!value} data-dragging={dragging} aria-busy={busy}
-      onDragEnter={dragEnter}
-      onDragOver={event => { event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = active ? 'copy' : 'none'; }}
+    <div className="video-template-upload-grid" data-dragging={dragging} aria-busy={busy}
+      onDragEnter={(event: DragEvent<HTMLDivElement>) => { event.preventDefault(); event.stopPropagation(); if (active && !busy && event.dataTransfer.types.includes('Files')) { dragDepth.current++; setDragging(true); } }}
+      onDragOver={event => { event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = active && !busy ? 'copy' : 'none'; }}
       onDragLeave={event => { event.preventDefault(); event.stopPropagation(); dragDepth.current = Math.max(0, dragDepth.current - 1); if (!dragDepth.current) setDragging(false); }}
       onDrop={event => { event.preventDefault(); event.stopPropagation(); dragDepth.current = 0; setDragging(false); void upload(Array.from(event.dataTransfer.files)); }}>
-      {value ? <>
-        <div className="video-template-thumbnail">
-          <img src={value.url} alt={value.name} />
-          <div className="video-template-image-actions">
-            <Button title={t.replace} aria-label={`${t.replace} · ${label}`} aria-haspopup="dialog" disabled={!active} onClick={choose}><Icon name="promptCoverReplace" size={16} /></Button>
-            <Button title={t.remove} aria-label={`${t.remove} · ${label}`} disabled={!active} onClick={() => { request.current++; setBusy(false); onChange(); requestAnimationFrame(() => emptyButton.current?.focus()); }}><Icon name="promptTrash" size={16} /></Button>
-          </div>
-        </div>
-        <p className="video-template-file-name">{value.name}</p>
-      </> : <button ref={emptyButton} type="button" className="video-template-upload-empty" aria-label={`${label} · ${placeholder}`} aria-describedby={`${id}-formats`} aria-haspopup="dialog" disabled={!active} onClick={choose}>
-        <Icon name="promptCoverAddImage" size={24} /><span>{busy ? t.reading : placeholder}</span>
+      {images.map(image => <div key={image.id} className="video-template-upload-tile">
+        <div className="video-template-thumbnail"><img src={image.url} alt={image.name} draggable={false} /></div>
+        <Button variant="tonal" className="video-template-upload-remove" aria-label={`${t.remove} · ${image.name}`} disabled={!active || busy}
+          onClick={() => { onRemove(image.id); requestAnimationFrame(() => addButton.current?.focus()); }}><Icon name="templateUploadClose" size={16} /></Button>
+      </div>)}
+      {images.length < uploadLimit && <button ref={addButton} type="button" className="video-template-upload-add" aria-label={t.addImages} aria-describedby={`${id}-formats`} aria-haspopup="dialog" disabled={!active || busy} onClick={onChoose}>
+        <Icon name="templateUploadAdd" size={20} />
       </button>}
-      {busy && value && <span className="video-template-upload-status" role="status">{t.reading}</span>}
     </div>
+    {busy && <p className="video-template-upload-status" role="status">{t.reading}</p>}
   </section>;
 }
 
@@ -118,26 +106,22 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
   const id = useId();
   const [selected, setSelected] = useState<VideoTemplateId>('commerce');
   const [uploads, setUploads] = useState<TemplateUploads>({});
-  const [imagePicker, setImagePicker] = useState<{ templateId: VideoTemplateId; slot: ImageSlot } | null>(null);
+  const [imagePicker, setImagePicker] = useState<{ templateId: VideoTemplateId } | null>(null);
   const shownPicker = usePresence(phase === 'enter' ? imagePicker : null);
   const [videoFailed, setVideoFailed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [busySlots, setBusySlots] = useState({ garment: false, model: false });
+  const [uploadBusy, setUploadBusy] = useState(false);
   const generationRequest = useRef<AbortController | null>(null);
   const video = useRef<HTMLVideoElement>(null);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const template = videoTemplates.find(item => item.id === selected)!;
   const { video: videoSource, poster } = videoTemplateMedia(template);
-  const canEdit = phase === 'enter' && !submitting && !busySlots.garment && !busySlots.model && !shownPicker.value
+  const canEdit = phase === 'enter' && !submitting && !uploadBusy && !shownPicker.value
     && Boolean(template.preview && template.workflow);
-  const canGenerate = canEdit && Boolean(uploads[selected]?.garment?.url || uploads[selected]?.model?.url);
+  const canGenerate = canEdit && Boolean(uploads[selected]?.length);
 
   useEffect(() => () => { generationRequest.current?.abort(); generationRequest.current = null; }, []);
   useEffect(() => { if (phase === 'exit') generationRequest.current?.abort(); }, [phase]);
-
-  function changeBusy(slot: ImageSlot, busy: boolean) {
-    setBusySlots(previous => previous[slot] === busy ? previous : { ...previous, [slot]: busy });
-  }
 
   async function submit(action: 'edit' | 'generate') {
     if (!(action === 'edit' ? canEdit : canGenerate) || generationRequest.current) return;
@@ -145,7 +129,7 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
     generationRequest.current = request;
     setSubmitting(true);
     try {
-      const created = await (action === 'edit' ? onEdit : onGenerate)(selected, { ...uploads[selected] }, request.signal);
+      const created = await (action === 'edit' ? onEdit : onGenerate)(selected, [...(uploads[selected] ?? [])], request.signal);
       if (created && !request.signal.aborted) close();
     } catch {
       if (!request.signal.aborted) notify(t.generateError, 'error');
@@ -168,7 +152,7 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
   function selectTemplate(next: VideoTemplateId) {
     if (next === selected) return;
     generationRequest.current?.abort(); generationRequest.current = null;
-    setSubmitting(false); setBusySlots({ garment: false, model: false });
+    setSubmitting(false); setUploadBusy(false);
     video.current?.pause();
     setVideoFailed(false);
     setSelected(next);
@@ -186,18 +170,24 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
     tabs.current[next]?.focus();
   }
 
-  function changeImage(templateId: VideoTemplateId, slot: ImageSlot, image?: UploadedImage) {
-    // The workspace owns uploaded URLs so references and upload history can share them.
-    setUploads(previous => ({ ...previous, [templateId]: { ...previous[templateId], [slot]: image } }));
+  function addImages(templateId: VideoTemplateId, images: UploadedImage[]) {
+    setUploads(previous => {
+      const existing = previous[templateId] ?? [];
+      if (existing.length + images.length > uploadLimit) return previous;
+      return { ...previous, [templateId]: [...existing, ...images] };
+    });
   }
 
-  function chooseImage(slot: ImageSlot) {
-    if (phase === 'enter' && !shownPicker.value) setImagePicker({ templateId: selected, slot });
+  function chooseImages() {
+    if (phase === 'enter' && !submitting && !uploadBusy && !shownPicker.value && (uploads[selected]?.length ?? 0) < uploadLimit) {
+      setImagePicker({ templateId: selected });
+    }
   }
 
-  function confirmImage(image: UploadedImage) {
-    if (phase !== 'enter' || !imagePicker) return;
-    changeImage(imagePicker.templateId, imagePicker.slot, { url: image.url, name: image.name });
+  function confirmImages(images: { url: string; name: string }[]) {
+    if (phase !== 'enter' || !imagePicker || imagePicker.templateId !== selected) return;
+    if (images.length + (uploads[selected]?.length ?? 0) > uploadLimit) { notify(t.imageLimit, 'error'); return; }
+    addImages(selected, images.map(image => ({ ...image, id: crypto.randomUUID() })));
     setImagePicker(null);
   }
 
@@ -228,16 +218,9 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
               </div>}
             </header>
             <Divider />
-            <section className="video-template-uploads" key={selected} aria-labelledby={`${id}-upload-title`} aria-describedby={`${id}-upload-requirement`}>
-              <header className="video-template-upload-heading">
-                <h4 id={`${id}-upload-title`}>{t.uploadTitle}</h4>
-                <p id={`${id}-upload-requirement`}>{t.uploadRequirement}</p>
-              </header>
-              <div className="video-template-upload-fields">
-                <TemplateImageField locale={locale} slot="garment" value={uploads[selected]?.garment} active={phase === 'enter' && !submitting} onChange={image => changeImage(selected, 'garment', image)} onUpload={onUpload} onChoose={() => chooseImage('garment')} onBusyChange={busy => changeBusy('garment', busy)} />
-                <TemplateImageField locale={locale} slot="model" value={uploads[selected]?.model} active={phase === 'enter' && !submitting} onChange={image => changeImage(selected, 'model', image)} onUpload={onUpload} onChoose={() => chooseImage('model')} onBusyChange={busy => changeBusy('model', busy)} />
-              </div>
-            </section>
+            <TemplateImageUploads key={selected} locale={locale} images={uploads[selected] ?? []} active={phase === 'enter' && !submitting && !shownPicker.value}
+              onAdd={images => addImages(selected, images)} onRemove={imageId => setUploads(previous => ({ ...previous, [selected]: previous[selected]?.filter(image => image.id !== imageId) }))}
+              onUpload={onUpload} onChoose={chooseImages} onBusyChange={setUploadBusy} />
           </div>
           <footer className="video-template-actions"><Button variant="secondary" size="m" disabled={!canEdit} onClick={() => { void submit('edit'); }}>{t.edit}</Button><GenerateTaskButton label={submitting ? t.preparing : t.generate} cost="80" disabled={!canGenerate} aria-busy={submitting} onClick={() => { void submit('generate'); }} /></footer>
         </div>
@@ -247,6 +230,6 @@ export function VideoTemplateDialog({ locale, onClose, phase, uploads: libraryUp
       </>}
     </section>
   </Dialog>
-    {shownPicker.value && <AssetPicker locale={locale} phase={shownPicker.phase} uploads={libraryUploads} onUpload={onUpload} onConfirm={confirmImage} onClose={() => setImagePicker(null)} />}
+    {shownPicker.value && <AssetPicker locale={locale} phase={shownPicker.phase} uploads={libraryUploads} onUpload={onUpload} mediaKind="image" maxCount={uploadLimit - (uploads[shownPicker.value.templateId]?.length ?? 0)} limitMessage={t.imageLimit} onConfirm={image => confirmImages([image])} onConfirmBatch={confirmImages} onClose={() => setImagePicker(null)} />}
   </>;
 }

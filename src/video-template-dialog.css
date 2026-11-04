@@ -26,25 +26,19 @@
 .video-template-upload-heading { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .video-template-upload-heading h4 { margin: 0; color: var(--text-primary); font-size: 14px; font-weight: 500; line-height: 20px; overflow-wrap: anywhere; }
 .video-template-upload-heading p { margin: 0; color: var(--text-tertiary); font-size: 12px; font-weight: 400; line-height: 16px; overflow-wrap: anywhere; }
-.video-template-upload-fields { display: flex; flex-direction: column; gap: 8px; }
-.video-template-image-field { display: flex; flex-shrink: 0; flex-direction: column; gap: 8px; min-width: 0; }
-.video-template-image-field h4 { margin: 0; }
+.video-template-upload-count { color: var(--brand-primary-hover); }
 .video-template-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.video-template-upload { position: relative; display: flex; align-items: center; gap: 8px; height: 96px; padding: 8px; overflow: hidden; border-radius: var(--radius-xl); background: var(--state-default); color: var(--text-tertiary); }
-.video-template-upload:hover, .video-template-upload:focus-within { background: var(--state-hover); }
-.video-template-upload[data-dragging='true'] { box-shadow: inset 0 0 0 1px var(--border-brand); background: var(--alpha-brand-20); }
-.video-template-upload-empty { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; height: 100%; padding: 0; border: 0; border-radius: var(--radius-base); background: transparent; color: var(--text-tertiary); font-size: 12px; font-weight: 400; line-height: 16px; }
-.video-template-upload-empty:hover, .video-template-upload-empty:focus-visible { color: var(--text-secondary); }
-.video-template-upload-empty span:not(.icon) { overflow-wrap: anywhere; }
-/* Clip the image and rectangular hover layer together; a separate rounded overlay exposes bright image edges. */
-.video-template-thumbnail { position: relative; isolation: isolate; width: 80px; height: 80px; flex: 0 0 80px; overflow: hidden; border-radius: var(--radius-l); clip-path: inset(0 round var(--radius-l)); background: var(--control-fill-hover); }
-.video-template-thumbnail > img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
-.video-template-file-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; min-width: 0; max-height: 64px; margin: 0; padding-inline: 4px; overflow: hidden; color: var(--text-tertiary); font-size: 12px; font-weight: 400; line-height: 16px; overflow-wrap: anywhere; }
-.video-template-image-actions { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 4px; opacity: 0; pointer-events: none; background: var(--surface-media-overlay); backdrop-filter: blur(10px); }
-.video-template-upload:hover .video-template-image-actions, .video-template-upload:focus-within .video-template-image-actions { opacity: 1; pointer-events: auto; }
-.video-template-image-actions .lc-button { width: 24px; min-width: 24px; height: 24px; padding: 0; border-radius: 6px; color: var(--text-on-brand-white); }
-.video-template-image-actions .lc-button:hover:not(:disabled) { background: var(--surface-media-overlay); color: var(--text-on-brand-white); }
-.video-template-upload-status { position: absolute; right: 8px; bottom: 4px; padding: 2px 4px; border-radius: 4px; background: var(--surface-default); color: var(--text-tertiary); font-size: 12px; line-height: 16px; }
+.video-template-upload-grid { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; min-width: 0; padding-block: 4px; margin-block: -4px; border-radius: var(--radius-l); }
+.video-template-upload-grid[data-dragging='true'] { outline: 1px solid var(--border-brand); background: var(--alpha-brand-20); }
+.video-template-upload-tile { position: relative; flex: 0 0 72px; width: 72px; height: 72px; }
+.video-template-thumbnail { width: 72px; height: 72px; overflow: hidden; border: 1px solid var(--border-weak); border-radius: var(--radius-l); background: var(--control-fill-hover); }
+.video-template-thumbnail > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.video-template-upload-add { display: flex; flex: 0 0 72px; align-items: center; justify-content: center; width: 72px; height: 72px; padding: 0; border: 1px solid var(--border-weak); border-radius: var(--radius-l); background: var(--state-default); color: var(--text-secondary); }
+.video-template-upload-add:hover:not(:disabled) { background: var(--state-hover); }
+.video-template-upload-add:disabled { cursor: default; color: var(--text-disabled); }
+.video-template-upload-tile .video-template-upload-remove { position: absolute; top: -4px; right: -4px; z-index: 1; width: 24px; min-width: 24px; height: 24px; min-height: 24px; padding: 0; border-radius: var(--radius-max); opacity: 0; pointer-events: none; transition: opacity var(--motion-duration, 200ms) ease-out; }
+.video-template-upload-tile:is(:hover, :focus-within) .video-template-upload-remove { opacity: 1; pointer-events: auto; }
+.video-template-upload-status { margin: 0; color: var(--text-tertiary); font-size: 12px; line-height: 16px; }
 .video-template-actions { display: flex; flex-shrink: 0; align-items: flex-start; gap: 8px; width: 100%; }
 .video-template-actions > .lc-button { padding-inline: 24px; }
 .video-template-actions > .generate-task-button { flex: 1; min-width: 0; height: 40px; padding-inline: 20px; font-size: 14px; line-height: 20px; white-space: nowrap; }
@@ -81,7 +75,5 @@
   .video-template-tabs button { font-size: 12px; line-height: 18px; }
   .video-template-content { padding: 12px; }
   .video-template-preview { flex-basis: 224px; min-height: 224px; }
-  .video-template-thumbnail { width: 64px; height: 64px; flex-basis: 64px; }
-  .video-template-upload { gap: 4px; }
 }
-@media (hover: none) { .video-template-image-actions { opacity: 1; pointer-events: auto; } }
+@media (hover: none) { .video-template-upload-tile .video-template-upload-remove { opacity: 1; pointer-events: auto; } }

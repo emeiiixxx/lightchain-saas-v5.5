@@ -8,7 +8,7 @@ type TemplateMedia = { video: string; poster: string; width?: number; height?: n
 
 export type VideoTemplateId = 'commerce' | 'creator' | 'runway' | 'brand' | 'launch' | 'fabric' | 'live' | 'wholesale';
 export type VideoTemplateImageSlot = 'garment' | 'model';
-export type VideoTemplateReplacements = Partial<Record<VideoTemplateImageSlot, { url: string; name: string }>>;
+export type VideoTemplateReplacements = readonly { url: string; name: string }[];
 export type VideoTemplateWorkflow = Pick<VideoWorkflow, 'mode' | 'generationMode' | 'ratio' | 'resolution' | 'duration' | 'audio' | 'smartExpand'> & {
   prompt: LocalizedText;
   inputs: readonly {
@@ -118,13 +118,11 @@ export const videoTemplateMessages = {
   'zh-CN': {
     title: '热门视频模版', categories: '模版分类', close: '关闭',
     appearanceLock: '形象锁定：', yes: '是', no: '否',
-    uploadTitle: '上传对应素材，替换模版中的商品或人物',
-    uploadRequirement: '使用模版生成时，服装图/模特图2选1，必填',
-    garment: '上传服装图', model: '上传模特图',
-    garmentPlaceholder: '替换模版商品，可直接上传服装模特图', modelPlaceholder: '替换模版人物',
-    replace: '替换图片', remove: '删除图片', reading: '正在读取图片…',
+    uploadTitle: '上传商品图或模特图素材',
+    uploadCount: '最多9张，已上传', addImages: '添加图片', imageLimit: '最多上传9张图片。',
+    remove: '删除图片', reading: '正在读取图片…',
     uploadError: '请上传 JPG、JPEG、PNG 或 WebP 图片，单张不超过 20 MB。',
-    singleImage: '每处最多上传 1 张图片。', decodeError: '图片读取失败，请重新选择。',
+    decodeError: '图片读取失败，请重新选择。',
     formats: '支持 JPG、JPEG、PNG、WebP，单张不超过 20 MB',
     emptyTitle: '暂无数据', emptyDescription: '当前没有可展示的内容',
     edit: '编辑模版', generate: '立即生成',
@@ -134,13 +132,11 @@ export const videoTemplateMessages = {
   en: {
     title: 'Popular video templates', categories: 'Template categories', close: 'Close',
     appearanceLock: 'Appearance locked: ', yes: 'Yes', no: 'No',
-    uploadTitle: 'Upload matching images to replace the template’s product or model',
-    uploadRequirement: 'A garment image or model image is required to generate from this template.',
-    garment: 'Upload garment image', model: 'Upload model image',
-    garmentPlaceholder: 'Replace template product — a photo of a model wearing the outfit works too', modelPlaceholder: 'Replace template model',
-    replace: 'Replace image', remove: 'Remove image', reading: 'Reading image…',
+    uploadTitle: 'Upload product or model images',
+    uploadCount: 'Up to 9 images · Uploaded ', addImages: 'Add images', imageLimit: 'Upload up to 9 images.',
+    remove: 'Remove image', reading: 'Reading images…',
     uploadError: 'Upload a JPG, JPEG, PNG or WebP image, up to 20 MB.',
-    singleImage: 'Upload one image per field.', decodeError: 'Could not read this image. Please choose another.',
+    decodeError: 'Could not read this image. Please choose another.',
     formats: 'JPG, JPEG, PNG or WebP, up to 20 MB per image',
     emptyTitle: 'No data yet', emptyDescription: 'There is no content to display',
     edit: 'Edit template', generate: 'Generate now',
@@ -150,13 +146,11 @@ export const videoTemplateMessages = {
   ja: {
     title: '人気動画テンプレート', categories: 'テンプレートの分類', close: '閉じる',
     appearanceLock: '外見固定：', yes: 'あり', no: 'なし',
-    uploadTitle: '素材をアップロードして、テンプレートの商品や人物を差し替え',
-    uploadRequirement: 'テンプレートで生成するには、服装画像またはモデル画像が必要です。',
-    garment: '服装画像をアップロード', model: 'モデル画像をアップロード',
-    garmentPlaceholder: 'テンプレートの商品を差し替え。モデル着用画像もアップロードできます', modelPlaceholder: 'テンプレートの人物を差し替え',
-    replace: '画像を差し替え', remove: '画像を削除', reading: '画像を読み込み中…',
+    uploadTitle: '商品・モデル画像をアップロード',
+    uploadCount: '最大9枚・アップロード済み ', addImages: '画像を追加', imageLimit: 'アップロードできる画像は最大9枚です。',
+    remove: '画像を削除', reading: '画像を読み込み中…',
     uploadError: 'JPG・JPEG・PNG・WebP形式、1枚20 MB以内の画像を選択してください。',
-    singleImage: '各欄にアップロードできる画像は1枚です。', decodeError: '画像を読み込めませんでした。別の画像を選択してください。',
+    decodeError: '画像を読み込めませんでした。別の画像を選択してください。',
     formats: 'JPG・JPEG・PNG・WebP形式、1枚20 MB以内',
     emptyTitle: 'データがありません', emptyDescription: '現在表示できるコンテンツはありません',
     edit: 'テンプレート編集', generate: '今すぐ生成',
