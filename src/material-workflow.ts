@@ -60,7 +60,7 @@ export function canGenerateMaterialWorkflow(node: MaterialWorkflow): boolean {
 }
 
 export function createMaterialWorkflow(x: number, y: number, kind: MaterialWorkflowKind, source?: CanvasImage): MaterialWorkflow {
-  return { id: crypto.randomUUID(), x, y, kind, view: ['front'], grid: 4, prompt: '', smartExpand: false,
+  return { id: crypto.randomUUID(), x, y, kind, view: [], grid: 4, prompt: '', smartExpand: false,
     ratio: 'auto', resolution: '2K', count: 1,
     references: source ? [{ id: crypto.randomUUID(), sourceImageId: source.id, name: source.name, url: source.url, kind: 'image' }] : [] };
 }

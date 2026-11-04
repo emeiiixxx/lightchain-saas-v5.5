@@ -37,7 +37,7 @@ export const videoTemplates: readonly VideoTemplate[] = [
     preview: 'portrait',
     references: videoTemplateReferenceSets.commerce,
     workflow: {
-      mode: 'references', generationMode: 'fast', ratio: '9:16', resolution: '2K', duration: '10s', audio: 'auto', smartExpand: false,
+      mode: 'references', generationMode: 'fast', ratio: '9:16', resolution: '2K', duration: '10s', audio: 'auto', smartExpand: true,
       inputs: [
         { slot: 'garment', target: 'references', images: videoTemplateReferenceSets.commerce.subjects },
         { slot: 'model', target: 'references', images: [videoTemplateReferenceSets.commerce.modelPreview] },
@@ -61,7 +61,7 @@ export const videoTemplates: readonly VideoTemplate[] = [
     media: { video: `${import.meta.env.BASE_URL}assets/video-template-creator/creator.mp4`, poster: creatorImage, width: 1124, height: 1844 },
     references: { subjects: [], subjectThumbnail: creatorImage, modelThumbnail: creatorImage, modelPreview: creatorImage },
     workflow: {
-      mode: 'references', generationMode: 'professional', ratio: '3:4', resolution: '720p', duration: '5s', audio: 'auto', smartExpand: false,
+      mode: 'references', generationMode: 'professional', ratio: '3:4', resolution: '720p', duration: '5s', audio: 'auto', smartExpand: true,
       inputs: [
         { slot: 'garment', target: 'references', images: [] },
         { slot: 'model', target: 'references', images: [creatorImage] },
@@ -85,7 +85,7 @@ export const videoTemplates: readonly VideoTemplate[] = [
     preview: 'landscape',
     references: videoTemplateReferenceSets.brand,
     workflow: {
-      mode: 'references', generationMode: 'fast', ratio: '16:9', resolution: '2K', duration: '10s', audio: 'auto', smartExpand: false,
+      mode: 'references', generationMode: 'fast', ratio: '16:9', resolution: '2K', duration: '10s', audio: 'auto', smartExpand: true,
       inputs: [
         { slot: 'garment', target: 'references', images: videoTemplateReferenceSets.brand.subjects },
         { slot: 'model', target: 'references', images: [videoTemplateReferenceSets.brand.modelPreview] },

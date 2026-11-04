@@ -76,7 +76,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
   const frameAssets = node.main ? videoNodeAssetSets.framesFilled : videoNodeAssetSets.framesEmpty;
   const referenceAssets = references.length ? videoNodeAssetSets.referencesFilled : videoNodeAssetSets.referencesEmpty;
   const assets = frames ? frameAssets : referenceAssets;
-  const expansionControl = <label className="video-prompt-expansion nodrag nopan"><span>{t.smartExpand}</span><Switch checked={node.smartExpand ?? false} aria-label={t.smartExpand} onCheckedChange={smartExpand => onChange({ smartExpand })} /></label>;
+  const expansionControl = <label className="video-prompt-expansion nodrag nopan"><span>{t.smartExpand}</span><Switch checked={node.smartExpand ?? true} aria-label={t.smartExpand} onCheckedChange={smartExpand => onChange({ smartExpand })} /></label>;
   const designId = frames ? (node.main ? '119:11242' : '84:6110') : (references.length ? '121:18150' : '121:17924');
   const root = useRef<HTMLElement>(null);
   const suppressPreviewUntil = useRef(0);
