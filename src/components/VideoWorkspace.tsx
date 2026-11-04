@@ -620,13 +620,13 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     animateView(fitImages(results, element.clientWidth, element.clientHeight));
     element.focus({ preventScroll: true });
   }
-  function startDemoTask(editorId: string | undefined, sourceIds: string[], results: DemoResult[], ratio = 'auto', previous = current.current, templateSource?: VideoCanvasMedia) {
+  function startDemoTask(editorId: string | undefined, sourceIds: string[], results: DemoResult[], ratio = 'auto', previous = current.current) {
     if (!results.length) return;
     const editor = [...previous.workflows.map(videoWorkflowBox), ...(previous.materialWorkflows ?? []).map(materialWorkflowBox), ...(previous.upscaleWorkflows ?? []).map(videoUpscaleWorkflowBox)].find(node => node.id === editorId);
     if (editorId && !editor) return;
     const id = crypto.randomUUID();
     const boundResults = results.map(result => ({ ...result, generatedByEditorId: editorId, generatedTaskId: id }));
-    const source = sourceIds.map(sourceId => previous.images.find(image => image.id === sourceId && !image.generation)).find(Boolean) ?? templateSource;
+    const source = sourceIds.map(sourceId => previous.images.find(image => image.id === sourceId && !image.generation)).find(Boolean);
     const size = demoPlaceholderSize(ratio, source);
     const placeholders: DemoResult[] = results.map(result => ({
       id: result.id, name: result.name, url: '', ...size,
@@ -678,8 +678,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const epoch = uploadEpoch.current;
     const prepared = await prepareVideoTemplateGeneration(template, replacements, locale);
     if (signal.aborted || !activeRef.current || uploadEpoch.current !== epoch) return false;
-    const source = prepared.images[0];
-    startDemoTask(undefined, [], [prepared.result], prepared.workflow.ratio, current.current, source ? { ...source, x: 0, y: 0 } : undefined);
+    const { staged, workflow } = stageTemplateOnCanvas(prepared, false);
+    // Inputs, editor and running result are committed together by startDemoTask.
+    startDemoTask(workflow.id, videoWorkflowSourceIds(workflow), [prepared.result], workflow.ratio, staged);
     requestAnimationFrame(() => { if (activeRef.current) canvas.current?.focus({ preventScroll: true }); });
     return true;
   }
@@ -690,25 +691,30 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const prepared = await prepareVideoTemplateGeneration(template, replacements, locale, false);
     if (signal.aborted || !activeRef.current || uploadEpoch.current !== epoch) return false;
     // Editing materializes the existing template, without submitting a task.
+    const { staged, images, workflow } = stageTemplateOnCanvas(prepared, true);
+    commit(staged);
+    if (canvas.current) animateView(fitImages([...images, videoWorkflowBox(workflow)], canvas.current.clientWidth, canvas.current.clientHeight));
+    requestAnimationFrame(() => { if (activeRef.current) canvas.current?.focus({ preventScroll: true }); });
+    return true;
+  }
+  function stageTemplateOnCanvas(prepared: Awaited<ReturnType<typeof prepareVideoTemplateGeneration>>, includeResult: boolean) {
     const previous = current.current;
     const images: VideoCanvasMedia[] = prepared.images.map(image => ({ ...image, x: 0, y: 0 }));
-    const workflow = prepared.workflow;
-    images.push({ ...sizeVideoCanvasMedia(prepared.result), x: 0, y: 0 });
-    const positions = arrangeVideoWorkflowMedia(images, [workflow]);
+    if (includeResult) images.push({ ...sizeVideoCanvasMedia(prepared.result), x: 0, y: 0 });
+    const positions = arrangeVideoWorkflowMedia(images, [prepared.workflow]);
     const bounds = boundsOf(sceneItems(previous));
     const offset = bounds ? { x: bounds.x + bounds.width + 240, y: bounds.y } : { x: 0, y: 0 };
     const position = <T extends { id: string; x: number; y: number }>(item: T): T => {
       const point = positions.get(item.id) ?? item;
       return { ...item, x: point.x + offset.x, y: point.y + offset.y };
     };
+    const placedImages = images.map(position);
+    const workflow = position(prepared.workflow);
     const staged: Snapshot = { ...previous,
-      images: [...previous.images, ...images.map(position)],
-      workflows: [...previous.workflows, position(workflow)], selected: [workflow.id],
+      images: [...previous.images, ...placedImages],
+      workflows: [...previous.workflows, workflow], selected: [workflow.id],
     };
-    commit(staged);
-    if (canvas.current) animateView(fitImages([...images.map(position), videoWorkflowBox(position(workflow))], canvas.current.clientWidth, canvas.current.clientHeight));
-    requestAnimationFrame(() => { if (activeRef.current) canvas.current?.focus({ preventScroll: true }); });
-    return true;
+    return { staged, images: placedImages, workflow };
   }
   async function generateMaterialDemo(id: string) {
     const previous = current.current, node = previous.materialWorkflows?.find(item => item.id === id);
