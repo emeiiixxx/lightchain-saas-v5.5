@@ -178,7 +178,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
       <div className="fusion-field video-workflow-settings" data-node-id="I119:11243;2575:3889;165:29865"><span className="fusion-label">{t.settings}</span>
         <div className="fusion-settings">
           <VideoGenerationSettings locale={locale} value={node} onChange={onChange} autoIcon={assets.auto}
-            includeModeInSummary summaryIcon={videoSettingsIcon}
+            includeModeInSummary summaryIcon={videoSettingsIcon} showRatioOptions={node.mode === 'references'}
             chevron={<NodeIcon src={assets.chevron} className="lc-setting-select-chevron" />} />
         </div>
       </div>

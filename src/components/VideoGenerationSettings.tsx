@@ -37,8 +37,9 @@ function ParameterSegments({ label, options, value, onChange, onSelect, vertical
   </div></div>;
 }
 
-export function VideoGenerationSettings({ locale, value, onChange, autoIcon, chevron, includeModeInSummary = false, summaryIcon }: {
+export function VideoGenerationSettings({ locale, value, onChange, autoIcon, chevron, includeModeInSummary = false, summaryIcon, showRatioOptions }: {
   locale: Locale; value: Settings; onChange: (patch: Partial<Settings>) => void; autoIcon?: string; chevron?: ReactNode; includeModeInSummary?: boolean; summaryIcon?: string;
+  showRatioOptions: boolean;
 }) {
   const t = copy[locale];
   const [open, setOpen] = useState(false);
@@ -147,8 +148,8 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
       <section className="video-generation-mode-setting"><h3>{t.mode}</h3><ParameterSegments label={t.mode} value={generationMode}
         onChange={changeGenerationMode} onSelect={changeGenerationMode}
         options={[{ value: 'fast', label: t.fast }, { value: 'professional', label: t.professional }]} /></section>
-      <section><h3>{t.ratio}</h3><ParameterSegments label={t.ratio} vertical value={value.ratio} onChange={ratio => onChange({ ratio })}
-        options={ratios.map(ratio => ({ value: ratio, label: ratio === 'auto' ? t.auto : ratio, icon: ratioIcon(ratio) }))} /></section>
+      {showRatioOptions && <section><h3>{t.ratio}</h3><ParameterSegments label={t.ratio} vertical value={value.ratio} onChange={ratio => onChange({ ratio })}
+        options={ratios.map(ratio => ({ value: ratio, label: ratio === 'auto' ? t.auto : ratio, icon: ratioIcon(ratio) }))} /></section>}
       <section><div className="video-resolution-heading"><h3>{t.resolution}</h3>
         {generationMode === 'professional' && <button type="button" className="video-resolution-help" aria-label={t.resolutionHelp} data-tooltip={t.resolutionHint} data-tooltip-side="right" data-tooltip-width="200">
           <span className="icon" aria-hidden="true" style={{ width: 16, height: 16, '--icon-url': `url("${assetBase}resolution-info.svg")` } as CSSProperties} />
