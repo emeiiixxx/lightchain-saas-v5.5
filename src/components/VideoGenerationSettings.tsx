@@ -56,7 +56,12 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
     const seconds = (index + 1) * 5;
     return { value: `${seconds}s`, label: `${seconds}${t.seconds}` };
   });
-  const summary = `${includeModeInSummary ? `${t[generationMode]} ｜ ` : ''}${value.ratio === 'auto' ? t.auto : value.ratio} ｜ ${value.resolution === '480p' ? t.sample : value.resolution} ｜ ${duration}`;
+  const summary = [
+    includeModeInSummary && t[generationMode],
+    showRatioOptions && (value.ratio === 'auto' ? t.auto : value.ratio),
+    value.resolution === '480p' ? t.sample : value.resolution,
+    duration,
+  ].filter(Boolean).join(' ｜ ');
   const summaryIconUrl = summaryIcon ?? (value.ratio === 'auto' && autoIcon ? autoIcon : ratioIcon(value.ratio));
 
   function changeGenerationMode(next: string) {
