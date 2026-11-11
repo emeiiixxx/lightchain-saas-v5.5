@@ -1,5 +1,6 @@
+import { imageIdentity, uniqueReferenceImages } from '../image-identity';
 import { readMotionDuration } from '../motion-duration';
-import { canvasSourceInfo, canvasSourceEligible, bindCanvasSources, type WorkflowUpload, type VideoWorkflowUpload, type MaterialWorkflowUpload } from '../video-canvas-source';
+import { canvasSourceInfo, canvasSourceEligible, bindCanvasSources, workflowInputImageUrls, type WorkflowUpload, type VideoWorkflowUpload, type MaterialWorkflowUpload } from '../video-canvas-source';
 import type { WorkflowSource } from './WorkflowSourceMenu';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { boundsOf, DEFAULT_VIEW, fitImages, zoomAt, type CanvasImage, type Viewport } from '../canvas';
@@ -520,7 +521,13 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (!selection || (action === 'professional' ? !selection.showVideoAction : !selection.showImageActions)) return;
     const bounds = boundsOf(selection.media);
     if (!bounds) return;
-    const references: VideoReference[] = selection.media.map(source => ({
+    const seenImages = new Set<string>();
+    const references: VideoReference[] = selection.media.filter(source => {
+      if (source.video) return true;
+      const key = imageIdentity(source.url);
+      if (seenImages.has(key)) return false;
+      seenImages.add(key); return true;
+    }).map(source => ({
       id: crypto.randomUUID(), sourceImageId: source.id,
       name: source.video?.name ?? source.name,
       url: source.video?.url ?? source.url, kind: source.video ? 'video' : 'image',
@@ -767,6 +774,10 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       const info = canvasSourceInfo(current.current, previous.target);
       const image = current.current.images.find(item => item.id === id);
       if (!info || !image || !canvasSourceEligible(current.current, previous.target, image)) return previous;
+      if (!image.video && previous.ids.some(selectedId => {
+        const selected = current.current.images.find(item => item.id === selectedId);
+        return selected && !selected.video && imageIdentity(selected.url) === imageIdentity(image.url);
+      })) return previous;
       return { ...previous, ids: info.remaining === 1 ? [id] : previous.ids.length < info.remaining ? [...previous.ids, id] : previous.ids };
     });
   }
@@ -833,6 +844,11 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       animateView(fitImages([...images.filter(item => sourceIds.has(item.id)), videoWorkflowBox(updated)], canvas.current.clientWidth, canvas.current.clientHeight));
     }
   }
+  function notifyDuplicateReference() {
+    notify(locale === 'zh-CN' ? '同一节点不能重复添加同一张参考图，已跳过重复图片。'
+      : locale === 'ja' ? '同じノードに同じ参照画像は追加できません。重複画像をスキップしました。'
+      : 'Duplicate reference images are not allowed in the same node. Duplicates were skipped.');
+  }
   function referenceImageUploadLimitMessage(remaining: number) {
     return locale === 'zh-CN' ? `本次最多还能添加${remaining}张参考图。`
       : locale === 'ja' ? `参照画像はあと${remaining}枚追加できます。`
@@ -847,13 +863,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       setWorkflowUpload(null); return;
     }
     const remaining = target.field === 'back' ? 1 : Math.max(0, materialReferenceLimit(node.kind) - node.references.length);
-    // Deduplicate only this picker batch, not earlier selections of the same image.
-    const urls = new Set<string>();
-    const unique = uploaded.filter(image => {
-      if (urls.has(image.url)) return false;
-      urls.add(image.url);
-      return true;
-    });
+    const unique = uniqueReferenceImages(uploaded, workflowInputImageUrls(previous, target));
+    if (unique.length !== uploaded.length) notifyDuplicateReference();
     if (unique.length > remaining) { notify(referenceImageUploadLimitMessage(remaining), 'error'); return; }
     if (!unique.length) { setWorkflowUpload(null); return; }
     let staged = previous;
@@ -881,13 +892,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const node = previous.workflows.find(item => item.id === target.id);
     if (!node || node.mode !== 'references') { setWorkflowUpload(null); return; }
     const remaining = Math.max(0, videoReferenceLimits.image - videoWorkflowReferences(node).filter(reference => reference.kind === 'image').length);
-    // Deduplicate this confirmation only; earlier selections retain independent canvas instances.
-    const urls = new Set<string>();
-    const unique = uploaded.filter(image => {
-      if (urls.has(image.url)) return false;
-      urls.add(image.url);
-      return true;
-    });
+    const unique = uniqueReferenceImages(uploaded, workflowInputImageUrls(previous, target));
+    if (unique.length !== uploaded.length) notifyDuplicateReference();
     if (unique.length > remaining) { notify(referenceImageUploadLimitMessage(remaining), 'error'); return; }
     if (!unique.length) { setWorkflowUpload(null); return; }
     let staged = previous;
@@ -918,6 +924,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const node = target && current.current.workflows.find(item => item.id === target.id);
     if (!target || target !== expectedTarget || target.kind !== 'image' || !node || !activeRef.current) return;
     if ((target.field === 'references') !== (node.mode === 'references')) { setWorkflowUpload(null); return; }
+    if (!uniqueReferenceImages([image], workflowInputImageUrls(current.current, target)).length) { notifyDuplicateReference(); return; }
     if (target.field === 'references') {
       if (!referenceCapacityAvailable(node, 'image')) { setWorkflowUpload(null); return; }
     }
@@ -1230,7 +1237,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       onConfirmBatch={materialBatchUpload ? images => applyMaterialWorkflowImages(images, shownWorkflowUpload.value!)
         : videoImageUploadNode ? images => applyVideoWorkflowImages(images, shownWorkflowUpload.value!) : undefined}
       maxCount={imageUploadRemaining} limitMessage={imageBatchUpload ? referenceImageUploadLimitMessage(imageUploadRemaining!) : undefined}
-      excludedUrls={shownWorkflowUpload.value.kind === 'video' && shownWorkflowUpload.value.field === 'references'
+      excludedUrls={shownWorkflowUpload.value.kind === 'image' ? workflowInputImageUrls(snapshot, shownWorkflowUpload.value) : shownWorkflowUpload.value.kind === 'video' && shownWorkflowUpload.value.field === 'references'
         ? snapshot.workflows.filter(node => node.id === shownWorkflowUpload.value!.id).flatMap(node => videoWorkflowReferences(node).filter(reference => reference.kind === 'video').map(reference => reference.url)) : undefined}
       videoUploads={uploadedVideos} onConfirmVideo={shownWorkflowUpload.value.kind === 'video' ? reference => applyWorkflowVideo(reference, shownWorkflowUpload.value!) : undefined} onClose={() => setWorkflowUpload(null)} />}
     {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p><p className="video-canvas-help">{connectionHelp[locale]}</p></Dialog>}

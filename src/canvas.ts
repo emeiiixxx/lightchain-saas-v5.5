@@ -1,3 +1,4 @@
+import { rememberUploadedImageIdentity } from './image-identity';
 import { compactBox, type HierarchyData } from '@antv/hierarchy';
 import { groupTaskBlocks } from './canvas-task-layout';
 import { rememberImagePreview } from './image-previews';
@@ -111,6 +112,7 @@ export async function readImage(file: File): Promise<Omit<CanvasImage, 'x' | 'y'
   const url = URL.createObjectURL(file);
   try {
     const image = new Image(); image.src = url; await image.decode();
+    await rememberUploadedImageIdentity(url, file);
     rememberImagePreview(url, image);
     const width = Math.min(360, image.naturalWidth);
     return { id: crypto.randomUUID(), name: file.name, url, width, height: width * image.naturalHeight / image.naturalWidth, naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight };

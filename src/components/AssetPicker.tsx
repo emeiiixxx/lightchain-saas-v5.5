@@ -1,3 +1,4 @@
+import { imageIdentity } from '../image-identity';
 import { ProgressiveImage } from './ProgressiveImage';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Dialog, Divider, Icon } from './ui';
@@ -66,7 +67,7 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
   }, [phase]);
   const historyAssets: PickerAsset[] = [...(videoOnly ? [] : uploads), ...(allowVideo ? [...videoUploads, ...localVideos] : []), ...(videoOnly ? [] : multiple ? multiDemoAssets : demoAssets)];
   const candidates = source === 'historyUploads' ? [...new Map(historyAssets.map(asset => [asset.url, asset])).values()] : [];
-  const visible = candidates.filter(asset => !excludedUrls.includes(asset.url)).filter(asset => asset.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  const visible = candidates.filter(asset => !excludedUrls.some(url => imageIdentity(url) === imageIdentity(asset.url))).filter(asset => asset.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
 
   function close() {
     active.current = false; request.current++; pendingVideoRead.current?.abort(); onClose();

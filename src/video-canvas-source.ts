@@ -1,3 +1,4 @@
+import { imageIdentity } from './image-identity';
 import type { VideoCanvasMedia } from './video-canvas-media';
 import { materialReferenceLimit, materialWorkflowHasBackView, materialWorkflowSourceIds, type MaterialWorkflow } from './material-workflow';
 import { videoReferenceLimits, videoWorkflowReferences, videoWorkflowSourceIds, type VideoWorkflow, type VideoReference } from './video-workflow';
@@ -7,6 +8,18 @@ export type VideoWorkflowUpload = { editor?: 'video'; id: string; field: 'main' 
 export type MaterialWorkflowUpload = { editor: 'material'; id: string; field: 'references' | 'back'; kind: 'image' };
 export type WorkflowUpload = VideoWorkflowUpload | MaterialWorkflowUpload | { editor: 'upscale'; id: string; field: 'video'; kind: 'video' };
 type Scene = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; materialWorkflows?: MaterialWorkflow[]; upscaleWorkflows?: VideoUpscaleWorkflow[] };
+
+// All input slots share the same image uniqueness constraint within a node.
+export function workflowInputImageUrls(scene: Scene, target: WorkflowUpload): string[] {
+  if (target.editor === 'upscale') return [];
+  if (target.editor === 'material') {
+    const node = scene.materialWorkflows?.find(item => item.id === target.id);
+    return node ? [...node.references, ...(node.back ? [node.back] : [])].map(image => image.url) : [];
+  }
+  const node = scene.workflows.find(item => item.id === target.id);
+  return node ? [...(node.main ? [node.main] : []), ...(node.endFrame ? [node.endFrame] : []),
+    ...node.references.filter(reference => reference.kind === 'image')].map(image => image.url) : [];
+}
 
 export function canvasSourceInfo(scene: Scene, target: WorkflowUpload): { remaining: number; used: (string | undefined)[] } | null {
   if (target.editor === 'material') {
@@ -26,6 +39,7 @@ export function canvasSourceInfo(scene: Scene, target: WorkflowUpload): { remain
 export function canvasSourceEligible(scene: Scene, target: WorkflowUpload, image: VideoCanvasMedia) {
   const info = canvasSourceInfo(scene, target);
   if (!info || image.generation || (image.video ? 'video' : 'image') !== target.kind || info.used.includes(image.id)) return false;
+  if (!image.video && workflowInputImageUrls(scene, target).some(url => imageIdentity(url) === imageIdentity(image.url))) return false;
   const downstream = new Set([target.id]);
   const editors = [
     ...scene.workflows.map(node => ({ id: node.id, sources: videoWorkflowSourceIds(node) })),
@@ -45,6 +59,8 @@ export function bindCanvasSources<T extends Scene>(scene: T, target: WorkflowUpl
   const info = canvasSourceInfo(scene, target);
   const images = [...new Set(ids)].map(id => scene.images.find(image => image.id === id));
   if (!info || !images.length || images.length > info.remaining || images.some(image => !image || !canvasSourceEligible(scene, target, image))) return null;
+  const imageKeys = images.filter(image => !image!.video).map(image => imageIdentity(image!.url));
+  if (new Set(imageKeys).size !== imageKeys.length) return null;
   const references: VideoReference[] = images.map(image => ({ ...(image!.video ?? { name: image!.name, url: image!.url, kind: 'image' as const }), id: crypto.randomUUID(), sourceImageId: image!.id }));
   if (target.editor === 'material') return { ...scene, materialWorkflows: scene.materialWorkflows!.map(node => node.id !== target.id ? node : target.field === 'back' ? { ...node, back: references[0] } : { ...node, references: [...node.references, ...references] }) };
   if (target.editor === 'upscale') return { ...scene, upscaleWorkflows: scene.upscaleWorkflows!.map(node => node.id !== target.id ? node : { ...node, video: { ...images[0]!.video!, sourceImageId: images[0]!.id } }) };
