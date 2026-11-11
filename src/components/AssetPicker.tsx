@@ -22,6 +22,7 @@ type Props = {
   mediaKind?: 'image' | 'video';
   maxCount?: number;
   excludedUrls?: string[];
+  selectedDisabledUrls?: string[];
   limitMessage?: string;
   locale: Locale;
   phase: 'enter' | 'exit';
@@ -36,7 +37,7 @@ type Props = {
   onClose: () => void;
 };
 
-export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUpload, onVideoUpload, onConfirm, onConfirmVideo, onConfirmBatch, onConfirmMediaBatch, onClose, maxCount = 20, excludedUrls = [], limitMessage, allowSvg = false, mediaKind }: Props) {
+export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUpload, onVideoUpload, onConfirm, onConfirmVideo, onConfirmBatch, onConfirmMediaBatch, onClose, maxCount = 20, excludedUrls = [], selectedDisabledUrls = [], limitMessage, allowSvg = false, mediaKind }: Props) {
   const t = messages[locale];
   const multiple = !!onConfirmBatch || !!onConfirmMediaBatch;
   const allowVideo = mediaKind !== 'image' && (!!onConfirmMediaBatch || (!!onConfirmVideo && !multiple));
@@ -67,6 +68,9 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
   }, [phase]);
   const historyAssets: PickerAsset[] = [...(videoOnly ? [] : uploads), ...(allowVideo ? [...videoUploads, ...localVideos] : []), ...(videoOnly ? [] : multiple ? multiDemoAssets : demoAssets)];
   const candidates = source === 'historyUploads' ? [...new Map(historyAssets.map(asset => [asset.url, asset])).values()] : [];
+  const alreadyAddedKeys = new Set(selectedDisabledUrls.map(imageIdentity));
+  const isAlreadyAdded = (asset: PickerAsset) => alreadyAddedKeys.has(imageIdentity(asset.url));
+  const alreadyAddedLabel = locale === 'zh-CN' ? '已添加' : locale === 'ja' ? '追加済み' : 'Already added';
   const visible = candidates.filter(asset => !excludedUrls.some(url => imageIdentity(url) === imageIdentity(asset.url))).filter(asset => asset.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
 
   function close() {
@@ -110,12 +114,13 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
         else if (onVideoUpload) onVideoUpload(asset);
         else { unclaimedVideos.current.set(asset.url, asset); setLocalVideos(previous => [...previous, asset]); }
       });
-      if (!multiple && loaded[0]) {
-        const image = await prepareMainImage(loaded[0]);
+      const available = loaded.filter(asset => !isAlreadyAdded(asset));
+      if (!multiple && available[0]) {
+        const image = await prepareMainImage(available[0]);
         if (active.current && id === request.current) onConfirm(image);
         return;
       }
-      if (multiple) setChosen(previous => [...previous, ...loaded]);
+      if (multiple) setChosen(previous => [...previous, ...available]);
       if (results.some(result => result.status === 'rejected')) setError('read');
       setSource('historyUploads'); setQuery('');
     } catch (error) {
@@ -125,7 +130,7 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
   }
 
   async function useAsset(asset: PickerAsset) {
-    if (locked.current || !active.current) return;
+    if (locked.current || !active.current || isAlreadyAdded(asset)) return;
     if ((videoOnly && !isVideoAsset(asset)) || (mediaKind === 'image' && isVideoAsset(asset))) return;
     const id = ++request.current;
     locked.current = true; setBusy(true); setError(null);
@@ -142,7 +147,7 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
   }
 
   function toggleAsset(asset: PickerAsset) {
-    if (locked.current || !active.current) return;
+    if (locked.current || !active.current || isAlreadyAdded(asset)) return;
     if ((videoOnly && !isVideoAsset(asset)) || (mediaKind === 'image' && isVideoAsset(asset))) return;
     if (chosen.some(item => item.id === asset.id)) {
       setChosen(previous => previous.filter(item => item.id !== asset.id)); setError(null);
@@ -184,7 +189,7 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
         onDrop={event => { event.preventDefault(); event.stopPropagation(); setDragOver(false); void upload(event.dataTransfer.files); }}>
         <Icon name="upload" size={32} /><span className="asset-upload-title">{busy ? t.reading : dragOver ? (allowVideo ? uploadText.drop : t.dropImagesHere) : t.localUpload}</span><span className="asset-upload-hint">{dragOver && !busy ? t.releaseToUpload : allowVideo ? uploadText.hint : allowSvg ? promptCoverMessages[locale].formats : t.localUploadHint}</span>
       </button>}
-      {visible.map(asset => multiple ? <button type="button" key={asset.id} className="asset-card asset-card--multiple" aria-label={asset.name} aria-pressed={chosen.some(item => item.id === asset.id)} disabled={busy} onClick={() => toggleAsset(asset)}>
+      {visible.map(asset => multiple || isAlreadyAdded(asset) ? <button type="button" key={asset.id} className={`asset-card asset-card--multiple${isAlreadyAdded(asset) ? ' asset-card--already-added' : ''}`} aria-label={isAlreadyAdded(asset) ? `${asset.name} · ${alreadyAddedLabel}` : asset.name} aria-pressed={isAlreadyAdded(asset) || chosen.some(item => item.id === asset.id)} disabled={busy || isAlreadyAdded(asset)} onClick={() => toggleAsset(asset)}>
         <ProgressiveImage src={isVideoAsset(asset) ? asset.posterUrl : asset.url} alt="" />
         {isVideoAsset(asset) && <span className="asset-video-marker" aria-hidden="true"><Icon name="historyVideo" size={16} /></span>}
         <span className="asset-checkbox" aria-hidden="true"><Icon name="selectionCheck" size={24} /></span>

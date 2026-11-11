@@ -1237,7 +1237,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       onConfirmBatch={materialBatchUpload ? images => applyMaterialWorkflowImages(images, shownWorkflowUpload.value!)
         : videoImageUploadNode ? images => applyVideoWorkflowImages(images, shownWorkflowUpload.value!) : undefined}
       maxCount={imageUploadRemaining} limitMessage={imageBatchUpload ? referenceImageUploadLimitMessage(imageUploadRemaining!) : undefined}
-      excludedUrls={shownWorkflowUpload.value.kind === 'image' ? workflowInputImageUrls(snapshot, shownWorkflowUpload.value) : shownWorkflowUpload.value.kind === 'video' && shownWorkflowUpload.value.field === 'references'
+      selectedDisabledUrls={shownWorkflowUpload.value.kind === 'image' ? workflowInputImageUrls(snapshot, shownWorkflowUpload.value) : undefined}
+      excludedUrls={shownWorkflowUpload.value.kind === 'video' && shownWorkflowUpload.value.field === 'references'
         ? snapshot.workflows.filter(node => node.id === shownWorkflowUpload.value!.id).flatMap(node => videoWorkflowReferences(node).filter(reference => reference.kind === 'video').map(reference => reference.url)) : undefined}
       videoUploads={uploadedVideos} onConfirmVideo={shownWorkflowUpload.value.kind === 'video' ? reference => applyWorkflowVideo(reference, shownWorkflowUpload.value!) : undefined} onClose={() => setWorkflowUpload(null)} />}
     {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p><p className="video-canvas-help">{connectionHelp[locale]}</p></Dialog>}

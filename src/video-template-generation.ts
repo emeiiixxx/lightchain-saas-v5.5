@@ -13,11 +13,12 @@ export async function prepareVideoTemplateGeneration(template: VideoTemplate, re
     throw new Error('template_inputs_required');
   }
   if (replacements.length > videoReferenceLimits.image || replacements.some(image => !image.url)) throw new Error('invalid_template_inputs');
-  const slots = uniqueReferenceImages(replacements.length
+  const inputSlots = replacements.length
     ? replacements.map((image, index) => ({ ...image, target: definition.mode === 'references' ? 'references' as const : index === 0 ? 'main' as const : 'endFrame' as const }))
     : definition.inputs.flatMap(input => input.images.map((url, index) => ({
       url, name: `${template.label[locale]} · ${input.slot === 'garment' ? '商品' : '模特'} ${index + 1}`, target: input.target,
-    }))));
+    })));
+  const slots = definition.mode === 'references' ? uniqueReferenceImages(inputSlots) : inputSlots;
   if (definition.mode === 'frames' && (slots.some(slot => slot.target === 'references')
     || slots.filter(slot => slot.target === 'main').length !== 1 || slots.filter(slot => slot.target === 'endFrame').length > 1)) {
     throw new Error('invalid_template_frame_slots');

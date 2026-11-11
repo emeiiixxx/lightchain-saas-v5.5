@@ -54,6 +54,11 @@
 .asset-checkbox .icon { opacity: 0; }
 .asset-card--multiple[aria-pressed='true'] .asset-checkbox { background: var(--brand-primary); border-color: transparent; }
 .asset-card--multiple[aria-pressed='true'] .asset-checkbox .icon { opacity: 1; }
+/* Existing node inputs remain visible and checked, but cannot be selected again. */
+.asset-card--already-added { cursor: not-allowed; }
+.asset-card--already-added > .progressive-image { opacity: .5; filter: grayscale(1); }
+.asset-card--already-added[aria-pressed='true']::after { border-color: var(--border-medium); }
+.asset-card--already-added[aria-pressed='true'] .asset-checkbox { background: var(--control-fill-default); border-color: var(--border-medium); color: var(--text-secondary); }
 .asset-footer { display: flex; align-items: center; gap: 8px; padding: 24px; flex-shrink: 0; }
 .asset-counter { display: flex; align-items: center; gap: 4px; flex: 1; color: var(--text-placeholder); font-size: 12px; line-height: 16px; }
 .asset-counter strong { color: var(--text-brand); font-weight: 400; font-size: 14px; line-height: 20px; }

@@ -9,7 +9,7 @@ export type MaterialWorkflowUpload = { editor: 'material'; id: string; field: 'r
 export type WorkflowUpload = VideoWorkflowUpload | MaterialWorkflowUpload | { editor: 'upscale'; id: string; field: 'video'; kind: 'video' };
 type Scene = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; materialWorkflows?: MaterialWorkflow[]; upscaleWorkflows?: VideoUpscaleWorkflow[] };
 
-// All input slots share the same image uniqueness constraint within a node.
+// Reference lists reject duplicate images; first and last frames are independent slots.
 export function workflowInputImageUrls(scene: Scene, target: WorkflowUpload): string[] {
   if (target.editor === 'upscale') return [];
   if (target.editor === 'material') {
@@ -17,6 +17,7 @@ export function workflowInputImageUrls(scene: Scene, target: WorkflowUpload): st
     return node ? [...node.references, ...(node.back ? [node.back] : [])].map(image => image.url) : [];
   }
   const node = scene.workflows.find(item => item.id === target.id);
+  if (node?.mode === 'frames') return [];
   return node ? [...(node.main ? [node.main] : []), ...(node.endFrame ? [node.endFrame] : []),
     ...node.references.filter(reference => reference.kind === 'image')].map(image => image.url) : [];
 }
