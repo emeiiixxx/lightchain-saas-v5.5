@@ -24,7 +24,7 @@
 .asset-card { background: var(--control-fill-default); cursor: pointer; }
 .asset-grid[aria-busy='true'] .asset-card { cursor: wait; }
 .asset-card::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
-.asset-card:hover::after { border-color: var(--border-brand); }
+.asset-card:hover:not(:disabled)::after { border-color: var(--border-brand); }
 .asset-card > img { display: block; width: 100%; height: 100%; object-fit: cover; }
 /* Hover treatment is specified by the product instruction; the Figma frame
    supplies the default card. Keep image overlays dark in both themes. */
@@ -54,11 +54,10 @@
 .asset-checkbox .icon { opacity: 0; }
 .asset-card--multiple[aria-pressed='true'] .asset-checkbox { background: var(--brand-primary); border-color: transparent; }
 .asset-card--multiple[aria-pressed='true'] .asset-checkbox .icon { opacity: 1; }
-/* Existing node inputs remain visible and checked, but cannot be selected again. */
+/* Keep photo colors intact; use the shared selected-disabled control tokens. */
 .asset-card--already-added { cursor: not-allowed; }
-.asset-card--already-added > .progressive-image { opacity: .5; filter: grayscale(1); }
-.asset-card--already-added[aria-pressed='true']::after { border-color: var(--border-medium); }
-.asset-card--already-added[aria-pressed='true'] .asset-checkbox { background: var(--control-fill-default); border-color: var(--border-medium); color: var(--text-secondary); }
+.asset-card--multiple:disabled[aria-pressed='true']::after { border-color: var(--brand-primary-disabled); }
+.asset-card--multiple:disabled[aria-pressed='true'] .asset-checkbox { background: var(--brand-primary-disabled); border-color: transparent; color: var(--text-on-brand-disabled); }
 .asset-footer { display: flex; align-items: center; gap: 8px; padding: 24px; flex-shrink: 0; }
 .asset-counter { display: flex; align-items: center; gap: 4px; flex: 1; color: var(--text-placeholder); font-size: 12px; line-height: 16px; }
 .asset-counter strong { color: var(--text-brand); font-weight: 400; font-size: 14px; line-height: 20px; }
